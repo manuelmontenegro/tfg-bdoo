@@ -399,9 +399,9 @@ public class LibreriaBBDD {
 		
 		//EJEMPLO: Empleados que sean hombres o se llamen E (Empleados 0001,0002,0005)
 		Query q = new Query(Empleado.class);
-		//HAY QUE PARAMETRIZAR LA CONSTRAINT Y CAMBIAR EL MÉTODO PARA QUE NO HAYA QUE PONER LAS COMILLAS SIMPLES
-		SimpleConstraint sc1 = SimpleConstraint.igualQueConstraint("sexo", "'hombre'");
-		SimpleConstraint sc2 = SimpleConstraint.igualQueConstraint("nombre", "'E'");
+		//->HAY QUE CAMBIARLO PARA QUE NO HAYA QUE PONER LAS COMILLAS
+		SimpleConstraint sc1 = SimpleConstraint.igualQueConstraint("sexo", "\"hombre\"");
+		SimpleConstraint sc2 = SimpleConstraint.igualQueConstraint("nombre", "\"E\"");
 		OrConstraint oc = new OrConstraint(sc1,sc2);
 		q.setConstraint(oc);
 		List<Object> l = q.executeQuery(lib.getConnection());

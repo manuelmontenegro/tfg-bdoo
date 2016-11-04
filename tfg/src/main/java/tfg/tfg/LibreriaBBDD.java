@@ -409,6 +409,22 @@ public class LibreriaBBDD {
 			System.out.println(o.toString());
 		}
 		
+		/*
+		 cambiar el par de constrain por una lista y en el constructos que reciba  constarin con puntos suspensivos....
+		-----------
+		Query q = new Query(Empleado.class, oc);//tambien se puede hacer un constructor solo con el .class y que la constraian la ponga a TrueConstrain
+		
+		bd.exequteQuerry(q); // esto coge una coxion de un pool de conexiones
+		-----------------------
+		
+		
+		hay que hacer consultas parametricas "?"
+		*/
+		
+		
+		
+		 
+		
 	}
 	
 	

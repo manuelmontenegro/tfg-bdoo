@@ -410,7 +410,7 @@ public class LibreriaBBDD {
 		}
 		
 		/*
-		 cambiar el par de constrain por una lista y en el constructos que reciba  constarin con puntos suspensivos....
+		 cambiar el par de constrain por una lista y en el constructos que reciba  constraint con puntos suspensivos....
 		-----------
 		Query q = new Query(Empleado.class, oc);//tambien se puede hacer un constructor solo con el .class y que la constraian la ponga a TrueConstrain
 		

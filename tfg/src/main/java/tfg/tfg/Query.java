@@ -84,7 +84,7 @@ public class Query {
 			PreparedStatement pst = con.prepareStatement(sql);		//Preparación de la sentencia
 			ResultSet rs = pst.executeQuery();						//Ejecución de la sentencia
 			//Object object = this.clase.newInstance();				//Instancia de la clase 'clase'
-			Empleado object; //-> CAMBIAR PARA QUE FUNCIONE PARA TODOS.
+			Empleado object; //-> CAMBIAR PARA QUE FUNCIONE PARA TODOS....
 			while (rs.next()) {										//Mientras aún haya resultados de la sentencia SQL ejecutada
 				object = new Empleado();
 	            object.setContrasenya(rs.getString("contrasenya"));

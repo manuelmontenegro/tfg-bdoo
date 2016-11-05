@@ -1,10 +1,12 @@
 package tfg.tfg;
 
+import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import prueba.Empleado;
@@ -73,6 +75,25 @@ public class Query {
 	}
 	
 	/**
+	 * Recibe un ResulSet y devuelve un objeto de la clase 'clase' obteniendo los campos de la BD.
+	 * @param rs
+	 * @return Object o
+	 * @throws InstantiationException
+	 * @throws IllegalAccessException
+	 * @throws SQLException
+	 */
+	private Object createObject(ResultSet rs) throws InstantiationException, IllegalAccessException, SQLException{
+		Object o = this.clase.newInstance();					//Nueva instancia de la clase 'clase'
+		Field[] campos = o.getClass().getDeclaredFields();		//Obtener los campos del objecto
+		for(Field f: campos){									//Para cada uno de los campos:
+			Object campo = rs.getObject(f.getName());			//Obtener de la BD el valor del campo
+			f.setAccessible(true);								//Permitir acceder a campos privados
+			f.set(o, campo);									//campo = valor
+		}
+		return o;
+	}
+	
+	/**
 	 * Ejecuta la sentencia SQL con las constraint creadas y devuelve una lista con los resultados.
 	 * @param con (Conexión con la BD).
 	 * @return List que contiene los resultados de la consulta.
@@ -83,23 +104,13 @@ public class Query {
 		try {
 			PreparedStatement pst = con.prepareStatement(sql);		//Preparación de la sentencia
 			ResultSet rs = pst.executeQuery();						//Ejecución de la sentencia
-			//Object object = this.clase.newInstance();				//Instancia de la clase 'clase'
-			Empleado object; //-> CAMBIAR PARA QUE FUNCIONE PARA TODOS....
+			Object object;											//Instancia de la clase 'clase'
 			while (rs.next()) {										//Mientras aún haya resultados de la sentencia SQL ejecutada
-				object = new Empleado();
-	            object.setContrasenya(rs.getString("contrasenya"));
-	            object.setDireccion(rs.getString("direccion"));
-	            object.setDNI(rs.getString("dni"));
-	            object.setNombre(rs.getString("nombre"));
-	            object.setSexo(rs.getString("sexo"));
-	            object.setTelefono(rs.getInt("telefono"));
-	            object.setTipo(rs.getString("tipo"));
-	            
+				object = createObject(rs);         					//Crea el objeto de la clase
 	            lista.add(object);									//Añadir el objeto a la lista que se devolverá
 	        }
 			
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
+		} catch (SQLException | InstantiationException | IllegalAccessException e) {
 			e.printStackTrace();
 		}
 		return lista;

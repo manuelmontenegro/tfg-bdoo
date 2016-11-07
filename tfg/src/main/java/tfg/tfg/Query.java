@@ -102,6 +102,7 @@ public class Query {
 		String sql = this.toSql(con); 								//Sentencia SQL a ejecutar
 		List<Object> lista = new ArrayList<Object>(); 				//Lista en la que se introducirán los objetos
 		try {
+			System.out.println(sql);
 			PreparedStatement pst = con.prepareStatement(sql);		//Preparación de la sentencia
 			ResultSet rs = pst.executeQuery();						//Ejecución de la sentencia
 			Object object;											//Instancia de la clase 'clase'

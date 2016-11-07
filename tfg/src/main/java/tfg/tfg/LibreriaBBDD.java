@@ -1,5 +1,7 @@
 package tfg.tfg;
 
+import java.beans.PropertyVetoException;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -9,7 +11,11 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.sql.DataSource;
 import javax.swing.JOptionPane;
+import javax.swing.UnsupportedLookAndFeelException;
+
+import com.mchange.v2.c3p0.ComboPooledDataSource;
 
 import prueba.Empleado;
 import prueba2.Plato;
@@ -74,7 +80,8 @@ public class LibreriaBBDD {
 	}
 
 	// Metodo para conectar a la base de datos
-	private Connection conectar(){
+	private Connection conectar(){	
+		
 	       Connection link = null;
 	       try{
 	           Class.forName("org.gjt.mm.mysql.Driver");
@@ -93,9 +100,10 @@ public class LibreriaBBDD {
 		
 		for(Field n : o.getClass().getDeclaredFields()){
 			String tipo = "";
-			if(n.getType().getCanonicalName().contains("String"))
+			System.out.println(n.getType());
+			if(n.getType().getCanonicalName().equalsIgnoreCase("Java.lang.String"))
 				tipo = "VARCHAR(255)";
-			else if(n.getType().getCanonicalName().contains("int"))
+			else if(n.getType().getCanonicalName().equalsIgnoreCase("Int"))
 				tipo = "INTEGER";
 				
 			Atributo a = new Atributo(n.getName(),tipo);
@@ -400,9 +408,9 @@ public class LibreriaBBDD {
 		//EJEMPLO: Empleados que sean hombres o se llamen E (Empleados 0001,0002,0005)
 		Query q = new Query(Empleado.class);
 		//->HAY QUE CAMBIARLO PARA QUE NO HAYA QUE PONER LAS COMILLAS
-		SimpleConstraint sc1 = SimpleConstraint.igualQueConstraint("sexo", "\"hombre\"");
+		SimpleConstraint sc1 = SimpleConstraint.igualQueConstraint("sexo", "\"mujer\"");
 		SimpleConstraint sc2 = SimpleConstraint.igualQueConstraint("nombre", "\"E\"");
-		OrConstraint oc = new OrConstraint(sc1,sc2);
+		Constraint oc = new NotConstraint(sc1);
 		q.setConstraint(oc);
 		List<Object> l = q.executeQuery(lib.getConnection());
 		for(Object o: l){

@@ -2,26 +2,23 @@ package tfg.tfg;
 
 
 /**
- * Clase para representar una restricción del tipo Restriccioón1 AND Restricción2
+ * Clase para representar una restricción del tipo NOT Restricción
  * @author Victor y Alvaro
  *
  */
 public class NotConstraint implements Constraint{
 
-	private Constraint cons;	//Primera restricción
+	private Constraint cons;	//Restricción
 	
 	public NotConstraint(Constraint c){
-		this.cons =c;
+		this.cons = c;
 	}
 	
 	/**
-	 * Devuelve las dos restricciones unidas por un AND. 
+	 * Devuelve la restricción con un NOT delante. 
 	 */
 	public String toSql() {
-
-		String ret = " Not (";
-		ret +=this.cons.toSql();	
-		return ret+ ")";
+		return "((NOT (" + this.cons.toSql() + "))";
 	}
 	
 }

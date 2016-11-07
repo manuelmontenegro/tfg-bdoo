@@ -27,23 +27,37 @@ public class LibreriaBBDD {
 	private String user;
 	private String pass;
 	private String nombrebbdd;
-	private Connection con;
+	//private Connection con;
+	private ComboPooledDataSource cpds;
 	private String nombreTabla;
 	
 	//Constructor
 	public LibreriaBBDD(String nombrebbdd, String user, String pass){
+		try{
+		this.cpds = new ComboPooledDataSource();
+		}
+		 catch (Exception e) {}
 		this.user = user;
 		this.pass = pass;
 		this.nombrebbdd = nombrebbdd;
-		this.con = conectar();
+		conectar();
 		this.nombreTabla = "";
 		crearTablaIndice();
 		crearColumnaIndice();
 	}
 	
 	public Connection getConnection(){
-		return this.con;
+		Connection c = null;
+		try {
+			c = cpds.getConnection();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return c;
 	}
+	
+	
 	//Metodo para crear tabla indiceTabla
 	private void crearTablaIndice() {
 		String sql = "CREATE TABLE IF NOT EXISTS indicetabla " +
@@ -53,9 +67,10 @@ public class LibreriaBBDD {
                 " PRIMARY KEY ( id ))"; 
 		PreparedStatement pst;
 		try {
-			pst = this.con.prepareStatement(sql);
+			Connection c= this.getConnection();
+			pst = c.prepareStatement(sql);
 			pst.execute();
-
+			c.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -71,26 +86,32 @@ public class LibreriaBBDD {
                 " PRIMARY KEY ( id ))"; 
 		PreparedStatement pst;
 		try {
-			pst = this.con.prepareStatement(sql);
+			Connection c= this.getConnection();
+			pst = c.prepareStatement(sql);
 			pst.execute();
-
+			c.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
 
 	// Metodo para conectar a la base de datos
-	private Connection conectar(){	
+	private void conectar(){	
 		
-	       Connection link = null;
-	       try{
-	           Class.forName("org.gjt.mm.mysql.Driver");
-	            link = DriverManager.getConnection("jdbc:mysql://localhost/"+this.nombrebbdd, this.user,this.pass);
-	       }catch(Exception ex){
-	           JOptionPane.showMessageDialog(null, ex);
-	       }
-	       return link;
-	   }
+		try {
+			this.cpds.setDriverClass("com.mysql.jdbc.Driver");
+		} catch (PropertyVetoException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		this.cpds.setJdbcUrl("jdbc:mysql://localhost/"+this.nombrebbdd);
+		this.cpds.setUser(this.user);
+		this.cpds.setPassword(this.pass);
+		
+		this.cpds.setAcquireRetryAttempts(1);
+		this.cpds.setAcquireRetryDelay(1);
+	}
+		
 	
 	/*Este metodo es para crear la base de datos
 	 * 	cogemos todos los atributos de la clase que le pasemos
@@ -100,7 +121,6 @@ public class LibreriaBBDD {
 		
 		for(Field n : o.getClass().getDeclaredFields()){
 			String tipo = "";
-			System.out.println(n.getType());
 			if(n.getType().getCanonicalName().equalsIgnoreCase("Java.lang.String"))
 				tipo = "VARCHAR(255)";
 			else if(n.getType().getCanonicalName().equalsIgnoreCase("Int"))
@@ -163,9 +183,10 @@ public class LibreriaBBDD {
 		System.out.println(sql);
 		PreparedStatement pst;
 		try {
-			pst = this.con.prepareStatement(sql);
+			Connection c= this.getConnection();
+			pst = c.prepareStatement(sql);
 			pst.execute();
-
+			c.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -187,7 +208,10 @@ public class LibreriaBBDD {
 		String sql = "SELECT atributo FROM indicecolumna WHERE idtabla = ?";
 		PreparedStatement pst;
 		try {
-			pst = this.con.prepareStatement(sql);
+			Connection c= this.getConnection();
+			pst = c.prepareStatement(sql);
+			
+			
 			pst.setString(1, idtabla);
 			ResultSet rs = pst.executeQuery();
 			boolean esta = false;
@@ -200,21 +224,26 @@ public class LibreriaBBDD {
 				if(!esta){
 					
 					String del = "ALTER TABLE "+this.nombreTabla+" DROP COLUMN "+rs.getString("atributo");
-					pst = this.con.prepareStatement(del);
+					c= this.getConnection();
+					pst = c.prepareStatement(del);
 					pst.execute();
+					c.close();
 					System.out.println(del);
 					
 					del = "DELETE FROM indicecolumna WHERE idtabla = ? and atributo = ?";
-					pst = this.con.prepareStatement(del);
+					c= this.getConnection();
+					pst = c.prepareStatement(del);
 					System.out.println(del);
 
 					pst.setString(1, idtabla);
 					pst.setString(2, rs.getString("atributo"));
-					pst.execute();					
+					pst.execute();
+					c.close();
 				}
 				esta = false;
 
 			}
+			c.close();
 		} catch (SQLException e){
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -228,18 +257,21 @@ public class LibreriaBBDD {
 		String id = "";
 		String sql = "SELECT id FROM indicetabla WHERE nombreclase = ? and nombretabla = ?";
 		PreparedStatement pst;
+		Connection c= this.getConnection();
 		try {
-			pst = this.con.prepareStatement(sql);
+			pst = c.prepareStatement(sql);
 			pst.setString(1, nombreClase);
 			pst.setString(2, this.nombreTabla);
 			ResultSet rs = pst.executeQuery();
 			if(rs.next()){
 				id = rs.getString("id");
 			}
+			c.close();
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
 		
 		return id;
 	}
@@ -253,14 +285,16 @@ public class LibreriaBBDD {
 		String sql = "SELECT nombreclase,nombretabla FROM indicetabla WHERE nombreclase = ?";
 		PreparedStatement pst;
 		try {
-			pst = this.con.prepareStatement(sql);
+			Connection c= this.getConnection();
+			pst = c.prepareStatement(sql);
 			pst.setString(1, nombreClase);
 			ResultSet rs = pst.executeQuery();
 			if(!rs.next()){
 				String id = ""; 
 				int idsuma = 0;
 				sql = "SELECT max(id) FROM indicetabla";
-				pst = this.con.prepareStatement(sql);
+				c= this.getConnection();
+				pst = c.prepareStatement(sql);
 				rs = pst.executeQuery();
 				if(rs.next()){
 					
@@ -277,8 +311,10 @@ public class LibreriaBBDD {
 					     " VALUES ( \""+ nombreClase + "\" , \"" + this.nombreTabla + "\" )";
 				System.out.println(sql);
 				try {
-					pst = this.con.prepareStatement(sql);
+					c= this.getConnection();
+					pst = c.prepareStatement(sql);
 					pst.execute();
+					c.close();
 				} catch (SQLException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -288,6 +324,7 @@ public class LibreriaBBDD {
 			else{
 				this.nombreTabla = rs.getString("nombretabla");
 			}
+			c.close();
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -304,7 +341,8 @@ public class LibreriaBBDD {
 		String sql = "SELECT id FROM indicecolumna WHERE idtabla = ? and atributo = ?";
 		PreparedStatement pst;
 		try {
-			pst = this.con.prepareStatement(sql);
+			Connection c= this.getConnection();
+			pst = c.prepareStatement(sql);
 			pst.setString(1, idtabla);
 			pst.setString(2, atributo);
 			ResultSet rs = pst.executeQuery();
@@ -313,19 +351,24 @@ public class LibreriaBBDD {
 					     " VALUES ( \""+ idtabla + "\" , \"" + atributo + "\" , \"" + columna + "\"  )";
 				System.out.println(sql);
 				try {
-					pst = this.con.prepareStatement(sql);
+					c= this.getConnection();
+					pst = c.prepareStatement(sql);
 					pst.execute();
+					c.close();
 					
 					String anyadir = "ALTER TABLE "+this.nombreTabla+" ADD " +atributo + " " +a.getTipo();
-					pst = this.con.prepareStatement(anyadir);
+					c= this.getConnection();
+					pst = c.prepareStatement(anyadir);
 					System.out.println(anyadir);
 					pst.execute();
+					c.close();
 				} catch (SQLException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			
 			}
+			c.close();
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -369,8 +412,10 @@ public class LibreriaBBDD {
 		System.out.println(sql);
 		PreparedStatement pst;
 			try {
-				pst = this.con.prepareStatement(sql);
+				Connection c= this.getConnection();
+				pst = c.prepareStatement(sql);
 				pst.execute();
+				c.close();
 			} catch (SQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -390,10 +435,22 @@ public class LibreriaBBDD {
 		System.out.println("Objeto Insertado");
 	}	
 	
+	private List<Object> executeQuery(Query q) {
+		Connection c = this.getConnection();
+		List<Object> lista = q.executeQuery(c);
+		try {
+			c.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return lista;
+	}
+	
 	public static void main(String[] argv){
 		LibreriaBBDD lib = new LibreriaBBDD("tfg","root","");
-		/*
-		Empleado empleado1 = new Empleado("0001","A","ramiro",24234,"hombre","cocinero","123");
+		
+		/*Empleado empleado1 = new Empleado("0001","A","ramiro",24234,"hombre","cocinero","123");
 		Empleado empleado2 = new Empleado("0002","B","ramiro",24234,"hombre","cocinero","123");
 		Empleado empleado3 = new Empleado("0003","C","ramiro",24234,"mujer","cocinero","123");
 		Empleado empleado4 = new Empleado("0004","D","ramiro",24234,"mujer","cocinero","123");
@@ -402,17 +459,21 @@ public class LibreriaBBDD {
 		lib.guardar(empleado2);
 		lib.guardar(empleado3);
 		lib.guardar(empleado4);
-		lib.guardar(empleado5);
-		*/
+		lib.guardar(empleado5);*/
+		
 		
 		//EJEMPLO: Empleados que sean hombres o se llamen E (Empleados 0001,0002,0005)
+		
 		Query q = new Query(Empleado.class);
+		
 		//->HAY QUE CAMBIARLO PARA QUE NO HAYA QUE PONER LAS COMILLAS
 		SimpleConstraint sc1 = SimpleConstraint.igualQueConstraint("sexo", "\"mujer\"");
 		SimpleConstraint sc2 = SimpleConstraint.igualQueConstraint("nombre", "\"E\"");
 		Constraint oc = new NotConstraint(sc1);
 		q.setConstraint(oc);
-		List<Object> l = q.executeQuery(lib.getConnection());
+		
+		List<Object> l = lib.executeQuery(q);
+		//List<Object> l = q.executeQuery(lib.getConnection());
 		for(Object o: l){
 			System.out.println(o.toString());
 		}
@@ -434,6 +495,8 @@ public class LibreriaBBDD {
 		 
 		
 	}
+
+
 	
 	
 	

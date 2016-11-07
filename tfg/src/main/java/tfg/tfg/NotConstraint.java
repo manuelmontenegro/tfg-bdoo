@@ -1,7 +1,5 @@
 package tfg.tfg;
 
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Clase para representar una restricción del tipo Restriccioón1 AND Restricción2

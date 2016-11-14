@@ -98,16 +98,20 @@ public class Query {
 	 * @return List que contiene los resultados de la consulta.
 	 */
 	public List<Object> executeQuery(Connection con){
-		String sql = this.toSql(con); 								//Sentencia SQL a ejecutar
-		List<Object> lista = new ArrayList<Object>(); 				//Lista en la que se introducirán los objetos
+		String sql = this.toSql(con); 									//Sentencia SQL a ejecutar
+		List<Object> lista = new ArrayList<Object>(); 					//Lista en la que se introducirán los objetos
 		try {
 			System.out.println(sql);
-			PreparedStatement pst = con.prepareStatement(sql);		//Preparación de la sentencia
-			ResultSet rs = pst.executeQuery();						//Ejecución de la sentencia
-			Object object;											//Instancia de la clase 'clase'
-			while (rs.next()) {										//Mientras aún haya resultados de la sentencia SQL ejecutada
-				object = createObject(rs);         					//Crea el objeto de la clase
-	            lista.add(object);									//Añadir el objeto a la lista que se devolverá
+			PreparedStatement pst = con.prepareStatement(sql);			//Preparación de la sentencia
+			List<Object> values = this.restriccion.getValues();			//Lista de valores de las restricciones	
+			for (int i = 1; i <= values.size(); i++) {					//Para cada valor:
+				pst.setObject(i, values.get(i-1));						//Añadir el valor a la sentencia
+			}
+			ResultSet rs = pst.executeQuery();							//Ejecución de la sentencia
+			Object object;												//Instancia de la clase 'clase'
+			while (rs.next()) {											//Mientras aún haya resultados de la sentencia SQL ejecutada
+				object = createObject(rs);         						//Crea el objeto de la clase
+	            lista.add(object);										//Añadir el objeto a la lista que se devolverá
 	        }
 			
 		} catch (SQLException | InstantiationException | IllegalAccessException e) {

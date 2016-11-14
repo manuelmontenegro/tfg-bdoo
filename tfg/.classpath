@@ -24,7 +24,5 @@
 	</classpathentry>
 	<classpathentry kind="lib" path="mysql-connector-java-5.1.23-bin.jar"/>
 	<classpathentry kind="lib" path="reflections-0.9.5.jar"/>
-	<classpathentry kind="lib" path="C:/Users/fonty/tfg/tfg/c3p0-0.9.5-sources.jar"/>
-	<classpathentry kind="lib" path="C:/Users/fonty/tfg/tfg/mchange-commons-java-0.2.9.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

@@ -449,8 +449,8 @@ public class LibreriaBBDD {
 	
 	public static void main(String[] argv){
 		LibreriaBBDD lib = new LibreriaBBDD("tfg","root","");
-		
-		/*Empleado empleado1 = new Empleado("0001","A","ramiro",24234,"hombre","cocinero","123");
+		/*
+		Empleado empleado1 = new Empleado("0001","A","ramiro",24234,"hombre","cocinero","123");
 		Empleado empleado2 = new Empleado("0002","B","ramiro",24234,"hombre","cocinero","123");
 		Empleado empleado3 = new Empleado("0003","C","ramiro",24234,"mujer","cocinero","123");
 		Empleado empleado4 = new Empleado("0004","D","ramiro",24234,"mujer","cocinero","123");
@@ -459,27 +459,25 @@ public class LibreriaBBDD {
 		lib.guardar(empleado2);
 		lib.guardar(empleado3);
 		lib.guardar(empleado4);
-		lib.guardar(empleado5);*/
+		lib.guardar(empleado5);
+		*/
 		
 		
 		//EJEMPLO: Empleados que sean hombres o se llamen E (Empleados 0001,0002,0005)
 		
 		Query q = new Query(Empleado.class);
 		
-		//->HAY QUE CAMBIARLO PARA QUE NO HAYA QUE PONER LAS COMILLAS
-		SimpleConstraint sc1 = SimpleConstraint.igualQueConstraint("sexo", "\"mujer\"");
-		SimpleConstraint sc2 = SimpleConstraint.igualQueConstraint("nombre", "\"E\"");
-		Constraint oc = new NotConstraint(sc1);
+		SimpleConstraint sc1 = SimpleConstraint.igualQueConstraint("sexo", "hombre");
+		SimpleConstraint sc2 = SimpleConstraint.igualQueConstraint("nombre", "E");
+		Constraint oc = new OrConstraint(sc1, sc2);
 		q.setConstraint(oc);
-		
 		List<Object> l = lib.executeQuery(q);
-		//List<Object> l = q.executeQuery(lib.getConnection());
+		
 		for(Object o: l){
 			System.out.println(o.toString());
 		}
 		
 		/*
-		 cambiar el par de constrain por una lista y en el constructos que reciba  constraint con puntos suspensivos....
 		-----------
 		Query q = new Query(Empleado.class, oc);//tambien se puede hacer un constructor solo con el .class y que la constraian la ponga a TrueConstrain
 		

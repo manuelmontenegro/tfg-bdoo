@@ -25,16 +25,23 @@ public class OrConstraint implements Constraint{
 	 * Devuelve las restricciones unidas por un OR. 
 	 */
 	public String toSql() {
-		if (this.cons.size() == 0) 						//Si no hay restricciones
-			return "FALSE";
-		
 		List<String> list = new ArrayList<String>();			//Lista con el SQL de cada una de las restricciones
 		for (int i = 0; i < this.cons.size(); i++) {			//Para cada una de las restricciones de la lista:
-			list.set(i, this.cons.get(i).toSql());				//Añadir a la lista de String cada SQL de la lista de restricciones
+			list.add(this.cons.get(i).toSql());					//Añadir a la lista de String cada SQL de la lista de restricciones
 		}
 		String ret = StringUtils.join(list, " OR ");			//Unir las restricciones con un AND
 		
 		return "(" + ret + ")";
+	}
+
+	/**
+	 * Devuelve una lista con los valores de las restricciones de la lista.
+	 */
+	public List<Object> getValues() {
+		List<Object> l = new ArrayList<Object>();
+		for(Constraint c: cons)
+			l.addAll(c.getValues());
+		return l;
 	}
 	
 }

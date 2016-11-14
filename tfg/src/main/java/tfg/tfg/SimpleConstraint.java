@@ -1,5 +1,8 @@
 package tfg.tfg;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /***
  * Clase que representa una restricción simple del tipo "Campo - Operando - Valor".
  * @author Carlos
@@ -9,7 +12,7 @@ public class SimpleConstraint implements Constraint{
 	
 	private String operando;	//Operando de relación entre el campo y el valor
 	private String campo;		//Campo al que se quiere aplicar la restricción
-	private String valor;		//Valor de la restricción
+	private Object valor;		//Valor de la restricción
 	
 	/***
 	 * Constructor de la clase.
@@ -17,33 +20,33 @@ public class SimpleConstraint implements Constraint{
 	 * @param ca
 	 * @param va
 	 */
-	private SimpleConstraint(String op, String ca, String va){
+	private SimpleConstraint(String op, String ca, Object va){
 		operando = op;
 		campo = ca;
 		valor = va;
 	}
 	
-	public static SimpleConstraint mayorQueConstraint(String campo, String valor){
+	public static SimpleConstraint mayorQueConstraint(String campo, Object valor){
 		return new SimpleConstraint(">",campo,valor);
 	}
 	
-	public static SimpleConstraint igualQueConstraint(String campo, String valor){
+	public static SimpleConstraint igualQueConstraint(String campo, Object valor){
 		return new SimpleConstraint("=",campo,valor);
 	}
 	
-	public static SimpleConstraint menorQueConstraint(String campo, String valor){
+	public static SimpleConstraint menorQueConstraint(String campo, Object valor){
 		return new SimpleConstraint("<",campo,valor);
 	}
 	
-	public static SimpleConstraint mayorIgualQueConstraint(String campo, String valor){
+	public static SimpleConstraint mayorIgualQueConstraint(String campo, Object valor){
 		return new SimpleConstraint(">=",campo,valor);
 	}
 	
-	public static SimpleConstraint menorIgualQueConstraint(String campo, String valor){
+	public static SimpleConstraint menorIgualQueConstraint(String campo, Object valor){
 		return new SimpleConstraint("<=",campo,valor);
 	}
 	
-	public static SimpleConstraint distintoQueConstraint(String campo, String valor){
+	public static SimpleConstraint distintoQueConstraint(String campo, Object valor){
 		return new SimpleConstraint("<>",campo,valor);
 	}
 	
@@ -51,7 +54,16 @@ public class SimpleConstraint implements Constraint{
 	 * Devuelve la restricción en forma de sentencia SQL a incluir en la cláusula WHERE.
 	 */
 	public String toSql(){
-		return "(" + campo + " " + operando + " " + valor + ")";
+		return "(" + campo + " " + operando + " ?)";
+	}
+
+	/**
+	 * Devuelve una lista con el valor de la restricción.
+	 */
+	public List<Object> getValues() {
+		List<Object> l = new ArrayList<Object>();
+		l.add(this.valor);
+		return l;
 	}
 
 }

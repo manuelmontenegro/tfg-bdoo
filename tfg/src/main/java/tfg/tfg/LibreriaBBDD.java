@@ -9,6 +9,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
 
 import javax.sql.DataSource;
@@ -30,13 +31,24 @@ public class LibreriaBBDD {
 	//private Connection con;
 	private ComboPooledDataSource cpds;
 	private String nombreTabla;
+	private IdentityHashMap<Object, Integer> objectMap;
+	private IdentityHashMap<Pair<Class, Integer>, Object> idMap;
 	
-	//Constructor
+	/**
+	 * Constructor
+	 * @param nombrebbdd
+	 * @param user
+	 * @param pass
+	 */
 	public LibreriaBBDD(String nombrebbdd, String user, String pass){
 		try{
-		this.cpds = new ComboPooledDataSource();
+			this.cpds = new ComboPooledDataSource();
 		}
-		 catch (Exception e) {}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+		this.objectMap = new IdentityHashMap<Object, Integer>();
+		this.idMap = new IdentityHashMap<Pair<Class, Integer>, Object>();
 		this.user = user;
 		this.pass = pass;
 		this.nombrebbdd = nombrebbdd;
@@ -58,7 +70,9 @@ public class LibreriaBBDD {
 	}
 	
 	
-	//Metodo para crear tabla indiceTabla
+	/**
+	 * Metodo para crear tabla indiceTabla
+	 */
 	private void crearTablaIndice() {
 		String sql = "CREATE TABLE IF NOT EXISTS indicetabla " +
                 "(id INTEGER not NULL AUTO_INCREMENT, " +
@@ -76,7 +90,9 @@ public class LibreriaBBDD {
 		}
 	}
 	
-	//Metodo para crear tabla indiceColumna
+	/**
+	 * Metodo para crear tabla indiceColumna
+	 */
 	private void crearColumnaIndice() {
 		String sql = "CREATE TABLE IF NOT EXISTS indicecolumna " +
                 "(id INTEGER not NULL AUTO_INCREMENT, " +
@@ -95,7 +111,9 @@ public class LibreriaBBDD {
 		}
 	}
 
-	// Metodo para conectar a la base de datos
+	/**
+	 *  Metodo para conectar a la base de datos
+	 */
 	private void conectar(){	
 		
 		try {
@@ -113,7 +131,8 @@ public class LibreriaBBDD {
 	}
 		
 	
-	/*Este metodo es para crear la base de datos
+	/**
+	 * Este metodo es para crear la base de datos
 	 * 	cogemos todos los atributos de la clase que le pasemos
 	 */
 	private ArrayList<Atributo> sacarAtributos(Object o){
@@ -134,7 +153,8 @@ public class LibreriaBBDD {
 
 	}
 
-	/*Este metodo es para insertar en la base de datos
+	/**
+	 * Este metodo es para insertar en la base de datos
 	 * teniendo en cuenta que no tienen porque estar todos los atributos de la clase
 	 * metidos en el constructor que le pasemos,
 	 * este metodo mira cual son nulos para no meterlos
@@ -169,7 +189,8 @@ public class LibreriaBBDD {
 
 	}
 	
-	/*Metodo para crear la base de datos
+	/**
+	 * Metodo para crear la base de datos
 	 * Te crea la base de datos con el nombreclase que le pasas
 	 * Si existe no la crea
 	 */
@@ -429,10 +450,16 @@ public class LibreriaBBDD {
 		ArrayList<Atributo> atributos = sacarAtributos(o);
 		this.nombreTabla = o.getClass().getSimpleName();
 		String nombreClase = o.getClass().getName();
-
 		crearTabla(atributos,nombreClase);
-		insertarObjeto(o,sacarAtributosNoNulos(o));
-		System.out.println("Objeto Insertado");
+		if(!this.objectMap.containsKey(o)){
+			insertarObjeto(o,sacarAtributosNoNulos(o));
+			this.objectMap.put(o, 1); //<-----------------------CAMBIAR EL 1 POR LA ID DEL OBJETO EN LA BD
+			Pair<Class, Integer> pair = new Pair<Class, Integer>(o.getClass(), 1); //<-----------------------CAMBIAR EL 1 POR LA ID DEL OBJETO EN LA BD
+			this.idMap.put(pair, o);
+		}
+		else{
+			//LANZAR EXCEPCIÓN
+		}
 	}	
 	
 	private List<Object> executeQuery(Query q) {
@@ -476,78 +503,61 @@ public class LibreriaBBDD {
 		for(Object o: l){
 			System.out.println(o.toString());
 		}
-
-		
-		
-		 
-		
 	}
 
-
-	
-	
-	
-
-	
 }
 
 
 /*
- Empleado e1=new Empleado(paco,33);
- Empleado e2=new Empleado(paco,33);
- db.guardar(e1);
- db.guardar(e2);
- en realidad son objetos distintos
- 
- Empleado e3=e1;
- db.guardar(e3);
- este sin encambio es igual 
- ------------------------
- patron identiti map 
- en la libreria de base de datos tener un Map<Object, Integer> activos
- tu buscas por objetos y si no esta le insertas en el mapa y le guardas en la base de datos
- y si si esta que le ignore o sobreescriba o actualize
- 
- -----------
-si acabas de inicializar la libreria y haces querys deves meterle en el mapa, tambien al guardar
-y si haces update de un objeto que no esta en el mapa es un error exepcion nuestra
-
-
------------------
-Empleado e1=db.querry(dni=7941);
-Empleado e2=db.querry(dni=7941);
-e1 y e2 son el mismo objeto y no deve hacer dos news
-la primera vez se recupera y se mete en el mapa
-la segunda vez se comprueba el mapa y se devuelve el objeto del mapa
-mapa inverso
-Class puede ser el nombre de tabla (String) o el objeto class que es tambien unico
-Map<<Class, Integer>,  Object> asi o se hace hay que crear una clase que contenga estas dos clases<Class, Integer> y implementar equals()
-       <<Empleado,1>,(objeto java)>
-       
-       
-------------
-
-para borrar  el objeto deve estar en el mapa, si no exepcion nuestra
-se bora la entrada del mapa y la entrada en la base de datos
-
-
------------------------
-Map en java tiene varias implementaciones HasMap, TreeMap pero ninguna de estas nos vale
-
-String s1="Hola";
-HashMap<>m=new HashMap<String, Integer>();
-String s2="Hola";
-m.put(s1,3)
-Integer i=m.get(s2);
-el problema es que usa equals() para buscar en el mapa y equals de s1 y s1 es true
-
-hay una clase IdentityHashMap que usa el igual y no el equals() esta es la que hay que usar
-
-
-
-
-
-
+	 Empleado e1=new Empleado(paco,33);
+	 Empleado e2=new Empleado(paco,33);
+	 db.guardar(e1);
+	 db.guardar(e2);
+	 en realidad son objetos distintos
+	 
+	 Empleado e3=e1;
+	 db.guardar(e3);
+	 este sin encambio es igual 
+	 ------------------------
+	 patron identiti map 
+	 en la libreria de base de datos tener un Map<Object, Integer> activos
+	 tu buscas por objetos y si no esta le insertas en el mapa y le guardas en la base de datos
+	 y si si esta que le ignore o sobreescriba o actualize
+	 
+	 -----------
+	si acabas de inicializar la libreria y haces querys deves meterle en el mapa, tambien al guardar
+	y si haces update de un objeto que no esta en el mapa es un error exepcion nuestra
+	
+	
+	-----------------
+	Empleado e1=db.querry(dni=7941);
+	Empleado e2=db.querry(dni=7941);
+	e1 y e2 son el mismo objeto y no deve hacer dos news
+	la primera vez se recupera y se mete en el mapa
+	la segunda vez se comprueba el mapa y se devuelve el objeto del mapa
+	mapa inverso
+	Class puede ser el nombre de tabla (String) o el objeto class que es tambien unico
+	Map<<Class, Integer>,  Object> asi o se hace hay que crear una clase que contenga estas dos clases<Class, Integer> y implementar equals()
+	       <<Empleado,1>,(objeto java)>
+	       
+	       
+	------------
+	
+	para borrar  el objeto deve estar en el mapa, si no exepcion nuestra
+	se bora la entrada del mapa y la entrada en la base de datos
+	
+	
+	-----------------------
+	Map en java tiene varias implementaciones HasMap, TreeMap pero ninguna de estas nos vale
+	
+	String s1="Hola";
+	HashMap<>m=new HashMap<String, Integer>();
+	String s2="Hola";
+	m.put(s1,3)
+	Integer i=m.get(s2);
+	el problema es que usa equals() para buscar en el mapa y equals de s1 y s1 es true
+	
+	hay una clase IdentityHashMap que usa el igual y no el equals() esta es la que hay que usar
 
 
 */

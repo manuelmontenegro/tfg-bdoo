@@ -1,5 +1,7 @@
 package prueba2;
 
+import tfg.tfg.Query;
+
 public class Empleado {
 	private String DNI;
 	private String nombre;
@@ -85,8 +87,6 @@ public class Empleado {
 	public void setContrasenya(String contrasenya) {
 		this.contrasenya = contrasenya;
 	}
-	
-	
-	
+
 	
 }

@@ -27,5 +27,19 @@ public class Pair <A,B>{
 	public void setObjectB(B objectB) {
 		this.objectB = objectB;
 	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof Pair) {
+			Pair tmpPersona = (Pair) obj;
+			if (this.objectA.equals(tmpPersona.objectA) && this.objectB.equals(tmpPersona.objectB)) {
+				return true;
+			} else {
+				return false;
+			}
+		} else {
+			return false;
+		}
+	}
 
 }

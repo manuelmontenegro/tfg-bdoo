@@ -6,6 +6,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 
 import prueba.Empleado;
@@ -40,8 +42,9 @@ public class Query {
 	 * Devuelve el nombre de la tabla correspondiente al atributo clase.
 	 * @param con (Conexión a la BD).
 	 * @return Nombre de la tabla.
+	 * @throws SQLException 
 	 */
-	private String getTableName(Connection con){
+	private String getTableName(Connection con) throws SQLException{
 		String str = "";
 		String sqlStatement = "SELECT nombretabla "
 				+ "FROM INDICETABLA "
@@ -49,12 +52,10 @@ public class Query {
 				+ this.clase.getName() + "\'"; 			//Sentencia sql para obtener el nombre de la tabla asociado a la clase 'clase'
 		
 		PreparedStatement pst;
-		try {
-			pst = con.prepareStatement(sqlStatement); 	//Preparación de la sentencia
-			ResultSet rs = pst.executeQuery(); 			//Ejecución de la sentencia
-			rs.next();
-			str = rs.getString("nombretabla"); 			//str = nombre de la tabla
-		} catch (SQLException e) {e.printStackTrace();}
+		pst = con.prepareStatement(sqlStatement); // Preparación de la sentencia
+		ResultSet rs = pst.executeQuery(); // Ejecución de la sentencia
+		rs.next();
+		str = rs.getString("nombretabla"); // str = nombre de la tabla
 		
 		return str;
 	}
@@ -63,8 +64,9 @@ public class Query {
 	 * Devuelve la sentencia SQL a ejecutar con la constraint creada.
 	 * @param con (Conexión con la BD).
 	 * @return Sentencia SQL.
+	 * @throws SQLException 
 	 */
-	public String toSql(Connection con) {
+	public String toSql(Connection con) throws SQLException {
 		String sqlStatement = "SELECT * FROM ";
 		String tableName = this.getTableName(con); 		//Nombre de la tabla a la que se aplican las constraint
 		sqlStatement += tableName;
@@ -95,28 +97,44 @@ public class Query {
 	/**
 	 * Ejecuta la sentencia SQL con las constraint creadas y devuelve una lista con los resultados.
 	 * @param con (Conexión con la BD).
+	 * @param idMap 
 	 * @return List que contiene los resultados de la consulta.
+	 * @throws SQLException 
+	 * @throws IllegalAccessException 
+	 * @throws InstantiationException 
 	 */
-	public List<Object> executeQuery(Connection con){
+	protected List<Object> executeQuery(Connection con, HashMap<Pair<Class, Integer>, Object> idMap) throws SQLException, InstantiationException, IllegalAccessException{
 		String sql = this.toSql(con); 									//Sentencia SQL a ejecutar
 		List<Object> lista = new ArrayList<Object>(); 					//Lista en la que se introducirán los objetos
-		try {
-			System.out.println(sql);
-			PreparedStatement pst = con.prepareStatement(sql);			//Preparación de la sentencia
-			List<Object> values = this.restriccion.getValues();			//Lista de valores de las restricciones	
-			for (int i = 1; i <= values.size(); i++) {					//Para cada valor:
-				pst.setObject(i, values.get(i-1));						//Añadir el valor a la sentencia
-			}
-			ResultSet rs = pst.executeQuery();							//Ejecución de la sentencia
-			Object object;												//Instancia de la clase 'clase'
-			while (rs.next()) {											//Mientras aún haya resultados de la sentencia SQL ejecutada
-				object = createObject(rs);         						//Crea el objeto de la clase
-	            lista.add(object);										//Añadir el objeto a la lista que se devolverá
-	        }
-			
-		} catch (SQLException | InstantiationException | IllegalAccessException e) {
-			e.printStackTrace();
+		System.out.println(sql);
+		PreparedStatement pst = con.prepareStatement(sql); // Preparación de la
+															// sentencia
+		List<Object> values = this.restriccion.getValues(); // Lista de valores
+															// de las
+															// restricciones
+		for (int i = 1; i <= values.size(); i++) { // Para cada valor:
+			pst.setObject(i, values.get(i - 1)); // Añadir el valor a la
+													// sentencia
 		}
+		ResultSet rs = pst.executeQuery(); // Ejecución de la sentencia
+		Object object; // Instancia de la clase 'clase'
+		while (rs.next()) { // Mientras aún haya resultados de la sentencia SQL
+							// ejecutada
+			Pair<Class, Integer> p = new Pair<Class, Integer>(this.clase,rs.getInt("id"));// Te creas la pareja
+			//mirar si esta en el mapa inverso
+			if(idMap.containsKey(p)){ 
+				object = idMap.get(p);
+				System.out.println("si esta en el mapa");
+			}
+			else{ //Si no esta te creas el objeto y le añades al mapa
+				object = createObject(rs); // Crea el objeto de la clase
+				idMap.put(p, object);
+				System.out.println("no esta en el mapa");
+			}
+			lista.add(object); // Añadir el objeto a la lista que se devolverá
+		}
+			
+
 		return lista;
 	}
 }

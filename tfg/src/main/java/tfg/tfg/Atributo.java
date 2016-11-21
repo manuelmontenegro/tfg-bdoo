@@ -24,6 +24,31 @@ public class Atributo {
 		this.tipo = tipo;
 	}
 	
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof Atributo) {
+			Atributo tmpPersona = (Atributo) obj;
+			if (this.tipo.equals(tmpPersona.tipo) && this.nombre.equals(tmpPersona.nombre)) {
+				return true;
+			} else {
+				return false;
+			}
+		} else {
+			return false;
+		}
+	}
+	
+	public static void main(String[] argv) {
+		Atributo a = new Atributo("paco","pao");
+		Atributo b = new Atributo("paco","paco");
+		
+		if(a.equals(b))
+			System.out.println("Iguales");
+		else
+			System.out.println("pues no");
+		
+	}
+	
 	
 	
 }

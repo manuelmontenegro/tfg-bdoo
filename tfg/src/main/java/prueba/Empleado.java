@@ -96,14 +96,14 @@ public class Empleado {
 	}
 	
 	public static void main(String[] argv){
-		Empleado empleado = new Empleado("0234","vic","ramiro",24234,"hombre","cocinero","123");
-		Empleado emp = new Empleado("32","vic");
-		Plato p = new Plato("lentejas","aceite y tomate");
-		LibreriaBBDD lib = new LibreriaBBDD("tfg","tfg","tfg");
-		lib.guardar(emp);
-		lib.guardar(empleado);
-		lib.guardar(p);
-		
+//		Empleado empleado = new Empleado("0234","vic","ramiro",24234,"hombre","cocinero","123");
+//		Empleado emp = new Empleado("32","vic");
+//		Plato p = new Plato("lentejas","aceite y tomate");
+//		LibreriaBBDD lib = new LibreriaBBDD("tfg","tfg","tfg");
+//		lib.guardar(emp);
+//		lib.guardar(empleado);
+//		lib.guardar(p);
+//		
 	}
 	
 	

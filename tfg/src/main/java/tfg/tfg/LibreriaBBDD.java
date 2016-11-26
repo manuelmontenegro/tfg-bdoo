@@ -33,7 +33,7 @@ public class LibreriaBBDD {
 	private ComboPooledDataSource cpds;
 	private String nombreTabla;
 	private IdentityHashMap<Object, Integer> objectMap;
-	private HashMap<Pair<Class, Integer>, Object> idMap;
+	private HashMap<String, Object> idMap;
 
 	/**
 	 * Constructor
@@ -49,7 +49,7 @@ public class LibreriaBBDD {
 		this.cpds = new ComboPooledDataSource();
 
 		this.objectMap = new IdentityHashMap<Object, Integer>();
-		this.idMap = new HashMap<Pair<Class, Integer>, Object>();
+		this.idMap = new HashMap<String, Object>();
 		this.user = user;
 		this.pass = pass;
 		this.nombrebbdd = nombrebbdd;
@@ -390,7 +390,7 @@ public class LibreriaBBDD {
 		if(!this.objectMap.containsKey(o)) {
 			int id = insertarObjeto(o, sacarAtributosNoNulos(o));
 			this.objectMap.put(o, id);
-			Pair<Class, Integer> pair = new Pair<Class, Integer>(o.getClass(), id);
+			String pair = o.getClass().getName()+"-"+id;
 			this.idMap.put(pair, o);
 		} else {
 			throw new InsertarDuplicado();
@@ -453,11 +453,6 @@ public class LibreriaBBDD {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		if(l1.get(0)==l2.get(0))
-			System.out.println("iguales mismo puntero");
-		else 
-			System.out.println("no iguales");
 		
 	}
 

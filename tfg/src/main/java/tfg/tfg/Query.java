@@ -103,7 +103,7 @@ public class Query {
 	 * @throws IllegalAccessException 
 	 * @throws InstantiationException 
 	 */
-	protected List<Object> executeQuery(Connection con, HashMap<Pair<Class, Integer>, Object> idMap) throws SQLException, InstantiationException, IllegalAccessException{
+	protected List<Object> executeQuery(Connection con, HashMap<String, Object> idMap) throws SQLException, InstantiationException, IllegalAccessException{
 		String sql = this.toSql(con); 									//Sentencia SQL a ejecutar
 		List<Object> lista = new ArrayList<Object>(); 					//Lista en la que se introducirán los objetos
 		System.out.println(sql);
@@ -120,8 +120,9 @@ public class Query {
 		Object object; // Instancia de la clase 'clase'
 		while (rs.next()) { // Mientras aún haya resultados de la sentencia SQL
 							// ejecutada
-			Pair<Class, Integer> p = new Pair<Class, Integer>(this.clase,rs.getInt("id"));// Te creas la pareja
+			//Pair<Class, Integer> p = new Pair<Class, Integer>(this.clase,rs.getInt("id"));// Te creas la pareja
 			//mirar si esta en el mapa inverso
+			String p = this.clase.getName()+"-"+rs.getInt("id");
 			if(idMap.containsKey(p)){ 
 				object = idMap.get(p);
 				System.out.println("si esta en el mapa");

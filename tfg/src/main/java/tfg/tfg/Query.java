@@ -52,10 +52,10 @@ public class Query {
 				+ this.clase.getName() + "\'"; 			//Sentencia sql para obtener el nombre de la tabla asociado a la clase 'clase'
 		
 		PreparedStatement pst;
-		pst = con.prepareStatement(sqlStatement); // Preparación de la sentencia
-		ResultSet rs = pst.executeQuery(); // Ejecución de la sentencia
+		pst = con.prepareStatement(sqlStatement); 		// Preparación de la sentencia
+		ResultSet rs = pst.executeQuery(); 				// Ejecución de la sentencia
 		rs.next();
-		str = rs.getString("nombretabla"); // str = nombre de la tabla
+		str = rs.getString("nombretabla"); 				// str = nombre de la tabla
 		
 		return str;
 	}
@@ -106,20 +106,14 @@ public class Query {
 	protected List<Object> executeQuery(Connection con, HashMap<String, Object> idMap) throws SQLException, InstantiationException, IllegalAccessException{
 		String sql = this.toSql(con); 									//Sentencia SQL a ejecutar
 		List<Object> lista = new ArrayList<Object>(); 					//Lista en la que se introducirán los objetos
-		System.out.println(sql);
-		PreparedStatement pst = con.prepareStatement(sql); // Preparación de la
-															// sentencia
-		List<Object> values = this.restriccion.getValues(); // Lista de valores
-															// de las
-															// restricciones
-		for (int i = 1; i <= values.size(); i++) { // Para cada valor:
-			pst.setObject(i, values.get(i - 1)); // Añadir el valor a la
-													// sentencia
+		PreparedStatement pst = con.prepareStatement(sql); 				// Preparación de la sentencia
+		List<Object> values = this.restriccion.getValues(); 			// Lista de valores de las restricciones
+		for (int i = 1; i <= values.size(); i++) { 						// Para cada valor:
+			pst.setObject(i, values.get(i - 1)); 						// Añadir el valor a la sentencia
 		}
-		ResultSet rs = pst.executeQuery(); // Ejecución de la sentencia
-		Object object; // Instancia de la clase 'clase'
-		while (rs.next()) { // Mientras aún haya resultados de la sentencia SQL
-							// ejecutada
+		ResultSet rs = pst.executeQuery(); 								// Ejecución de la sentencia
+		Object object; 													// Instancia de la clase 'clase'
+		while (rs.next()) { 											// Mientras aún haya resultados de la sentencia SQL ejecutada
 			//Pair<Class, Integer> p = new Pair<Class, Integer>(this.clase,rs.getInt("id"));// Te creas la pareja
 			//mirar si esta en el mapa inverso
 			String p = this.clase.getName()+"-"+rs.getInt("id");
@@ -127,12 +121,12 @@ public class Query {
 				object = idMap.get(p);
 				System.out.println("si esta en el mapa");
 			}
-			else{ //Si no esta te creas el objeto y le añades al mapa
-				object = createObject(rs); // Crea el objeto de la clase
+			else{ 														//Si no esta te creas el objeto y le añades al mapa
+				object = createObject(rs); 								// Crea el objeto de la clase
 				idMap.put(p, object);
 				System.out.println("no esta en el mapa");
 			}
-			lista.add(object); // Añadir el objeto a la lista que se devolverá
+			lista.add(object); 											// Añadir el objeto a la lista que se devolverá
 		}
 			
 

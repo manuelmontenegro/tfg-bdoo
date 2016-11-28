@@ -17,6 +17,8 @@ import javax.sql.DataSource;
 import javax.swing.JOptionPane;
 import javax.swing.UnsupportedLookAndFeelException;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 
 import exepciones.InsertarDuplicado;
@@ -162,6 +164,39 @@ public class LibreriaBBDD {
 		return atributos;
 
 	}
+	
+	/**
+	 * Devuelve el nombre de la tabla que representa la clase del objeto recibido en la base de datos.
+	 * @throws SQLException 
+	 */
+	public String getTableName(Object o) throws SQLException{
+		Connection con = this.cpds.getConnection();
+		String str = "";
+		String sqlStatement = "SELECT nombretabla "
+				+ "FROM INDICETABLA "
+				+ "WHERE nombreclase = \'" 
+				+ o.getClass().getName() + "\'"; 			//Sentencia sql para obtener el nombre de la tabla asociado a la clase 'clase'
+		
+		PreparedStatement pst;
+		pst = con.prepareStatement(sqlStatement); 			// Preparación de la sentencia
+		ResultSet rs = pst.executeQuery(); 					// Ejecución de la sentencia
+		rs.next();
+		str = rs.getString("nombretabla"); 					// str = nombre de la tabla
+		con.close();
+		return str;
+	}
+	
+	/**
+	 * Devuelve una cadena con el formato atributo1=?,atributo2=?,... para usar en la sentencia SQL
+	 */
+	private String getObjectSets(Object o){
+		ArrayList<String> list = new ArrayList<String>();
+		Field[] campos = o.getClass().getDeclaredFields();		//Obtener los campos del objecto
+		for(Field f: campos){									//Para cada uno de los campos:
+			list.add(f.getName() + "= ?");						//Añade a la lista atributo = ?
+		}
+		return StringUtils.join(list, ",");
+	}
 
 	/**
 	 * Metodo para crear la base de datos Te crea la base de datos con el
@@ -190,7 +225,7 @@ public class LibreriaBBDD {
 
 	}
 
-	/*
+	/**
 	 * Borra el atributo de la base de datos en la columna indicecolumna que no
 	 * este en el objeto y aparte borra la columna de la clase en cuestion
 	 */
@@ -235,7 +270,7 @@ public class LibreriaBBDD {
 	
 	}
 
-	/*
+	/**
 	 * Metodo para recibir el id de la tabla indicetabla y asi insertarle en la
 	 * tabla indicecolumna
 	 */
@@ -257,7 +292,7 @@ public class LibreriaBBDD {
 		return id;
 	}
 
-	/*
+	/**
 	 * Metodo para insertar filas en la tabla indicetabla Primero se mira si
 	 * existe el nombre de la clase en la tabla si existe no se hace nada pero
 	 * si no existe se inserta el nombre de la clase y el nombre de la tabla
@@ -301,7 +336,7 @@ public class LibreriaBBDD {
 
 	}
 
-	/*
+	/**
 	 * Metodo para insertar filas en la tabla indicecolumna Primero se mira si
 	 * existe el idtabla y el atributo en la tabla si existe no se hace nada
 	 * pero si no existe se inserta el idtabla,atributo y columna
@@ -336,7 +371,7 @@ public class LibreriaBBDD {
 
 	}
 
-	/*
+	/**
 	 * Metodo para insertar en la base de datos Inserta en la base de datos
 	 * nombreclase Inserta solo los atributos que le pases en el ArrayList
 	 */
@@ -381,7 +416,16 @@ public class LibreriaBBDD {
 		return -1;
 	}
 
-	// Metodo para guardar ese objeto en la base de datos
+	/**
+	 *  Metodo para guardar ese objeto en la base de datos
+	 * @param o
+	 * @throws SQLException
+	 * @throws NoSuchFieldException
+	 * @throws SecurityException
+	 * @throws IllegalArgumentException
+	 * @throws IllegalAccessException
+	 * @throws InsertarDuplicado
+	 */
 	public void guardar(Object o) throws SQLException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, InsertarDuplicado {
 		ArrayList<Atributo> atributos = sacarAtributos(o);
 		this.nombreTabla = o.getClass().getSimpleName();
@@ -396,7 +440,54 @@ public class LibreriaBBDD {
 			throw new InsertarDuplicado();
 		}
 	}
+	
+	/**
+	 * Elimina de la base de datos el objeto recibido
+	 * @param o
+	 * @throws SQLException
+	 */
+	public void delete(Object o) throws SQLException{
+		String tableName = this.getTableName(o);
+		String sqlStatement = "DELETE FROM " + tableName +
+				  " WHERE ID = ?";							//Sentencia SQL de eliminación
+		Connection con = this.cpds.getConnection();
+		PreparedStatement pst;
+		pst = con.prepareStatement(sqlStatement);			//Preparación de la sentencia
+		pst.setObject(1, this.objectMap.get(o));			//Añadir la ID parametrizada
+		pst.execute();
+		con.close();
+	}
+	
+	/**
+	 * Actualiza en la base de datos los atributos del objeto recibido
+	 * 
+	 * @param o
+	 * @throws SQLException
+	 */
+	public void update(Object o) throws SQLException{
+		String tableName = this.getTableName(o);											//Nombre de la tabla de la base de datos perteneciente a la clase del objeto
+		String sqlStatement = "UPDATE " + tableName +
+							  " SET " + this.getObjectSets(o) +
+							  " WHERE ID = ?";												//Sentencia sql de UPDATE
+		Connection con = this.cpds.getConnection();
+		PreparedStatement pst;
+		pst = con.prepareStatement(sqlStatement);											//Preparación de la sentencia
+		for (int i = 1; i <= o.getClass().getDeclaredFields().length; i++) { 				// Para cada valor:
+			pst.setObject(i, o.getClass().getDeclaredFields()[i - 1]); 						// Añadir el valor a la sentencia
+		}
+		pst.setObject(o.getClass().getDeclaredFields().length+1, this.objectMap.get(o));	//Añadir la ID parametrizada
+		pst.execute();
+		con.close();
+	}
 
+	/**
+	 * Ejecuta la consulta recibida 
+	 * @param q
+	 * @return Lista de objetos recibidos por la consulta
+	 * @throws SQLException
+	 * @throws InstantiationException
+	 * @throws IllegalAccessException
+	 */
 	private List<Object> executeQuery(Query q) throws SQLException, InstantiationException, IllegalAccessException {
 		Connection c = this.getConnection();
 		List<Object> lista = q.executeQuery(c,this.idMap);

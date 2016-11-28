@@ -19,6 +19,7 @@ import prueba.Empleado;
  *
  */
 public class Query {
+	private LibreriaBBDD lib;
 	private Class clase;				//Clase a la que se aplican las constraint
 	private Constraint restriccion;		//Constraint a aplicar
 	
@@ -26,8 +27,9 @@ public class Query {
 	 * Constructor de la clase.
 	 * @param cl
 	 */
-	public Query(Class cl){
+	protected Query(Class cl,LibreriaBBDD lib){
 		clase = cl;
+		this.lib=lib;
 	}
 	
 	/**
@@ -103,7 +105,7 @@ public class Query {
 	 * @throws IllegalAccessException 
 	 * @throws InstantiationException 
 	 */
-	protected List<Object> executeQuery(Connection con, HashMap<String, Object> idMap) throws SQLException, InstantiationException, IllegalAccessException{
+	protected List<Object> executeQuery(Connection con) throws SQLException, InstantiationException, IllegalAccessException{
 		String sql = this.toSql(con); 									//Sentencia SQL a ejecutar
 		List<Object> lista = new ArrayList<Object>(); 					//Lista en la que se introducirán los objetos
 		PreparedStatement pst = con.prepareStatement(sql); 				// Preparación de la sentencia
@@ -117,14 +119,13 @@ public class Query {
 			//Pair<Class, Integer> p = new Pair<Class, Integer>(this.clase,rs.getInt("id"));// Te creas la pareja
 			//mirar si esta en el mapa inverso
 			String p = this.clase.getName()+"-"+rs.getInt("id");
-			if(idMap.containsKey(p)){ 
-				object = idMap.get(p);
-				System.out.println("si esta en el mapa");
+			if(this.lib.constainsKeyIdMap(p)){ 
+				object = this.lib.getIdMap(p);
 			}
 			else{ 														//Si no esta te creas el objeto y le añades al mapa
 				object = createObject(rs); 								// Crea el objeto de la clase
-				idMap.put(p, object);
-				System.out.println("no esta en el mapa");
+				this.lib.putIdMap(p, object);
+				this.lib.putObjectMap(object, rs.getInt("id"));
 			}
 			lista.add(object); 											// Añadir el objeto a la lista que se devolverá
 		}

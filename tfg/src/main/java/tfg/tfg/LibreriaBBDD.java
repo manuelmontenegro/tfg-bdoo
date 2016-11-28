@@ -20,8 +20,10 @@ import javax.swing.UnsupportedLookAndFeelException;
 import org.apache.commons.lang3.StringUtils;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
+import com.mysql.jdbc.JDBC4PreparedStatement;
 
-import exepciones.InsertarDuplicado;
+import excepciones.BorrarObjetoInexistente;
+import excepciones.InsertarDuplicado;
 import prueba.Empleado;
 import prueba2.Plato;
 
@@ -407,13 +409,15 @@ public class LibreriaBBDD {
 		sql = "SELECT MAX(id) FROM " + this.nombreTabla ;
 		pst = c.prepareStatement(sql);
 		ResultSet rs = pst.executeQuery();
-		c.close();
 
+		int ret;
 		if (rs.next()) {
-			return rs.getInt("MAX(id)");
+			ret =rs.getInt("MAX(id)");
 		}
-
-		return -1;
+		else
+			ret= -1;
+		c.close();
+		return ret;
 	}
 
 	/**
@@ -445,17 +449,26 @@ public class LibreriaBBDD {
 	 * Elimina de la base de datos el objeto recibido
 	 * @param o
 	 * @throws SQLException
+	 * @throws BorrarObjetoInexistente 
 	 */
-	public void delete(Object o) throws SQLException{
+	public void delete(Object o) throws SQLException, BorrarObjetoInexistente{
+		if(!this.objectMap.containsKey(o)){
+			throw new BorrarObjetoInexistente();
+		}
 		String tableName = this.getTableName(o);
 		String sqlStatement = "DELETE FROM " + tableName +
 				  " WHERE ID = ?";							//Sentencia SQL de eliminación
 		Connection con = this.cpds.getConnection();
 		PreparedStatement pst;
+		Integer id = this.objectMap.get(o);
 		pst = con.prepareStatement(sqlStatement);			//Preparación de la sentencia
-		pst.setObject(1, this.objectMap.get(o));			//Añadir la ID parametrizada
+		pst.setObject(1, id);			//Añadir la ID parametrizada
+		System.out.println(pst);
 		pst.execute();
 		con.close();
+		this.objectMap.remove(o);
+		this.idMap.remove(o.getClass().getName()+"-"+id);
+
 	}
 	
 	/**
@@ -463,17 +476,44 @@ public class LibreriaBBDD {
 	 * 
 	 * @param o
 	 * @throws SQLException
+	 * @throws IllegalAccessException 
+	 * @throws IllegalArgumentException 
 	 */
-	public void update(Object o) throws SQLException{
+	public void update(Object o) throws SQLException, IllegalArgumentException, IllegalAccessException{
+		ArrayList<Atributo> atributos = sacarAtributosNoNulos(o);
+		String claves = "";
+		for (int i = 0; i < atributos.size(); i++) {
+			if (i != 0)
+				claves += " , ";
+			Atributo a = atributos.get(i);
+			claves += a.getNombre()+" = ?";
+		}
+
+		ArrayList<Object> valores = new ArrayList<Object>();
+		for (int i = 0; i < atributos.size(); i++) {
+			Atributo a = atributos.get(i);
+			
+				Field val = null;
+				try {
+					val = o.getClass().getDeclaredField(a.getNombre());
+				} catch (NoSuchFieldException | SecurityException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				val.setAccessible(true);
+				valores.add(val.get(o));
+		
+		}
+		
 		String tableName = this.getTableName(o);											//Nombre de la tabla de la base de datos perteneciente a la clase del objeto
 		String sqlStatement = "UPDATE " + tableName +
-							  " SET " + this.getObjectSets(o) +
-							  " WHERE ID = ?";												//Sentencia sql de UPDATE
+							  " SET " + claves +
+							  " WHERE ID = ?";		
 		Connection con = this.cpds.getConnection();
 		PreparedStatement pst;
 		pst = con.prepareStatement(sqlStatement);											//Preparación de la sentencia
-		for (int i = 1; i <= o.getClass().getDeclaredFields().length; i++) { 				// Para cada valor:
-			pst.setObject(i, o.getClass().getDeclaredFields()[i - 1]); 						// Añadir el valor a la sentencia
+		for (int i = 1; i <= valores.size(); i++) { 
+			pst.setObject(i, valores.get(i-1)); 						// Añadir el valor a la sentencia
 		}
 		pst.setObject(o.getClass().getDeclaredFields().length+1, this.objectMap.get(o));	//Añadir la ID parametrizada
 		pst.execute();
@@ -490,10 +530,68 @@ public class LibreriaBBDD {
 	 */
 	private List<Object> executeQuery(Query q) throws SQLException, InstantiationException, IllegalAccessException {
 		Connection c = this.getConnection();
-		List<Object> lista = q.executeQuery(c,this.idMap);
+		List<Object> lista = q.executeQuery(c);
 		c.close();
 
 		return lista;
+	}
+	/**
+	 * Devuelve una nueva Query
+	 * @param class1
+	 * @return
+	 */
+	private Query newQuery(Class class1) {
+		
+		return new Query(class1, this);
+	}
+	
+	/**
+	 * consultar si el mapa idMap contiene la clave s
+	 * @param s
+	 * @return
+	 */
+	protected boolean constainsKeyIdMap(String s){
+		return this.idMap.containsKey(s);
+	}
+	/**
+	 *devolver el objeto del idMap con la clave s 
+	 * @param s
+	 * @return
+	 */
+	protected Object getIdMap(String s) {
+		return this.idMap.get(s);
+	}
+	/**
+	 * inserter en el idMap el par key value
+	 * @param key
+	 * @param value
+	 */
+	protected void putIdMap(String key, Object value) {
+		this.idMap.put(key, value);
+	}
+	/**
+	 * Consultar si mapa objectMap contiene la clave o
+	 * @param o
+	 * @return
+	 */
+	protected boolean constainsKeyObjectMap(Object o){
+		return this.objectMap.containsKey(o);
+	}
+	/**
+	 * Devolver el objeto del objectMap con la clave s 
+	 * @param s
+	 * @return
+	 */
+	protected Object getObjectMap(Object s) {
+		return this.objectMap.get(s);
+	}
+	/**
+	 * Inserter en el objectMap el par key value
+	 * @param key
+	 * @param value
+	 */
+	protected void putObjectMap(Object key, Integer value) {
+		this.objectMap.put(key, value);
 	}
 
 	public static void main(String[] argv) {
@@ -523,7 +621,18 @@ public class LibreriaBBDD {
 		// EJEMPLO: Empleados que sean hombres o se llamen E (Empleados
 		// 0001,0002,0005)
 
-		Query q = new Query(Empleado.class);
+		
+		Empleado empleado5 = new Empleado("0005","E","ramiro",24234,"mujer","cocinero","123");
+		 
+		 try {
+			lib.guardar(empleado5);
+		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException
+				| SQLException | InsertarDuplicado e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		
+		Query q=lib.newQuery(Empleado.class);
 
 		SimpleConstraint sc1 = SimpleConstraint.igualQueConstraint("sexo", "mujer");
 		SimpleConstraint sc2 = SimpleConstraint.igualQueConstraint("nombre", "E");
@@ -537,15 +646,23 @@ public class LibreriaBBDD {
 			e.printStackTrace();
 		}
 
-		List<Object> l2 = null;
+		Empleado e = (Empleado) l1.get(0);
+		e.setContrasenya("54321");
 		try {
-			l2 = lib.executeQuery(q);
-		} catch (SQLException | InstantiationException | IllegalAccessException e) {
+			lib.update(e);
+		} catch (SQLException | IllegalArgumentException | IllegalAccessException e1) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			e1.printStackTrace();
 		}
+
+
 		
 	}
+
+	
+
+	
+
 
 }
 

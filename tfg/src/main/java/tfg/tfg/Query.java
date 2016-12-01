@@ -6,11 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.List;
-
-import prueba.Empleado;
 
 /**
  * Clase que permite ejecutar una sentencia SQL para devolver una lista de objetos de la tabla deseada

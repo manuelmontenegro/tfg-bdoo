@@ -31,7 +31,7 @@ public class Pair <A,B>{
 	@Override
 	public boolean equals(Object obj) {
 		if (obj instanceof Pair) {
-			Pair tmpPersona = (Pair) obj;
+			Pair<A, B> tmpPersona = (Pair<A, B>) obj;
 			if (this.objectA.equals(tmpPersona.objectA) && this.objectB.equals(tmpPersona.objectB)) {
 				return true;
 			} else {

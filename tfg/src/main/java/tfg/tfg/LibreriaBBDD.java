@@ -1,10 +1,8 @@
 package tfg.tfg;
 
 import java.beans.PropertyVetoException;
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -13,19 +11,13 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 
-import javax.sql.DataSource;
-import javax.swing.JOptionPane;
-import javax.swing.UnsupportedLookAndFeelException;
-
 import org.apache.commons.lang3.StringUtils;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
-import com.mysql.jdbc.JDBC4PreparedStatement;
 
 import excepciones.BorrarObjetoInexistente;
 import excepciones.InsertarDuplicado;
 import prueba.Empleado;
-import prueba2.Plato;
 
 public class LibreriaBBDD {
 
@@ -33,7 +25,6 @@ public class LibreriaBBDD {
 	private String user;
 	private String pass;
 	private String nombrebbdd;
-	// private Connection con;
 	private ComboPooledDataSource cpds;
 	private String nombreTabla;
 	private IdentityHashMap<Object, Integer> objectMap;
@@ -191,14 +182,14 @@ public class LibreriaBBDD {
 	/**
 	 * Devuelve una cadena con el formato atributo1=?,atributo2=?,... para usar en la sentencia SQL
 	 */
-	private String getObjectSets(Object o){
+	/*private String getObjectSets(Object o){
 		ArrayList<String> list = new ArrayList<String>();
 		Field[] campos = o.getClass().getDeclaredFields();		//Obtener los campos del objecto
 		for(Field f: campos){									//Para cada uno de los campos:
 			list.add(f.getName() + "= ?");						//Añade a la lista atributo = ?
 		}
 		return StringUtils.join(list, ",");
-	}
+	}*/
 
 	/**
 	 * Metodo para crear la base de datos Te crea la base de datos con el
@@ -478,8 +469,12 @@ public class LibreriaBBDD {
 	 * @throws SQLException
 	 * @throws IllegalAccessException 
 	 * @throws IllegalArgumentException 
+	 * @throws BorrarObjetoInexistente 
 	 */
-	public void update(Object o) throws SQLException, IllegalArgumentException, IllegalAccessException{
+	public void update(Object o) throws SQLException, IllegalArgumentException, IllegalAccessException, BorrarObjetoInexistente{
+		if(!this.objectMap.containsKey(o)){
+			throw new BorrarObjetoInexistente();
+		}
 		ArrayList<Atributo> atributos = sacarAtributosNoNulos(o);
 		String claves = "";
 		for (int i = 0; i < atributos.size(); i++) {
@@ -650,7 +645,7 @@ public class LibreriaBBDD {
 		e.setContrasenya("54321");
 		try {
 			lib.update(e);
-		} catch (SQLException | IllegalArgumentException | IllegalAccessException e1) {
+		} catch (SQLException | IllegalArgumentException | IllegalAccessException | BorrarObjetoInexistente e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}

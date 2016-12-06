@@ -11,8 +11,6 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
-
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 
 import excepciones.BorrarObjetoInexistente;
@@ -28,7 +26,7 @@ public class LibreriaBBDD {
 	private ComboPooledDataSource cpds;
 	private String nombreTabla;
 	private IdentityHashMap<Object, Integer> objectMap;
-	private HashMap<String, Object> idMap;
+	private HashMap<Identificador, Object> idMap;
 
 	/**
 	 * Constructor
@@ -44,7 +42,7 @@ public class LibreriaBBDD {
 		this.cpds = new ComboPooledDataSource();
 
 		this.objectMap = new IdentityHashMap<Object, Integer>();
-		this.idMap = new HashMap<String, Object>();
+		this.idMap = new HashMap<Identificador, Object>();
 		this.user = user;
 		this.pass = pass;
 		this.nombrebbdd = nombrebbdd;
@@ -429,8 +427,8 @@ public class LibreriaBBDD {
 		if(!this.objectMap.containsKey(o)) {
 			int id = insertarObjeto(o, sacarAtributosNoNulos(o));
 			this.objectMap.put(o, id);
-			String pair = o.getClass().getName()+"-"+id;
-			this.idMap.put(pair, o);
+			Identificador iden=new Identificador(id, o.getClass().getName());
+			this.idMap.put(iden, o);
 		} else {
 			throw new InsertarDuplicado();
 		}
@@ -545,7 +543,7 @@ public class LibreriaBBDD {
 	 * @param s
 	 * @return
 	 */
-	protected boolean constainsKeyIdMap(String s){
+	protected boolean constainsKeyIdMap(Identificador s){
 		return this.idMap.containsKey(s);
 	}
 	/**
@@ -553,7 +551,7 @@ public class LibreriaBBDD {
 	 * @param s
 	 * @return
 	 */
-	protected Object getIdMap(String s) {
+	protected Object getIdMap(Identificador s) {
 		return this.idMap.get(s);
 	}
 	/**
@@ -561,7 +559,7 @@ public class LibreriaBBDD {
 	 * @param key
 	 * @param value
 	 */
-	protected void putIdMap(String key, Object value) {
+	protected void putIdMap(Identificador key, Object value) {
 		this.idMap.put(key, value);
 	}
 	/**
@@ -662,45 +660,48 @@ public class LibreriaBBDD {
 }
 
 /*
- * Empleado e1=new Empleado(paco,33); Empleado e2=new Empleado(paco,33);
- * db.guardar(e1); db.guardar(e2); en realidad son objetos distintos
- * 
- * Empleado e3=e1; db.guardar(e3); este sin encambio es igual
- * ------------------------ patron identiti map en la libreria de base de datos
- * tener un Map<Object, Integer> activos tu buscas por objetos y si no esta le
- * insertas en el mapa y le guardas en la base de datos y si si esta que le
- * ignore o sobreescriba o actualize
- * 
- * ----------- si acabas de inicializar la libreria y haces querys debes meterle
- * en el mapa, tambien al guardar y si haces update de un objeto que no esta en
- * el mapa es un error exepcion nuestra
- * 
- * 
- * ----------------- Empleado e1=db.querry(dni=7941); Empleado
- * e2=db.querry(dni=7941); e1 y e2 son el mismo objeto y no debe hacer dos news
- * la primera vez se recupera y se mete en el mapa la segunda vez se comprueba
- * el mapa y se devuelve el objeto del mapa mapa inverso Class puede ser el
- * nombre de tabla (String) o el objeto class que es tambien unico Map<<Class,
- * Integer>, Object> asi o se hace hay que crear una clase que contenga estas
- * dos clases<Class, Integer> y implementar equals() <<Empleado,1>,(objeto
- * java)>
- * 
- * 
- * ------------
- * 
- * para borrar el objeto deve estar en el mapa, si no exepcion nuestra se bora
- * la entrada del mapa y la entrada en la base de datos
- * 
- * 
- * ----------------------- Map en java tiene varias implementaciones HasMap,
- * TreeMap pero ninguna de estas nos vale
- * 
- * String s1="Hola"; HashMap<>m=new HashMap<String, Integer>(); String
- * s2="Hola"; m.put(s1,3) Integer i=m.get(s2); el problema es que usa equals()
- * para buscar en el mapa y equals de s1 y s1 es true
- * 
- * hay una clase IdentityHashMap que usa el igual y no el equals() esta es la
- * que hay que usar
- * 
- * 
+
+cambiar el HasMap idMap la clave deve ser la clase identificador con el metodo equals() y el hashCode()
+
+
+
+
+
+usar el metodo de consulta QeryByExample
+Empleado e=new Empleado("Pepe", 0);
+List<Object>l=db.qeryByExampe(e);
+public <T> List<T> querryByExample(T obj){}
+devuelve todos los empleados con nombre pepe y la edad que sea 
+siempre encadenadas por ANDs y no tener en cuenta los null y los ceros
+
+
+se puede hacer otra version que si busque por el ceros y NULLs
+List<T> QueryByExample(T obj, List<String> dontIgnore);
+con una lista de los atributos que no hay que ignorar aunque sean nulos o ceros
+
+
+qBE(New Empleado(null, 0)) -> todos los empleados
+qBE(New Empleado("pepe", 21)) -> nombre pepe and edad 21
+qBE(New Empleado(null, 21)) -> edad=21
+qBe(New Empleado(pepe, 0)) -> nombre=pepe (ignora edad 0)
+qBE(New Empleado(pepe, 0),["edad"]) ->nombre=pepe and edad=0
+qBE(New Empleado(null, 0), [nombre, edad]) -> nombre is null and edad=0 ***importante is null
+qBE(New Empleado(null, 0), [nombre]) ->nombre is null
+
+
+cambiar simpleConstarin el toSql debe devolver "[campo] is null" cuando la parte derecha sea null y igual en los demas
+
+
+
+
+
+
+
+
+
+
+
+
+
+
  */

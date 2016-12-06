@@ -114,13 +114,13 @@ public class Query {
 		while (rs.next()) { 											// Mientras aún haya resultados de la sentencia SQL ejecutada
 			//Pair<Class, Integer> p = new Pair<Class, Integer>(this.clase,rs.getInt("id"));// Te creas la pareja
 			//mirar si esta en el mapa inverso
-			String p = this.clase.getName()+"-"+rs.getInt("id");
-			if(this.lib.constainsKeyIdMap(p)){ 
-				object = this.lib.getIdMap(p);
+			Identificador iden=new Identificador(rs.getInt("id"), this.clase.getName());
+			if(this.lib.constainsKeyIdMap(iden)){ 
+				object = this.lib.getIdMap(iden);
 			}
 			else{ 														//Si no esta te creas el objeto y le añades al mapa
 				object = createObject(rs); 								// Crea el objeto de la clase
-				this.lib.putIdMap(p, object);
+				this.lib.putIdMap(iden, object);
 				this.lib.putObjectMap(object, rs.getInt("id"));
 			}
 			lista.add(object); 											// Añadir el objeto a la lista que se devolverá

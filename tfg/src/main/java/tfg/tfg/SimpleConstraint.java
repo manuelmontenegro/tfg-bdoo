@@ -54,7 +54,10 @@ public class SimpleConstraint implements Constraint{
 	 * Devuelve la restricción en forma de sentencia SQL a incluir en la cláusula WHERE.
 	 */
 	public String toSql(){
-		return "(" + campo + " " + operando + " ?)";
+		if(valor != null)
+			return "(" + campo + " " + operando + " ?)";
+		else
+			return "(" + campo + " " + "is" + " ?)";
 	}
 
 	/**

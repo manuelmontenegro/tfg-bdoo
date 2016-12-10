@@ -21,6 +21,10 @@ public class AndConstraint implements Constraint{
 		}
 	}
 	
+	public AndConstraint(List<Constraint> l){
+		this.cons = l;
+	}
+	
 	/**
 	 * Devuelve las restricciones unidas por un AND. 
 	 */

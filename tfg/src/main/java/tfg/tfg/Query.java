@@ -109,11 +109,10 @@ public class Query {
 		for (int i = 1; i <= values.size(); i++) { 						// Para cada valor:
 			pst.setObject(i, values.get(i - 1)); 						// Añadir el valor a la sentencia
 		}
+		
 		ResultSet rs = pst.executeQuery(); 								// Ejecución de la sentencia
 		Object object; 													// Instancia de la clase 'clase'
 		while (rs.next()) { 											// Mientras aún haya resultados de la sentencia SQL ejecutada
-			//Pair<Class, Integer> p = new Pair<Class, Integer>(this.clase,rs.getInt("id"));// Te creas la pareja
-			//mirar si esta en el mapa inverso
 			Identificador iden=new Identificador(rs.getInt("id"), this.clase.getName());
 			if(this.lib.constainsKeyIdMap(iden)){ 
 				object = this.lib.getIdMap(iden);

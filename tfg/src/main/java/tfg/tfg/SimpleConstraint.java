@@ -57,7 +57,7 @@ public class SimpleConstraint implements Constraint{
 		if(valor != null)
 			return "(" + campo + " " + operando + " ?)";
 		else
-			return "(" + campo + " " + "is" + " ?)";
+			return "(" + campo + " IS NULL)";
 	}
 
 	/**
@@ -65,7 +65,8 @@ public class SimpleConstraint implements Constraint{
 	 */
 	public List<Object> getValues() {
 		List<Object> l = new ArrayList<Object>();
-		l.add(this.valor);
+		if(this.valor != null)
+			l.add(this.valor);
 		return l;
 	}
 

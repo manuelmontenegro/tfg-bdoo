@@ -2,6 +2,7 @@ package tfg.tfg;
 
 import java.beans.PropertyVetoException;
 import java.lang.reflect.Field;
+import java.security.acl.NotOwnerException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -521,11 +522,10 @@ public class LibreriaBBDD {
 	 * @throws InstantiationException
 	 * @throws IllegalAccessException
 	 */
-	private List<Object> executeQuery(Query q) throws SQLException, InstantiationException, IllegalAccessException {
+	public List<Object> executeQuery(Query q) throws SQLException, InstantiationException, IllegalAccessException {
 		Connection c = this.getConnection();
 		List<Object> lista = q.executeQuery(c);
 		c.close();
-
 		return lista;
 	}
 	/**
@@ -586,70 +586,136 @@ public class LibreriaBBDD {
 	protected void putObjectMap(Object key, Integer value) {
 		this.objectMap.put(key, value);
 	}
+	
+	/**
+	 * Implementa el método de consulta QueryByExample.
+	 * Recibe un objeto modelo e ignora todos los atributos que sean 0 o nulos.
+	 * @param o
+	 * @return
+	 * @throws InstantiationException
+	 * @throws IllegalAccessException
+	 * @throws NoSuchFieldException
+	 * @throws SecurityException
+	 * @throws SQLException
+	 */
+	public List<Object> queryByExample(Object o) throws InstantiationException, IllegalAccessException, NoSuchFieldException, SecurityException, SQLException{
+		return queryByExample(o, new ArrayList<String>());		//Devuelve la lista recibida del método QueryByExample con una lista en la que se ignoran todos los campos que sean 0 o nulos
+	}
+	
+	/**
+	 * Implementa el método de cosulta QueryByExample.
+	 * Recibe un objeto modelo y una lista de atributos que no se ignorarán en caso de ser 0 o nulos.
+	 * @param o
+	 * @param notToIgnore
+	 * @return
+	 * @throws InstantiationException
+	 * @throws IllegalAccessException
+	 * @throws SQLException
+	 * @throws NoSuchFieldException
+	 * @throws SecurityException
+	 */
+	public List<Object> queryByExample(Object o, List<String> notToIgnore) throws InstantiationException, IllegalAccessException, SQLException, NoSuchFieldException, SecurityException{
+		List<Object> l = new ArrayList<Object>();						//Lista a devolver
+		List<Constraint> constraintList = new ArrayList<Constraint>();	//Lista de rectricciones que se aplicarán
+		Field[] campos = o.getClass().getDeclaredFields();				//Obtener los campos del objecto
+		for(Field f: campos){											//Para cada uno de los campos:
+			f.setAccessible(true);										//Hacerlo accesible
+			boolean notIgnoring = false;								//Booleano para comprobar si el campo se ignorará en caso de ser 0 o nulo
+			
+			if(f.getType().getCanonicalName().contains("int")){			//Si el campo es un entero:
+				int n = (int)f.get(o);									//Obtener el valor del entero
+				if(n != 0)												//Si el entero es distinto de 0:
+					notIgnoring = true;									//El campo no se ignora
+			}
+			else{														//Si el campo no es un entero:
+				if(f.get(o) != null)									//Si es distinto de nulo:
+					notIgnoring = true;									//El campo no se ignora
+			}
+			
+			if(notToIgnore.contains(f.getName()) || notIgnoring)		//Si el campo aparece en la lista de no ignorados o se ha determinado que no se va a ignorar:
+				constraintList.add(SimpleConstraint.igualQueConstraint(f.getName(), f.get(o)));		//Se añade a la lista de restricciones
+		}
+		
+		Constraint c = new AndConstraint(constraintList);				//Se crea la restricción AND con las restricciones a cumplir de la lista
+		Query q = new Query(o.getClass(), this);						//Se crea la consulta
+		q.setConstraint(c);												//Se determina que la restricción de la consulta es la AND
+		l = executeQuery(q);											//Se ejecuta la consulta
+		return l;
+	}
 
 	public static void main(String[] argv) {
 		LibreriaBBDD lib = null;
 		try {
 			lib = new LibreriaBBDD("tfg", "root", "");
-		} catch (PropertyVetoException | SQLException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
+		} catch (PropertyVetoException | SQLException e1) {e1.printStackTrace();}
+		
 		/*
-		 * Empleado empleado1 = new
-		 * Empleado("0001","A","ramiro",24234,"hombre","cocinero","123");
-		 * Empleado empleado2 = new
-		 * Empleado("0002","B","ramiro",24234,"hombre","cocinero","123");
-		 * Empleado empleado3 = new
-		 * Empleado("0003","C","ramiro",24234,"mujer","cocinero","123");
-		 * Empleado empleado4 = new
-		 * Empleado("0004","D","ramiro",24234,"mujer","cocinero","123");
-		 * Empleado empleado5 = new
-		 * Empleado("0005","E","ramiro",24234,"mujer","cocinero","123");
-		 * lib.guardar(empleado1); lib.guardar(empleado2);
-		 * lib.guardar(empleado3); lib.guardar(empleado4);
-		 * lib.guardar(empleado5);
-		 */
-
-		// EJEMPLO: Empleados que sean hombres o se llamen E (Empleados
-		// 0001,0002,0005)
-
-		
-		Empleado empleado5 = new Empleado("0005","E","ramiro",24234,"mujer","cocinero","123");
-		 
+		 Empleado empleado1 = new Empleado("0001","A","ramiro",24234,"hombre","cocinero","123");
+		 Empleado empleado2 = new Empleado("0002","B","ramiro",24234,"hombre","cocinero","123");
+		 Empleado empleado3 = new Empleado("0003","C","ramiro",24234,"mujer","cocinero","123");
+		 Empleado empleado4 = new Empleado("0004","D","ramiro",24234,"mujer","cocinero","123");
+		 Empleado empleado5 = new Empleado("0005","E","ramiro",24234,"hombre","cocinero","123");
+		 Empleado empleado6 = new Empleado("0006","E","ramiro",0,"hombre","cocinero","123");
 		 try {
+			lib.guardar(empleado1);
+			lib.guardar(empleado2);
+			lib.guardar(empleado3); 
+			lib.guardar(empleado4);
 			lib.guardar(empleado5);
-		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException
-				| SQLException | InsertarDuplicado e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		
-		Query q=lib.newQuery(Empleado.class);
+			lib.guardar(empleado6);
+		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException | SQLException | InsertarDuplicado e2) {e2.printStackTrace();} 
+		*/
 
-		SimpleConstraint sc1 = SimpleConstraint.igualQueConstraint("sexo", "mujer");
-		SimpleConstraint sc2 = SimpleConstraint.igualQueConstraint("nombre", "E");
-		Constraint oc = new AndConstraint(sc1, sc2);
-		q.setConstraint(oc);
+		// EJEMPLO QUERYBYEXAMPLE IGNORANDO TODOS LOS CAMPOS: 
+		//Empleados que sean hombres y se llamen E (Empleados 0005 y 0006)
+
+		Empleado emp = new Empleado(null,"E",null,0,"hombre",null,null);
+		
+		System.out.println("Empleados que se llaman E y son hombres");
 		List<Object> l1 = null;
 		try {
-			l1 = lib.executeQuery(q);
-		} catch (SQLException | InstantiationException | IllegalAccessException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		Empleado e = (Empleado) l1.get(0);
-		e.setContrasenya("54321");
-		try {
-			lib.update(e);
-		} catch (SQLException | IllegalArgumentException | IllegalAccessException | BorrarObjetoInexistente e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-
-
+			
+			l1 = lib.queryByExample(emp);
+			
+		} catch (InstantiationException | IllegalAccessException | NoSuchFieldException | SecurityException | SQLException e) {e.printStackTrace();}
 		
+		for(Object o: l1){
+			System.out.println(o.toString());
+		}
+		
+		// EJEMPLO QUERYBYEXAMPLE IGNORANDO TODOS LOS CAMPOS MENOS EL TELÉFONO: 
+		//Empleados que sean hombres, se llamen E y su teléfono sea 0 (Empleado 0006)
+		//SE UTILIZA EL MISMO OBJETO emp DE LA CONSULTA ANTERIOR
+		
+		System.out.println("Empleados que se llaman E, son hombres y su teléfono es 0");
+		List<Object> l2 = null;
+		List<String> notToIgnore = new ArrayList<String>();
+		notToIgnore.add("telefono");
+		try {
+			l2 = lib.queryByExample(emp,notToIgnore);
+		} catch (InstantiationException | IllegalAccessException | NoSuchFieldException | SecurityException | SQLException e) {e.printStackTrace();}
+
+		for (Object o : l2) {
+			System.out.println(o.toString());
+		}
+		
+		// EJEMPLO QUERYBYEXAMPLE SIN IGNORAR NINGUN CAMPO: 
+		//Todos los empleados
+
+		Empleado emp2 = new Empleado(null,null,null,0,null,null,null);
+		
+		System.out.println("Todos los empleados");
+		List<Object> l3 = null;
+		try {
+			
+			l3 = lib.queryByExample(emp2);
+			
+		} catch (InstantiationException | IllegalAccessException | NoSuchFieldException | SecurityException | SQLException e) {e.printStackTrace();}
+		
+		for(Object o: l3){
+			System.out.println(o.toString());
+		}
+
 	}
 
 	
@@ -661,47 +727,31 @@ public class LibreriaBBDD {
 
 /*
 
-cambiar el HasMap idMap la clave deve ser la clase identificador con el metodo equals() y el hashCode()
+	cambiar el HasMap idMap la clave deve ser la clase identificador con el metodo equals() y el hashCode()
 
-
-
-
-
-usar el metodo de consulta QeryByExample
-Empleado e=new Empleado("Pepe", 0);
-List<Object>l=db.qeryByExampe(e);
-public <T> List<T> querryByExample(T obj){}
-devuelve todos los empleados con nombre pepe y la edad que sea 
-siempre encadenadas por ANDs y no tener en cuenta los null y los ceros
-
-
-se puede hacer otra version que si busque por el ceros y NULLs
-List<T> QueryByExample(T obj, List<String> dontIgnore);
-con una lista de los atributos que no hay que ignorar aunque sean nulos o ceros
-
-
-qBE(New Empleado(null, 0)) -> todos los empleados
-qBE(New Empleado("pepe", 21)) -> nombre pepe and edad 21
-qBE(New Empleado(null, 21)) -> edad=21
-qBe(New Empleado(pepe, 0)) -> nombre=pepe (ignora edad 0)
-qBE(New Empleado(pepe, 0),["edad"]) ->nombre=pepe and edad=0
-qBE(New Empleado(null, 0), [nombre, edad]) -> nombre is null and edad=0 ***importante is null
-qBE(New Empleado(null, 0), [nombre]) ->nombre is null
-
-
-cambiar simpleConstarin el toSql debe devolver "[campo] is null" cuando la parte derecha sea null y igual en los demas
-
-
-
-
-
-
-
-
-
-
-
-
+	usar el metodo de consulta QeryByExample
+	Empleado e=new Empleado("Pepe", 0);
+	List<Object>l=db.qeryByExampe(e);
+	public <T> List<T> querryByExample(T obj){}
+	devuelve todos los empleados con nombre pepe y la edad que sea 
+	siempre encadenadas por ANDs y no tener en cuenta los null y los ceros
+	
+	
+	se puede hacer otra version que si busque por el ceros y NULLs
+	List<T> QueryByExample(T obj, List<String> dontIgnore);
+	con una lista de los atributos que no hay que ignorar aunque sean nulos o ceros
+	
+	
+	qBE(New Empleado(null, 0)) -> todos los empleados
+	qBE(New Empleado("pepe", 21)) -> nombre pepe and edad 21
+	qBE(New Empleado(null, 21)) -> edad=21
+	qBe(New Empleado(pepe, 0)) -> nombre=pepe (ignora edad 0)
+	qBE(New Empleado(pepe, 0),["edad"]) ->nombre=pepe and edad=0
+	qBE(New Empleado(null, 0), [nombre, edad]) -> nombre is null and edad=0 ***importante is null
+	qBE(New Empleado(null, 0), [nombre]) ->nombre is null
+	
+	
+	cambiar simpleConstarin el toSql debe devolver "[campo] is null" cuando la parte derecha sea null y igual en los demas
 
 
  */

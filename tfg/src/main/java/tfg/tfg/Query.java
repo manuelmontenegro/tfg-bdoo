@@ -26,6 +26,7 @@ public class Query {
 	protected Query(Class cl,LibreriaBBDD lib){
 		clase = cl;
 		this.lib=lib;
+		this.restriccion = SimpleConstraint.igualQueConstraint(1,1);
 	}
 	
 	/**

@@ -23,10 +23,10 @@ public class Query {
 	 * Constructor de la clase.
 	 * @param cl
 	 */
-	protected Query(Class cl,LibreriaBBDD lib){
+	protected Query(Class<?> cl,LibreriaBBDD lib){
 		clase = cl;
 		this.lib=lib;
-		this.restriccion = SimpleConstraint.igualQueConstraint(1,1);
+		this.restriccion = new AndConstraint();
 	}
 	
 	/**

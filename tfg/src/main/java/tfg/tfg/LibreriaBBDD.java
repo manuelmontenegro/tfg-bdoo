@@ -755,3 +755,29 @@ public class LibreriaBBDD {
 
 
  */
+
+
+/*
+patron que podemos usar para hacer esto
+Foreign Key Mapping
+
+
+
+
+1)cadena de punteros
+si objeto apunta a otro que apunta a otro se deben guardar todos
+2)los ciclos
+si un objeto tiene otro que tiene otro que a su vez tie al primero no debe quedarse en u buqle infinito
+3)actualizar en cadena con un boolean o otro nombre para que actualize en cascada o no
+al actualizar un objeto actualizar tambien los objetos que tiene
+4)borrar 
+on delete set NULL
+al borrar un empleado no borrar su direccion
+5)al recuperar
+si un objeto tiene referencias a varios objetos indicar un nivel maxio de profundiada por ejemplo 5
+asi no recupera todos los objetos que tenga este y a partir de esa profundidad maxima poner NULLs
+y si si quieres profundizar mas hacer un metodo acitvate() --en pag 96
+este metodo recupera los NULLs que tiene un objeto que se halla recuperado antes para recuperarlos
+
+
+*/

@@ -16,7 +16,9 @@ import com.mchange.v2.c3p0.ComboPooledDataSource;
 
 import excepciones.BorrarObjetoInexistente;
 import excepciones.InsertarDuplicado;
+import prueba.Direccion;
 import prueba.Empleado;
+import prueba.Usuario;
 
 public class LibreriaBBDD {
 
@@ -111,13 +113,40 @@ public class LibreriaBBDD {
 	 */
 	private ArrayList<Atributo> sacarAtributos(Object o) {
 		ArrayList<Atributo> atributos = new ArrayList<Atributo>();
-
 		for (Field n : o.getClass().getDeclaredFields()) {
 			String tipo = "";
 			if (n.getType().getCanonicalName().equalsIgnoreCase("Java.lang.String"))
 				tipo = "VARCHAR(255)";
 			else if (n.getType().getCanonicalName().equalsIgnoreCase("Int"))
 				tipo = "INTEGER";
+			else{ //Si no es ningun tipo primitivo quiere decir que es una referencia a otro objeto
+				Object ob = null;
+				n.setAccessible(true); 
+				try {
+					ob = n.get(o); // Cargar el objeto en ob
+				} catch (IllegalArgumentException | IllegalAccessException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				try {
+					guardar(ob); 
+				} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException
+						| SQLException | InsertarDuplicado e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				/*ArrayList<Atributo> atri = sacarAtributos(ob);
+				try {
+					this.nombreTabla = ob.getClass().getSimpleName();
+					String nombreClase = ob.getClass().getName();
+					crearTabla(atri,nombreClase);
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}*/
+				tipo = "INTEGER, ADD FOREIGN KEY ("+n.getName()+") REFERENCES "+this.nombreTabla+"(id)"; // El tipo ya va a ser una foreign key
+				
+			}
 
 			Atributo a = new Atributo(n.getName(), tipo);
 			atributos.add(a);
@@ -126,7 +155,8 @@ public class LibreriaBBDD {
 		return atributos;
 
 	}
-
+	
+	
 	/**
 	 * Este metodo es para insertar en la base de datos teniendo en cuenta que
 	 * no tienen porque estar todos los atributos de la clase metidos en el
@@ -143,10 +173,11 @@ public class LibreriaBBDD {
 			n.setAccessible(true);
 				if (n.get(o) != null) {
 					String tipo = "";
-					if (n.getType().getCanonicalName().contains("Java.Lang.String"))
+					if (n.getType().getCanonicalName().contains("Java.Lang.String") || n.getType().getCanonicalName().contains("java.lang.String"))
 						tipo = "VARCHAR(255)";
 					else if (n.getType().getCanonicalName().contains("int"))
 						tipo = "INTEGER";
+					
 
 					Atributo a = new Atributo(n.getName(), tipo);
 					atributos.add(a);
@@ -342,21 +373,22 @@ public class LibreriaBBDD {
 		pst.setString(1, idtabla);
 		pst.setString(2, atributo);
 		ResultSet rs = pst.executeQuery();
+
 		if (!rs.next()) {
 			sql = "INSERT INTO indicecolumna (idtabla,atributo,columna) " + " VALUES ( \"" + idtabla + "\" , \""
 					+ atributo + "\" , \"" + columna + "\"  )";
 			System.out.println(sql);
-			c = this.getConnection();
-			pst = c.prepareStatement(sql);
+			Connection c1 = this.getConnection();
+			pst = c1.prepareStatement(sql);
 			pst.execute();
-			c.close();
+			c1.close();
 
 			String anyadir = "ALTER TABLE " + this.nombreTabla + " ADD " + atributo + " " + a.getTipo();
-			c = this.getConnection();
-			pst = c.prepareStatement(anyadir);
+			Connection c2 = this.getConnection();
+			pst = c2.prepareStatement(anyadir);
 			System.out.println(anyadir);
 			pst.execute();
-			c.close();
+			c2.close();
 
 		}
 		c.close();
@@ -383,13 +415,18 @@ public class LibreriaBBDD {
 				valores += " , ";
 				Field val = o.getClass().getDeclaredField(a.getNombre());
 				val.setAccessible(true);
-				valores += "\"" + val.get(o) + "\"";
+				if(a.getTipo().equalsIgnoreCase(""))//Si es "" quiere decir que es un objeto referenciado
+					valores += "\"" + this.objectMap.get(val.get(o)) + "\""; // Como ya esta guardado recuperas su id del objectMap
+				else
+					valores += "\"" + val.get(o) + "\"";
+				
+				
 		
 		}
 
 		String sql = "INSERT INTO " + this.nombreTabla + " (" + claves + ") " + " VALUES " + "(" + valores + ")";
 
-//		System.out.println(sql);
+		System.out.println(sql);
 		PreparedStatement pst;
 		Connection c = this.getConnection();
 		pst = c.prepareStatement(sql);
@@ -649,7 +686,16 @@ public class LibreriaBBDD {
 			lib = new LibreriaBBDD("tfg", "root", "");
 		} catch (PropertyVetoException | SQLException e1) {e1.printStackTrace();}
 		
-		/*
+		Direccion dir = new Direccion("gua",20);
+		Usuario u = new Usuario("manuel",dir);
+		try {
+			lib.guardar(u);
+		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException
+				| SQLException | InsertarDuplicado e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		 Empleado empleado1 = new Empleado("0001","A","ramiro",24234,"hombre","cocinero","123");
 		 Empleado empleado2 = new Empleado("0002","B","ramiro",24234,"hombre","cocinero","123");
 		 Empleado empleado3 = new Empleado("0003","C","ramiro",24234,"mujer","cocinero","123");
@@ -658,65 +704,69 @@ public class LibreriaBBDD {
 		 Empleado empleado6 = new Empleado("0006","E","ramiro",0,"hombre","cocinero","123");
 		 try {
 			lib.guardar(empleado1);
+			Empleado empleado7 = new Empleado("0234324s","hola");
+			lib.guardar(empleado7);
 			lib.guardar(empleado2);
 			lib.guardar(empleado3); 
 			lib.guardar(empleado4);
 			lib.guardar(empleado5);
 			lib.guardar(empleado6);
-		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException | SQLException | InsertarDuplicado e2) {e2.printStackTrace();} 
-		*/
-
-		// EJEMPLO QUERYBYEXAMPLE IGNORANDO TODOS LOS CAMPOS: 
-		//Empleados que sean hombres y se llamen E (Empleados 0005 y 0006)
-
-		Empleado emp = new Empleado(null,"E",null,0,"hombre",null,null);
-		
-		System.out.println("Empleados que se llaman E y son hombres");
-		List<Object> l1 = null;
-		try {
-			
-			l1 = lib.queryByExample(emp);
-			
-		} catch (InstantiationException | IllegalAccessException | NoSuchFieldException | SecurityException | SQLException e) {e.printStackTrace();}
-		
-		for(Object o: l1){
-			System.out.println(o.toString());
-		}
-		
-		// EJEMPLO QUERYBYEXAMPLE IGNORANDO TODOS LOS CAMPOS MENOS EL TELÉFONO: 
-		//Empleados que sean hombres, se llamen E y su teléfono sea 0 (Empleado 0006)
-		//SE UTILIZA EL MISMO OBJETO emp DE LA CONSULTA ANTERIOR
-		
-		System.out.println("Empleados que se llaman E, son hombres y su teléfono es 0");
-		List<Object> l2 = null;
-		List<String> notToIgnore = new ArrayList<String>();
-		notToIgnore.add("telefono");
-		try {
-			l2 = lib.queryByExample(emp,notToIgnore);
-		} catch (InstantiationException | IllegalAccessException | NoSuchFieldException | SecurityException | SQLException e) {e.printStackTrace();}
-
-		for (Object o : l2) {
-			System.out.println(o.toString());
-		}
-		
-		// EJEMPLO QUERYBYEXAMPLE SIN IGNORAR NINGUN CAMPO: 
-		//Todos los empleados
-
-		Empleado emp2 = new Empleado(null,null,null,0,null,null,null);
-		
-		System.out.println("Todos los empleados");
-		List<Object> l3 = null;
-		try {
-			
-			l3 = lib.queryByExample(emp2);
-			
-		} catch (InstantiationException | IllegalAccessException | NoSuchFieldException | SecurityException | SQLException e) {e.printStackTrace();}
-		
-		for(Object o: l3){
-			System.out.println(o.toString());
-		}
-
+		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException | SQLException | InsertarDuplicado e2) {e2.printStackTrace();
+		} 
 	}
+		
+//
+//		// EJEMPLO QUERYBYEXAMPLE IGNORANDO TODOS LOS CAMPOS: 
+//		//Empleados que sean hombres y se llamen E (Empleados 0005 y 0006)
+//
+//		Empleado emp = new Empleado(null,"E",null,0,"hombre",null,null);
+//		
+//		System.out.println("Empleados que se llaman E y son hombres");
+//		List<Object> l1 = null;
+//		try {
+//			
+//			l1 = lib.queryByExample(emp);
+//			
+//		} catch (InstantiationException | IllegalAccessException | NoSuchFieldException | SecurityException | SQLException e) {e.printStackTrace();}
+//		
+//		for(Object o: l1){
+//			System.out.println(o.toString());
+//		}
+//		
+//		// EJEMPLO QUERYBYEXAMPLE IGNORANDO TODOS LOS CAMPOS MENOS EL TELÉFONO: 
+//		//Empleados que sean hombres, se llamen E y su teléfono sea 0 (Empleado 0006)
+//		//SE UTILIZA EL MISMO OBJETO emp DE LA CONSULTA ANTERIOR
+//		
+//		System.out.println("Empleados que se llaman E, son hombres y su teléfono es 0");
+//		List<Object> l2 = null;
+//		List<String> notToIgnore = new ArrayList<String>();
+//		notToIgnore.add("telefono");
+//		try {
+//			l2 = lib.queryByExample(emp,notToIgnore);
+//		} catch (InstantiationException | IllegalAccessException | NoSuchFieldException | SecurityException | SQLException e) {e.printStackTrace();}
+//
+//		for (Object o : l2) {
+//			System.out.println(o.toString());
+//		}
+//		
+//		// EJEMPLO QUERYBYEXAMPLE SIN IGNORAR NINGUN CAMPO: 
+//		//Todos los empleados
+//
+//		Empleado emp2 = new Empleado(null,null,null,0,null,null,null);
+//		
+//		System.out.println("Todos los empleados");
+//		List<Object> l3 = null;
+//		try {
+//			
+//			l3 = lib.queryByExample(emp2);
+//			
+//		} catch (InstantiationException | IllegalAccessException | NoSuchFieldException | SecurityException | SQLException e) {e.printStackTrace();}
+//		
+//		for(Object o: l3){
+//			System.out.println(o.toString());
+//		}
+//
+//	}
 
 	
 
@@ -724,37 +774,6 @@ public class LibreriaBBDD {
 
 
 }
-
-/*
-
-	cambiar el HasMap idMap la clave deve ser la clase identificador con el metodo equals() y el hashCode()
-
-	usar el metodo de consulta QeryByExample
-	Empleado e=new Empleado("Pepe", 0);
-	List<Object>l=db.qeryByExampe(e);
-	public <T> List<T> querryByExample(T obj){}
-	devuelve todos los empleados con nombre pepe y la edad que sea 
-	siempre encadenadas por ANDs y no tener en cuenta los null y los ceros
-	
-	
-	se puede hacer otra version que si busque por el ceros y NULLs
-	List<T> QueryByExample(T obj, List<String> dontIgnore);
-	con una lista de los atributos que no hay que ignorar aunque sean nulos o ceros
-	
-	
-	qBE(New Empleado(null, 0)) -> todos los empleados
-	qBE(New Empleado("pepe", 21)) -> nombre pepe and edad 21
-	qBE(New Empleado(null, 21)) -> edad=21
-	qBe(New Empleado(pepe, 0)) -> nombre=pepe (ignora edad 0)
-	qBE(New Empleado(pepe, 0),["edad"]) ->nombre=pepe and edad=0
-	qBE(New Empleado(null, 0), [nombre, edad]) -> nombre is null and edad=0 ***importante is null
-	qBE(New Empleado(null, 0), [nombre]) ->nombre is null
-	
-	
-	cambiar simpleConstarin el toSql debe devolver "[campo] is null" cuando la parte derecha sea null y igual en los demas
-
-
- */
 
 
 /*

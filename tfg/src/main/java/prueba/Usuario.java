@@ -10,6 +10,10 @@ public class Usuario {
 		this.nombre = nombre;
 		this.direccion = direccion;
 	}
+	
+	public Usuario() {
+		super();
+	}
 
 	public String getNombre() {
 		return nombre;

@@ -4,6 +4,7 @@ import java.beans.PropertyVetoException;
 import java.lang.reflect.Field;
 import java.security.acl.NotOwnerException;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -193,6 +194,7 @@ public class LibreriaBBDD {
 	 * @throws SQLException 
 	 */
 	public String getTableName(Object o) throws SQLException{
+		System.out.println(o.getClass().getName());
 		Connection con = this.cpds.getConnection();
 		String str = "";
 		String sqlStatement = "SELECT nombretabla "
@@ -683,95 +685,25 @@ public class LibreriaBBDD {
 	public static void main(String[] argv) {
 		LibreriaBBDD lib = null;
 		try {
+			
 			lib = new LibreriaBBDD("tfg", "root", "");
-		} catch (PropertyVetoException | SQLException e1) {e1.printStackTrace();}
-		
-		Direccion dir = new Direccion("gua",20);
-		Usuario u = new Usuario("manuel",dir);
-		try {
+			/*
+			Direccion dir = new Direccion("gua",20);
+			Usuario u = new Usuario("manuel",dir);
 			lib.guardar(u);
-		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException
-				| SQLException | InsertarDuplicado e) {
-			// TODO Auto-generated catch block
+			*/
+			Usuario u = new Usuario(null,null);
+			Query q = lib.newQuery(u.getClass());
+			List<Object> lo = lib.executeQuery(q);
+			u = (Usuario) lo.get(0);
+			
+			System.out.println("Usuario de nombre " + u.getNombre() + " que vive en la calle " + u.getDireccion().getCalle() +  " número " + u.getDireccion().getNumero());
+			
+		} catch (SecurityException | IllegalArgumentException | SQLException | PropertyVetoException | InstantiationException | IllegalAccessException e) {
+			
 			e.printStackTrace();
 		}
-		
-		 Empleado empleado1 = new Empleado("0001","A","ramiro",24234,"hombre","cocinero","123");
-		 Empleado empleado2 = new Empleado("0002","B","ramiro",24234,"hombre","cocinero","123");
-		 Empleado empleado3 = new Empleado("0003","C","ramiro",24234,"mujer","cocinero","123");
-		 Empleado empleado4 = new Empleado("0004","D","ramiro",24234,"mujer","cocinero","123");
-		 Empleado empleado5 = new Empleado("0005","E","ramiro",24234,"hombre","cocinero","123");
-		 Empleado empleado6 = new Empleado("0006","E","ramiro",0,"hombre","cocinero","123");
-		 try {
-			lib.guardar(empleado1);
-			Empleado empleado7 = new Empleado("0234324s","hola");
-			lib.guardar(empleado7);
-			lib.guardar(empleado2);
-			lib.guardar(empleado3); 
-			lib.guardar(empleado4);
-			lib.guardar(empleado5);
-			lib.guardar(empleado6);
-		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException | SQLException | InsertarDuplicado e2) {e2.printStackTrace();
-		} 
 	}
-		
-//
-//		// EJEMPLO QUERYBYEXAMPLE IGNORANDO TODOS LOS CAMPOS: 
-//		//Empleados que sean hombres y se llamen E (Empleados 0005 y 0006)
-//
-//		Empleado emp = new Empleado(null,"E",null,0,"hombre",null,null);
-//		
-//		System.out.println("Empleados que se llaman E y son hombres");
-//		List<Object> l1 = null;
-//		try {
-//			
-//			l1 = lib.queryByExample(emp);
-//			
-//		} catch (InstantiationException | IllegalAccessException | NoSuchFieldException | SecurityException | SQLException e) {e.printStackTrace();}
-//		
-//		for(Object o: l1){
-//			System.out.println(o.toString());
-//		}
-//		
-//		// EJEMPLO QUERYBYEXAMPLE IGNORANDO TODOS LOS CAMPOS MENOS EL TELÉFONO: 
-//		//Empleados que sean hombres, se llamen E y su teléfono sea 0 (Empleado 0006)
-//		//SE UTILIZA EL MISMO OBJETO emp DE LA CONSULTA ANTERIOR
-//		
-//		System.out.println("Empleados que se llaman E, son hombres y su teléfono es 0");
-//		List<Object> l2 = null;
-//		List<String> notToIgnore = new ArrayList<String>();
-//		notToIgnore.add("telefono");
-//		try {
-//			l2 = lib.queryByExample(emp,notToIgnore);
-//		} catch (InstantiationException | IllegalAccessException | NoSuchFieldException | SecurityException | SQLException e) {e.printStackTrace();}
-//
-//		for (Object o : l2) {
-//			System.out.println(o.toString());
-//		}
-//		
-//		// EJEMPLO QUERYBYEXAMPLE SIN IGNORAR NINGUN CAMPO: 
-//		//Todos los empleados
-//
-//		Empleado emp2 = new Empleado(null,null,null,0,null,null,null);
-//		
-//		System.out.println("Todos los empleados");
-//		List<Object> l3 = null;
-//		try {
-//			
-//			l3 = lib.queryByExample(emp2);
-//			
-//		} catch (InstantiationException | IllegalAccessException | NoSuchFieldException | SecurityException | SQLException e) {e.printStackTrace();}
-//		
-//		for(Object o: l3){
-//			System.out.println(o.toString());
-//		}
-//
-//	}
-
-	
-
-	
-
 
 }
 

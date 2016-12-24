@@ -55,7 +55,21 @@ public class Query {
 		ResultSet rs = pst.executeQuery(); 				// Ejecución de la sentencia
 		rs.next();
 		str = rs.getString("nombretabla"); 				// str = nombre de la tabla
-		
+		return str;
+	}
+	
+	private String getTableName(Connection con, String className) throws SQLException{
+		String str = "";
+		String sqlStatement = "SELECT nombretabla "
+				+ "FROM INDICETABLA "
+				+ "WHERE nombreclase = \'" 
+				+ className + "\'"; 			//Sentencia sql para obtener el nombre de la tabla asociado a la clase 'clase'
+		PreparedStatement pst;
+		pst = con.prepareStatement(sqlStatement); 		// Preparación de la sentencia
+		ResultSet rs = pst.executeQuery(); 				// Ejecución de la sentencia
+		rs.next();
+		str = rs.getString("nombretabla"); 				// str = nombre de la tabla
+		con.close();
 		return str;
 	}
 	
@@ -74,6 +88,32 @@ public class Query {
 		return sqlStatement;
 	}
 	
+	private Object createForeignObject(Class c, ResultSet rs) throws InstantiationException, IllegalAccessException, SQLException{
+		Object o = c.newInstance();
+		Field[] campos = o.getClass().getDeclaredFields();		//Obtener los campos del objecto
+		for(Field f: campos){									//Para cada uno de los campos:
+			Object campo = rs.getObject(f.getName());			//Obtener de la BD el valor del campo
+			f.setAccessible(true);								//Permitir acceder a campos privados
+			
+			if(!f.getType().getCanonicalName().contains("java.lang.String") && !f.getType().getCanonicalName().contains("int")) //Si el campo no es ni int ni string:
+			{
+				String tn = this.getTableName(lib.getConnection(),f.getType().getCanonicalName());
+				String sqlStatement = "SELECT * FROM " + tn + " WHERE ID = ?";
+				Connection con = lib.getConnection();
+				PreparedStatement pst;
+				pst = con.prepareStatement(sqlStatement); 			// Preparación de la sentencia
+				pst.setInt(1, (int) campo);
+				ResultSet rset = pst.executeQuery(); 					// Ejecución de la sentencia
+				rset.next();
+				campo = this.createForeignObject(f.getType(),rset);
+				con.close();
+			}
+			
+			f.set(o, campo);									//campo = valor
+		}
+		return o;
+	}
+	
 	/**
 	 * Recibe un ResulSet y devuelve un objeto de la clase 'clase' obteniendo los campos de la BD.
 	 * @param rs
@@ -88,6 +128,21 @@ public class Query {
 		for(Field f: campos){									//Para cada uno de los campos:
 			Object campo = rs.getObject(f.getName());			//Obtener de la BD el valor del campo
 			f.setAccessible(true);								//Permitir acceder a campos privados
+			
+			if(!f.getType().getCanonicalName().contains("java.lang.String") && !f.getType().getCanonicalName().contains("Int")) //Si el campo no es ni int ni string:
+			{
+				String tn = this.getTableName(lib.getConnection(),f.getType().getCanonicalName());
+				String sqlStatement = "SELECT * FROM " + tn + " WHERE ID = ?";
+				Connection con = lib.getConnection();
+				PreparedStatement pst;
+				pst = con.prepareStatement(sqlStatement); 			// Preparación de la sentencia
+				pst.setInt(1, (int) campo);
+				ResultSet rset = pst.executeQuery(); 					// Ejecución de la sentencia
+				rset.next();
+				campo = this.createForeignObject(f.getType(),rset);
+				con.close();
+			}
+			
 			f.set(o, campo);									//campo = valor
 		}
 		return o;
@@ -125,7 +180,6 @@ public class Query {
 			}
 			lista.add(object); 											// Añadir el objeto a la lista que se devolverá
 		}
-			
 
 		return lista;
 	}

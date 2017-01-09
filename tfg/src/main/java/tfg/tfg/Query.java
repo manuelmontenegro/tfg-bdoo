@@ -88,7 +88,15 @@ public class Query {
 		return sqlStatement;
 	}
 	
-	private Object createForeignObject(Class c, ResultSet rs) throws InstantiationException, IllegalAccessException, SQLException{
+	/**
+	 * Recibe un ResulSet y devuelve un objeto de la clase 'clase' obteniendo los campos de la BD.
+	 * @param rs
+	 * @return Object o
+	 * @throws InstantiationException
+	 * @throws IllegalAccessException
+	 * @throws SQLException
+	 */
+	private Object createObject(Class c, ResultSet rs) throws InstantiationException, IllegalAccessException, SQLException{
 		Object o = c.newInstance();
 		Field[] campos = o.getClass().getDeclaredFields();		//Obtener los campos del objecto
 		for(Field f: campos){									//Para cada uno de los campos:
@@ -105,41 +113,7 @@ public class Query {
 				pst.setInt(1, (int) campo);
 				ResultSet rset = pst.executeQuery(); 					// Ejecución de la sentencia
 				rset.next();
-				campo = this.createForeignObject(f.getType(),rset);
-				con.close();
-			}
-			
-			f.set(o, campo);									//campo = valor
-		}
-		return o;
-	}
-	
-	/**
-	 * Recibe un ResulSet y devuelve un objeto de la clase 'clase' obteniendo los campos de la BD.
-	 * @param rs
-	 * @return Object o
-	 * @throws InstantiationException
-	 * @throws IllegalAccessException
-	 * @throws SQLException
-	 */
-	private Object createObject(ResultSet rs) throws InstantiationException, IllegalAccessException, SQLException{
-		Object o = this.clase.newInstance();					//Nueva instancia de la clase 'clase'
-		Field[] campos = o.getClass().getDeclaredFields();		//Obtener los campos del objecto
-		for(Field f: campos){									//Para cada uno de los campos:
-			Object campo = rs.getObject(f.getName());			//Obtener de la BD el valor del campo
-			f.setAccessible(true);								//Permitir acceder a campos privados
-			
-			if(!f.getType().getCanonicalName().contains("java.lang.String") && !f.getType().getCanonicalName().contains("Int")) //Si el campo no es ni int ni string:
-			{
-				String tn = this.getTableName(lib.getConnection(),f.getType().getCanonicalName());
-				String sqlStatement = "SELECT * FROM " + tn + " WHERE ID = ?";
-				Connection con = lib.getConnection();
-				PreparedStatement pst;
-				pst = con.prepareStatement(sqlStatement); 			// Preparación de la sentencia
-				pst.setInt(1, (int) campo);
-				ResultSet rset = pst.executeQuery(); 					// Ejecución de la sentencia
-				rset.next();
-				campo = this.createForeignObject(f.getType(),rset);
+				campo = this.createObject(f.getType(),rset);
 				con.close();
 			}
 			
@@ -174,7 +148,7 @@ public class Query {
 				object = this.lib.getIdMap(iden);
 			}
 			else{ 														//Si no esta te creas el objeto y le añades al mapa
-				object = createObject(rs); 								// Crea el objeto de la clase
+				object = createObject(this.clase,rs); 								// Crea el objeto de la clase
 				this.lib.putIdMap(iden, object);
 				this.lib.putObjectMap(object, rs.getInt("id"));
 			}
@@ -184,3 +158,25 @@ public class Query {
 		return lista;
 	}
 }
+
+
+/*
+Cosas que faltan:
+ * En el método createObject, dentro del if (en el caso que no sea int o String) mirar si el objeto que queremos esta en el mapa, 
+   ahora lo recupera de la BD sin mirar antes.
+
+ * Actualizar con profundidad (si uno de los campos del objeto no es int o String llamar recursivamente a actualizar)
+   Para controlar si queremos o no actualizar con profundidad el profesor dio 2 alternativas: añadir un bool al método (si está
+   a true se llamará recursivamente y si está a false hará lo que hace el método que tenemos ahora) o hacer otro método distinto 
+   que haga la función de la primera alternativa con el bool a true (updateRecursivo o como queramos llamarlo) y el método 
+   update que tenemos hecho dejarlo tal cual está
+
+ * Borrar creo que no tenemos que tocar nada
+
+ * Recuperación con límite: al método createObject añadirle un entero que vaya aumentando a medida que se llama a la función 
+   recursivamente, cuando llegue a un límite devuelve NULL en vez de recuperar el objeto que toque en la base de datos.
+   El límite creo que el profesor dijo que lo pusiese el usuario, podemos añadir un int lim_recuperacion a la LibreriaBBDD 
+   y un método set público para que el programador lo cambie. En el método createObject compara el int que aumenta recursivamente
+   con lib.getLim_Recuperacion para saber cuando parar. (num < lim.getLim_Recuperación)
+   
+ */

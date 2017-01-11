@@ -182,9 +182,8 @@ Cosas que faltan:
    que haga la función de la primera alternativa con el bool a true (updateRecursivo o como queramos llamarlo) y el método 
    update que tenemos hecho dejarlo tal cual está(HECHO)
    
- * Cambiar nombre de borrarobjetoinexistente por update
-
- * Borrar creo que no tenemos que tocar nada
+   
+ * Borrar creo que no tenemos que tocar nada - on delete set null linea 150
 
  * Recuperación con límite: al método createObject añadirle un entero que vaya aumentando a medida que se llama a la función 
    recursivamente, cuando llegue a un límite devuelve NULL en vez de recuperar el objeto que toque en la base de datos.

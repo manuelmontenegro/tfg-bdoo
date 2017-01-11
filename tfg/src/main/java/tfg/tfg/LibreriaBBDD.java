@@ -15,7 +15,7 @@ import java.util.List;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 
-import excepciones.BorrarObjetoInexistente;
+import excepciones.ObjetoInexistente;
 import excepciones.InsertarDuplicado;
 import prueba.Direccion;
 import prueba.Empleado;
@@ -31,6 +31,7 @@ public class LibreriaBBDD {
 	private String nombreTabla;
 	private IdentityHashMap<Object, Integer> objectMap;
 	private HashMap<Identificador, Object> idMap;
+	private int profundidad;
 
 	/**
 	 * Constructor
@@ -50,6 +51,7 @@ public class LibreriaBBDD {
 		this.user = user;
 		this.pass = pass;
 		this.nombrebbdd = nombrebbdd;
+		this.profundidad = 2;
 		conectar();
 		this.nombreTabla = "";
 		crearTablaIndice();
@@ -194,7 +196,6 @@ public class LibreriaBBDD {
 	 * @throws SQLException 
 	 */
 	public String getTableName(Object o) throws SQLException{
-		System.out.println(o.getClass().getName());
 		Connection con = this.cpds.getConnection();
 		String str = "";
 		String sqlStatement = "SELECT nombretabla "
@@ -478,11 +479,11 @@ public class LibreriaBBDD {
 	 * Elimina de la base de datos el objeto recibido
 	 * @param o
 	 * @throws SQLException
-	 * @throws BorrarObjetoInexistente 
+	 * @throws ObjetoInexistente 
 	 */
-	public void delete(Object o) throws SQLException, BorrarObjetoInexistente{
+	public void delete(Object o) throws SQLException, ObjetoInexistente{
 		if(!this.objectMap.containsKey(o)){
-			throw new BorrarObjetoInexistente();
+			throw new ObjetoInexistente();
 		}
 		String tableName = this.getTableName(o);
 		String sqlStatement = "DELETE FROM " + tableName +
@@ -507,11 +508,11 @@ public class LibreriaBBDD {
 	 * @throws SQLException
 	 * @throws IllegalAccessException 
 	 * @throws IllegalArgumentException 
-	 * @throws BorrarObjetoInexistente 
+	 * @throws ObjetoInexistente 
 	 */
-	public void update(Object o) throws SQLException, IllegalArgumentException, IllegalAccessException, BorrarObjetoInexistente{
+	public void update(Object o) throws SQLException, IllegalArgumentException, IllegalAccessException, ObjetoInexistente{
 		if(!this.objectMap.containsKey(o)){
-			throw new BorrarObjetoInexistente();
+			throw new ObjetoInexistente();
 		}
 		ArrayList<Atributo> atributos = sacarAtributosNoNulos(o);
 		String claves = "";
@@ -534,7 +535,80 @@ public class LibreriaBBDD {
 					e.printStackTrace();
 				}
 				val.setAccessible(true);
-				valores.add(val.get(o));
+				if(!val.getType().getCanonicalName().contains("java.lang.String") && !val.getType().getCanonicalName().contains("int")){ //Si el campo no es ni int ni string:
+					valores.add(this.objectMap.get(val.get(o)));
+				}
+				else{
+					valores.add(val.get(o));
+				}
+		
+		}
+		
+		String tableName = this.getTableName(o);											//Nombre de la tabla de la base de datos perteneciente a la clase del objeto
+		String sqlStatement = "UPDATE " + tableName +
+							  " SET " + claves +
+							  " WHERE ID = ?";		
+		Connection con = this.cpds.getConnection();
+		PreparedStatement pst;
+		pst = con.prepareStatement(sqlStatement);											//Preparación de la sentencia
+		for (int i = 1; i <= valores.size(); i++) { 
+			pst.setObject(i, valores.get(i-1)); 						// Añadir el valor a la sentencia
+		}
+		pst.setObject(o.getClass().getDeclaredFields().length+1, this.objectMap.get(o));	//Añadir la ID parametrizada
+		pst.execute();
+		con.close();
+	}
+	
+	public void updateProfundidad(Object o) throws IllegalArgumentException, IllegalAccessException, SQLException, ObjetoInexistente{
+		updateProfundidad(o,this.profundidad);
+	}
+	
+	/**
+	 * Actualiza en la base de datos los atributos del objeto recibido
+	 * 
+	 * @param o
+	 * @throws SQLException
+	 * @throws IllegalAccessException 
+	 * @throws IllegalArgumentException 
+	 * @throws ObjetoInexistente 
+	 */
+	private void updateProfundidad(Object o, int prof) throws SQLException, IllegalArgumentException, IllegalAccessException, ObjetoInexistente{
+		if(!this.objectMap.containsKey(o)){
+			throw new ObjetoInexistente(); //Cambiar nombre
+		}
+		ArrayList<Atributo> atributos = sacarAtributosNoNulos(o);
+		String claves = "";
+		for (int i = 0; i < atributos.size(); i++) {
+			if (i != 0)
+				claves += " , ";
+			Atributo a = atributos.get(i);
+			claves += a.getNombre()+" = ?";
+		}
+
+		ArrayList<Object> valores = new ArrayList<Object>();
+		for (int i = 0; i < atributos.size(); i++) {
+			Atributo a = atributos.get(i);
+			
+				Field val = null;
+				try {
+					val = o.getClass().getDeclaredField(a.getNombre());
+				} catch (NoSuchFieldException | SecurityException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				val.setAccessible(true);
+				if(!val.getType().getCanonicalName().contains("java.lang.String") && !val.getType().getCanonicalName().contains("int")){ 					//Si el campo no es ni int ni string:
+					if(prof == 0)
+						valores.add(this.objectMap.get(val.get(o)));
+					else{
+						valores.add(this.objectMap.get(val.get(o)));
+						updateProfundidad(val.get(o),prof-1);
+					}
+					
+				}
+				else{
+					valores.add(val.get(o));
+				}
 		
 		}
 		
@@ -627,6 +701,14 @@ public class LibreriaBBDD {
 	}
 	
 	/**
+	 * Metodo para cambiar la profundidad
+	 * @param profundidad
+	 */
+	public void setProfundidad(int profundidad){
+		this.profundidad = profundidad;
+	}
+	
+	/**
 	 * Implementa el método de consulta QueryByExample.
 	 * Recibe un objeto modelo e ignora todos los atributos que sean 0 o nulos.
 	 * @param o
@@ -697,10 +779,22 @@ public class LibreriaBBDD {
 			List<Object> lo = lib.executeQuery(q);
 			u = (Usuario) lo.get(0);
 			
+			
 			System.out.println("Usuario de nombre " + u.getNombre() + " que vive en la calle " + u.getDireccion().getCalle() +  " número " + u.getDireccion().getNumero());
+			u.setNombre("federico");
+			u.getDireccion().setCalle("toledo");
+			u.getDireccion().setNumero(32);
+			
+			lib.updateProfundidad(u);
+
+			System.out.println("Usuario de nombre " + u.getNombre() + " que vive en la calle " + u.getDireccion().getCalle() +  " número " + u.getDireccion().getNumero());
+
 			
 		} catch (SecurityException | IllegalArgumentException | SQLException | PropertyVetoException | InstantiationException | IllegalAccessException e) {
 			
+			e.printStackTrace();
+		} catch (ObjetoInexistente e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -729,6 +823,5 @@ si un objeto tiene referencias a varios objetos indicar un nivel maxio de profun
 asi no recupera todos los objetos que tenga este y a partir de esa profundidad maxima poner NULLs
 y si si quieres profundizar mas hacer un metodo acitvate() --en pag 96
 este metodo recupera los NULLs que tiene un objeto que se halla recuperado antes para recuperarlos
-
 
 */

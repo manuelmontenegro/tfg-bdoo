@@ -105,16 +105,27 @@ public class Query {
 			
 			if(!f.getType().getCanonicalName().contains("java.lang.String") && !f.getType().getCanonicalName().contains("int")) //Si el campo no es ni int ni string:
 			{
-				String tn = this.getTableName(lib.getConnection(),f.getType().getCanonicalName());
-				String sqlStatement = "SELECT * FROM " + tn + " WHERE ID = ?";
-				Connection con = lib.getConnection();
-				PreparedStatement pst;
-				pst = con.prepareStatement(sqlStatement); 			// Preparación de la sentencia
-				pst.setInt(1, (int) campo);
-				ResultSet rset = pst.executeQuery(); 					// Ejecución de la sentencia
-				rset.next();
-				campo = this.createObject(f.getType(),rset);
-				con.close();
+				Identificador iden=new Identificador(rs.getInt("id"), this.clase.getName());
+				if(this.lib.constainsKeyIdMap(iden)){ 
+					campo=this.lib.getIdMap(iden);
+				}
+				else {
+					String tn = this.getTableName(lib.getConnection(),f.getType().getCanonicalName());
+					String sqlStatement = "SELECT * FROM " + tn + " WHERE ID = ?";
+					Connection con = lib.getConnection();
+					PreparedStatement pst;
+					pst = con.prepareStatement(sqlStatement); 			// Preparación de la sentencia
+					pst.setInt(1, (int) campo);
+					ResultSet rset = pst.executeQuery(); 					// Ejecución de la sentencia
+					if(rset.next()){
+						campo = this.createObject(f.getType(),rset);
+						this.lib.putIdMap(iden, campo);
+						this.lib.putObjectMap(campo, rset.getInt("id"));
+					}
+					else
+						campo=null;
+					con.close();
+				}
 			}
 			
 			f.set(o, campo);									//campo = valor
@@ -163,13 +174,15 @@ public class Query {
 /*
 Cosas que faltan:
  * En el método createObject, dentro del if (en el caso que no sea int o String) mirar si el objeto que queremos esta en el mapa, 
-   ahora lo recupera de la BD sin mirar antes.
+   ahora lo recupera de la BD sin mirar antes.(HECHO)¸
 
  * Actualizar con profundidad (si uno de los campos del objeto no es int o String llamar recursivamente a actualizar)
    Para controlar si queremos o no actualizar con profundidad el profesor dio 2 alternativas: añadir un bool al método (si está
    a true se llamará recursivamente y si está a false hará lo que hace el método que tenemos ahora) o hacer otro método distinto 
    que haga la función de la primera alternativa con el bool a true (updateRecursivo o como queramos llamarlo) y el método 
-   update que tenemos hecho dejarlo tal cual está
+   update que tenemos hecho dejarlo tal cual está(HECHO)
+   
+ * Cambiar nombre de borrarobjetoinexistente por update
 
  * Borrar creo que no tenemos que tocar nada
 
@@ -178,5 +191,7 @@ Cosas que faltan:
    El límite creo que el profesor dijo que lo pusiese el usuario, podemos añadir un int lim_recuperacion a la LibreriaBBDD 
    y un método set público para que el programador lo cambie. En el método createObject compara el int que aumenta recursivamente
    con lib.getLim_Recuperacion para saber cuando parar. (num < lim.getLim_Recuperación)
+   
+
    
  */

@@ -1,0 +1,35 @@
+reunion del 13 enero para 
+crear un metodo que guarde o actualize void guardarOactualizar();
+pero sin borrar actualizar ni guardar por si estas seguro de si ya estaba guardao antes
+
+void guardarOactualizar(IdentityMap<Object, Integer>im, Object obj){
+  if(!esta en im ni el idMap global)
+    insertar fila pero todo vacio
+    obtener id de la fila con getgeneratedkeys()
+  }
+  
+  else{//esta en alguno de los dos
+    obtener id de la fila con de alguno de los dos mapas
+  }
+  
+  guardar en im <obj, id>
+  para cada atributo no basico{
+    if(!esta en im)
+      guardarOactualizar(im, atributoNObasico);
+  }
+  buscar en im los IDs de los atributos NO basicos
+  hacer update y ya insertar todos los valores
+}
+
+
+no se puedeusar el max(id) para saber la id del objeto insertado a parte de ser inificiente es peligroso
+getgeneratedkeys() metodo del jdbc que debuelbe el id de la ultima fila insertada en todas las tablas de la base de datos
+
+
+
+
+si hay tiempo 
+-colocor un poco mejor el codigo
+-JUnit para hacer test
+-añadir ramas al if para mas tipos basicos de java
+  byte shortint long float double boolean char "String" y Date que va a un timestamp para fecha y hora a la vez

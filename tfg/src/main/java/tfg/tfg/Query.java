@@ -8,6 +8,9 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import constraints.AndConstraint;
+import constraints.Constraint;
+
 /**
  * Clase que permite ejecutar una sentencia SQL para devolver una lista de objetos de la tabla deseada
  * con las restricciones definidas.

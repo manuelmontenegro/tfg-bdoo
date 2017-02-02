@@ -3,12 +3,14 @@ package prueba;
 public class Usuario {
 
 	private String nombre;
-	private Direccion direccion;
+	private int edad;
+	private Direccion domicilio;
 	
 	public Usuario(String nombre, Direccion direccion) {
 		super();
 		this.nombre = nombre;
-		this.direccion = direccion;
+		edad=22;
+		this.domicilio = direccion;
 	}
 	
 	public Usuario() {
@@ -24,11 +26,11 @@ public class Usuario {
 	}
 
 	public Direccion getDireccion() {
-		return direccion;
+		return domicilio;
 	}
 
 	public void setDireccion(Direccion direccion) {
-		this.direccion = direccion;
+		this.domicilio = direccion;
 	}
 	
 	

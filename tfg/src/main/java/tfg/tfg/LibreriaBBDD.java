@@ -15,8 +15,12 @@ import java.util.List;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 
+import constraints.AndConstraint;
+import constraints.Constraint;
+import constraints.SimpleConstraint;
 import excepciones.ObjetoInexistente;
 import excepciones.InsertarDuplicado;
+import prueba.Ciclo;
 import prueba.Direccion;
 import prueba.Empleado;
 import prueba.Usuario;
@@ -28,10 +32,11 @@ public class LibreriaBBDD {
 	private String pass;
 	private String nombrebbdd;
 	private ComboPooledDataSource cpds;
-	private String nombreTabla;
-	private IdentityHashMap<Object, Integer> objectMap;
-	private HashMap<Identificador, Object> idMap;
+	private IdentityHashMap<Object, Integer> objectMap; //objetos con su id
+	private HashMap<Identificador, Object> idMap; //identificador de clase r id con su objeto
 	private int profundidad;
+	private Guardador gua;
+	private GuardadorOactualizador guaOa;
 
 	/**
 	 * Constructor
@@ -53,9 +58,10 @@ public class LibreriaBBDD {
 		this.nombrebbdd = nombrebbdd;
 		this.profundidad = 2;
 		conectar();
-		this.nombreTabla = "";
 		crearTablaIndice();
 		crearColumnaIndice();
+		this.gua=new Guardador(this);
+		this.guaOa=new GuardadorOactualizador(this);
 	}
 
 	public Connection getConnection() throws SQLException {
@@ -84,9 +90,14 @@ public class LibreriaBBDD {
 	 * @throws SQLException
 	 */
 	private void crearColumnaIndice() throws SQLException {
-		String sql = "CREATE TABLE IF NOT EXISTS indicecolumna " + "(id INTEGER not NULL AUTO_INCREMENT, "
-				+ " idtabla INTEGER," + " atributo VARCHAR(255)," + " columna VARCHAR(255)," + " PRIMARY KEY ( id ))";
+		String sql = "CREATE TABLE IF NOT EXISTS indicecolumna " 
+				+ "(id INTEGER not NULL AUTO_INCREMENT, "
+				+ " idtabla INTEGER, " 
+				+ " atributo VARCHAR(255)," 
+				+ " columna VARCHAR(255)," + " PRIMARY KEY ( id ),"
+				+"  CONSTRAINT fk_table FOREIGN KEY (idtabla) REFERENCES indicetabla(id)) ";
 		PreparedStatement pst;
+		//System.out.println(sql);
 		Connection c = this.getConnection();
 		pst = c.prepareStatement(sql);
 		pst.execute();
@@ -110,86 +121,6 @@ public class LibreriaBBDD {
 		this.cpds.setAcquireRetryDelay(1);
 	}
 
-	/**
-	 * Este metodo es para crear la base de datos cogemos todos los atributos de
-	 * la clase que le pasemos
-	 */
-	private ArrayList<Atributo> sacarAtributos(Object o) {
-		ArrayList<Atributo> atributos = new ArrayList<Atributo>();
-		for (Field n : o.getClass().getDeclaredFields()) {
-			String tipo = "";
-			if (n.getType().getCanonicalName().equalsIgnoreCase("Java.lang.String"))
-				tipo = "VARCHAR(255)";
-			else if (n.getType().getCanonicalName().equalsIgnoreCase("Int"))
-				tipo = "INTEGER";
-			else{ //Si no es ningun tipo primitivo quiere decir que es una referencia a otro objeto
-				Object ob = null;
-				n.setAccessible(true); 
-				try {
-					ob = n.get(o); // Cargar el objeto en ob
-				} catch (IllegalArgumentException | IllegalAccessException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-				try {
-					guardar(ob); 
-				} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException
-						| SQLException | InsertarDuplicado e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-				/*ArrayList<Atributo> atri = sacarAtributos(ob);
-				try {
-					this.nombreTabla = ob.getClass().getSimpleName();
-					String nombreClase = ob.getClass().getName();
-					crearTabla(atri,nombreClase);
-				} catch (SQLException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}*/
-				tipo = "INTEGER, ADD FOREIGN KEY ("+n.getName()+") REFERENCES "+this.nombreTabla+"(id)"; // El tipo ya va a ser una foreign key
-				
-			}
-
-			Atributo a = new Atributo(n.getName(), tipo);
-			atributos.add(a);
-		}
-
-		return atributos;
-
-	}
-	
-	
-	/**
-	 * Este metodo es para insertar en la base de datos teniendo en cuenta que
-	 * no tienen porque estar todos los atributos de la clase metidos en el
-	 * constructor que le pasemos, este metodo mira cual son nulos para no
-	 * meterlos
-	 * @throws IllegalAccessException 
-	 * @throws IllegalArgumentException 
-	 */
-	private ArrayList<Atributo> sacarAtributosNoNulos(Object o) throws IllegalArgumentException, IllegalAccessException {
-		ArrayList<Atributo> atributos = new ArrayList<Atributo>();
-
-		// Con o.getClass().getDeclaredFields() --> Se cogen atributos privados
-		for (Field n : o.getClass().getDeclaredFields()) {
-			n.setAccessible(true);
-				if (n.get(o) != null) {
-					String tipo = "";
-					if (n.getType().getCanonicalName().contains("Java.Lang.String") || n.getType().getCanonicalName().contains("java.lang.String"))
-						tipo = "VARCHAR(255)";
-					else if (n.getType().getCanonicalName().contains("int"))
-						tipo = "INTEGER";
-					
-
-					Atributo a = new Atributo(n.getName(), tipo);
-					atributos.add(a);
-				}
-		}
-
-		return atributos;
-
-	}
 	
 	/**
 	 * Devuelve el nombre de la tabla que representa la clase del objeto recibido en la base de datos.
@@ -223,233 +154,8 @@ public class LibreriaBBDD {
 		}
 		return StringUtils.join(list, ",");
 	}*/
-
-	/**
-	 * Metodo para crear la base de datos Te crea la base de datos con el
-	 * nombreclase que le pasas Si existe no la crea
-	 * @throws SQLException 
-	 */
-	private void crearTabla(ArrayList<Atributo> atributos, String nombreClase) throws SQLException {
-
-		insertarTablaIndice(nombreClase);
-
-		String sql = "CREATE TABLE IF NOT EXISTS " + this.nombreTabla + "(id INTEGER not NULL AUTO_INCREMENT, "
-				+ " PRIMARY KEY ( id ))";
-		//System.out.println(sql);
-		PreparedStatement pst;
-		Connection c = this.getConnection();
-		pst = c.prepareStatement(sql);
-		pst.execute();
-		c.close();
 	
-
-		for (Atributo a : atributos) {
-			insertarColumnaIndice(setIDtabla(nombreClase), a.getNombre(), a.getNombre(), a);
-		}
-
-		borrarAtributo(setIDtabla(nombreClase), atributos);
-
-	}
-
-	/**
-	 * Borra el atributo de la base de datos en la columna indicecolumna que no
-	 * este en el objeto y aparte borra la columna de la clase en cuestion
-	 */
-	private void borrarAtributo(String idtabla, ArrayList<Atributo> atributos) throws SQLException {
-		String sql = "SELECT atributo FROM indicecolumna WHERE idtabla = ?";
-		PreparedStatement pst;
-		Connection c = this.getConnection();
-		pst = c.prepareStatement(sql);
-
-		pst.setString(1, idtabla);
-		ResultSet rs = pst.executeQuery();
-		boolean esta = false;
-		while (rs.next()) {
-			for (Atributo a : atributos) {
-				if (rs.getString("atributo").equalsIgnoreCase(a.getNombre())) {
-					esta = true;
-				}
-			}
-			if (!esta) {
-
-				String del = "ALTER TABLE " + this.nombreTabla + " DROP COLUMN " + rs.getString("atributo");
-				c = this.getConnection();
-				pst = c.prepareStatement(del);
-				pst.execute();
-				c.close();
-				System.out.println(del);
-
-				del = "DELETE FROM indicecolumna WHERE idtabla = ? and atributo = ?";
-				c = this.getConnection();
-				pst = c.prepareStatement(del);
-				System.out.println(del);
-
-				pst.setString(1, idtabla);
-				pst.setString(2, rs.getString("atributo"));
-				pst.execute();
-				c.close();
-			}
-			esta = false;
-
-		}
-		c.close();
 	
-	}
-
-	/**
-	 * Metodo para recibir el id de la tabla indicetabla y asi insertarle en la
-	 * tabla indicecolumna
-	 */
-	private String setIDtabla(String nombreClase) throws SQLException {
-		String id = "";
-		String sql = "SELECT id FROM indicetabla WHERE nombreclase = ? and nombretabla = ?";
-		PreparedStatement pst;
-		Connection c = this.getConnection();
-		pst = c.prepareStatement(sql);
-		pst.setString(1, nombreClase);
-		pst.setString(2, this.nombreTabla);
-		ResultSet rs = pst.executeQuery();
-		if (rs.next()) {
-			id = rs.getString("id");
-		}
-		c.close();
-
-
-		return id;
-	}
-
-	/**
-	 * Metodo para insertar filas en la tabla indicetabla Primero se mira si
-	 * existe el nombre de la clase en la tabla si existe no se hace nada pero
-	 * si no existe se inserta el nombre de la clase y el nombre de la tabla
-	 */
-	private void insertarTablaIndice(String nombreClase) throws SQLException {
-		String sql = "SELECT nombreclase,nombretabla FROM indicetabla WHERE nombreclase = ?";
-		PreparedStatement pst;
-		Connection c = this.getConnection();
-		pst = c.prepareStatement(sql);
-		pst.setString(1, nombreClase);
-		ResultSet rs = pst.executeQuery();
-		if (!rs.next()) {
-			String id = "";
-			int idsuma = 0;
-			sql = "SELECT max(id) FROM indicetabla";
-			c = this.getConnection();
-			pst = c.prepareStatement(sql);
-			rs = pst.executeQuery();
-			if (rs.next()) {
-
-				idsuma = rs.getInt("max(id)") + 1;
-				id = idsuma + "";
-			} else
-				id = "1";
-
-			this.nombreTabla = this.nombreTabla + id;
-
-			sql = "INSERT INTO indicetabla (nombreclase,nombretabla) " + " VALUES ( \"" + nombreClase + "\" , \""
-					+ this.nombreTabla + "\" )";
-			// System.out.println(sql);
-			c = this.getConnection();
-			pst = c.prepareStatement(sql);
-			pst.execute();
-			c.close();
-
-		} else {
-			this.nombreTabla = rs.getString("nombretabla");
-		}
-		c.close();
-	
-
-	}
-
-	/**
-	 * Metodo para insertar filas en la tabla indicecolumna Primero se mira si
-	 * existe el idtabla y el atributo en la tabla si existe no se hace nada
-	 * pero si no existe se inserta el idtabla,atributo y columna
-	 */
-	private void insertarColumnaIndice(String idtabla, String atributo, String columna, Atributo a) throws SQLException {
-		String sql = "SELECT id FROM indicecolumna WHERE idtabla = ? and atributo = ?";
-		PreparedStatement pst;
- 
-		Connection c = this.getConnection();
-		pst = c.prepareStatement(sql);
-		pst.setString(1, idtabla);
-		pst.setString(2, atributo);
-		ResultSet rs = pst.executeQuery();
-
-		if (!rs.next()) {
-			sql = "INSERT INTO indicecolumna (idtabla,atributo,columna) " + " VALUES ( \"" + idtabla + "\" , \""
-					+ atributo + "\" , \"" + columna + "\"  )";
-			System.out.println(sql);
-			Connection c1 = this.getConnection();
-			pst = c1.prepareStatement(sql);
-			pst.execute();
-			c1.close();
-
-			String anyadir = "ALTER TABLE " + this.nombreTabla + " ADD " + atributo + " " + a.getTipo();
-			Connection c2 = this.getConnection();
-			pst = c2.prepareStatement(anyadir);
-			System.out.println(anyadir);
-			pst.execute();
-			c2.close();
-
-		}
-		c.close();
-
-	}
-
-	/**
-	 * Metodo para insertar en la base de datos Inserta en la base de datos
-	 * nombreclase Inserta solo los atributos que le pases en el ArrayList
-	 */
-	private int insertarObjeto(Object o, ArrayList<Atributo> atributos) throws SQLException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
-		String claves = "";
-		for (int i = 0; i < atributos.size(); i++) {
-			if (i != 0)
-				claves += " , ";
-			Atributo a = atributos.get(i);
-			claves += a.getNombre();
-		}
-
-		String valores = "";
-		for (int i = 0; i < atributos.size(); i++) {
-			Atributo a = atributos.get(i);
-			if (i != 0)
-				valores += " , ";
-				Field val = o.getClass().getDeclaredField(a.getNombre());
-				val.setAccessible(true);
-				if(a.getTipo().equalsIgnoreCase(""))//Si es "" quiere decir que es un objeto referenciado
-					valores += "\"" + this.objectMap.get(val.get(o)) + "\""; // Como ya esta guardado recuperas su id del objectMap
-				else
-					valores += "\"" + val.get(o) + "\"";
-				
-				
-		
-		}
-
-		String sql = "INSERT INTO " + this.nombreTabla + " (" + claves + ") " + " VALUES " + "(" + valores + ")";
-
-		System.out.println(sql);
-		PreparedStatement pst;
-		Connection c = this.getConnection();
-		pst = c.prepareStatement(sql);
-		pst.execute();
-		
-		
-		sql = "SELECT MAX(id) FROM " + this.nombreTabla ;
-		pst = c.prepareStatement(sql);
-		ResultSet rs = pst.executeQuery();
-
-		int ret;
-		if (rs.next()) {
-			ret =rs.getInt("MAX(id)");
-		}
-		else
-			ret= -1;
-		c.close();
-		return ret;
-	}
-
 	/**
 	 *  Metodo para guardar ese objeto en la base de datos
 	 * @param o
@@ -461,18 +167,53 @@ public class LibreriaBBDD {
 	 * @throws InsertarDuplicado
 	 */
 	public void guardar(Object o) throws SQLException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, InsertarDuplicado {
-		ArrayList<Atributo> atributos = sacarAtributos(o);
-		this.nombreTabla = o.getClass().getSimpleName();
-		String nombreClase = o.getClass().getName();
-		crearTabla(atributos, nombreClase);
-		if(!this.objectMap.containsKey(o)) {
-			int id = insertarObjeto(o, sacarAtributosNoNulos(o));
-			this.objectMap.put(o, id);
-			Identificador iden=new Identificador(id, o.getClass().getName());
-			this.idMap.put(iden, o);
-		} else {
-			throw new InsertarDuplicado();
+		this.gua.guardar(o);
+	}
+	
+	/**
+	 * Metodo de la libreria para guardar un objeto y todos los que tenga a su vez
+	 * si el objeto ya esta previamente guardado actualizarara sus valores
+	 * Usa un mapa parcial de objetos visitados que a la vuelta vuelca en el general de objetos guardados
+	 * @param o objeto a guardar
+	 * @throws SQLException
+	 */
+	public void guardarOactualizar(Object o) throws SQLException{
+		IdentityHashMap<Object, Integer> im=new IdentityHashMap<Object, Integer>();
+		this.guaOa.guardarOactualizar(o, im);
+		this.objectMap.putAll(im);
+	}
+
+	
+
+	/**
+	 * Este metodo es para insertar en la base de datos teniendo en cuenta que
+	 * no tienen porque estar todos los atributos de la clase metidos en el
+	 * constructor que le pasemos, este metodo mira cual son nulos para no
+	 * meterlos
+	 * @throws IllegalAccessException 
+	 * @throws IllegalArgumentException 
+	 */
+	ArrayList<Atributo> sacarAtributosNoNulos(Object o) throws IllegalArgumentException, IllegalAccessException {
+		ArrayList<Atributo> atributos = new ArrayList<Atributo>();
+
+		// Con o.getClass().getDeclaredFields() --> Se cogen atributos privados
+		for (Field n : o.getClass().getDeclaredFields()) {
+			n.setAccessible(true);
+				if (n.get(o) != null) {
+					String tipo = "";
+					if (n.getType().getCanonicalName().contains("Java.Lang.String") || n.getType().getCanonicalName().contains("java.lang.String"))
+						tipo = "VARCHAR(255)";
+					else if (n.getType().getCanonicalName().contains("int"))
+						tipo = "INTEGER";
+					
+
+					Atributo a = new Atributo(n.getName(), tipo);
+					atributos.add(a);
+				}
 		}
+
+		return atributos;
+
 	}
 	
 	/**
@@ -531,7 +272,6 @@ public class LibreriaBBDD {
 				try {
 					val = o.getClass().getDeclaredField(a.getNombre());
 				} catch (NoSuchFieldException | SecurityException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 				val.setAccessible(true);
@@ -593,7 +333,6 @@ public class LibreriaBBDD {
 				try {
 					val = o.getClass().getDeclaredField(a.getNombre());
 				} catch (NoSuchFieldException | SecurityException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 				val.setAccessible(true);
@@ -688,7 +427,7 @@ public class LibreriaBBDD {
 	 * @param s
 	 * @return
 	 */
-	protected Object getObjectMap(Object s) {
+	protected int getObjectMap(Object s) {
 		return this.objectMap.get(s);
 	}
 	/**
@@ -768,13 +507,25 @@ public class LibreriaBBDD {
 		LibreriaBBDD lib = null;
 		try {
 			
+			
 			lib = new LibreriaBBDD("tfg", "root", "");
-			/*
+			
 			Direccion dir = new Direccion("gua",20);
 			Usuario u = new Usuario("manuel",dir);
-			lib.guardar(u);
-			*/
-			Usuario u = new Usuario(null,null);
+			
+			Empleado e=new  Empleado("03798853F", "Alvaro", "Guarrazar", 902202122,	"hombre", "cocinero", "passwd");
+			
+			Ciclo c1=new Ciclo("pepito", 33);
+			Ciclo c2=new Ciclo("jose", 44);
+			
+			
+			c1.setCiclo(c2);
+			c2.setCiclo(c1);
+			
+			lib.guardarOactualizar(c1);
+
+			
+			/*Usuario u = new Usuario(null,null);
 			Query q = lib.newQuery(u.getClass());
 			List<Object> lo = lib.executeQuery(q);
 			u = (Usuario) lo.get(0);
@@ -788,15 +539,12 @@ public class LibreriaBBDD {
 			lib.updateProfundidad(u);
 
 			System.out.println("Usuario de nombre " + u.getNombre() + " que vive en la calle " + u.getDireccion().getCalle() +  " número " + u.getDireccion().getNumero());
-
+			*/
 			
-		} catch (SecurityException | IllegalArgumentException | SQLException | PropertyVetoException | InstantiationException | IllegalAccessException e) {
+		} catch (SecurityException | IllegalArgumentException | SQLException | PropertyVetoException  e) {
 			
 			e.printStackTrace();
-		} catch (ObjetoInexistente e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		} 
 	}
 
 }

@@ -1,4 +1,4 @@
-package tfg.tfg;
+package constraints;
 
 import java.util.ArrayList;
 import java.util.List;

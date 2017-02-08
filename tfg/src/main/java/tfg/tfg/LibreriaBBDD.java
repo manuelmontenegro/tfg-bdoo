@@ -2,9 +2,7 @@ package tfg.tfg;
 
 import java.beans.PropertyVetoException;
 import java.lang.reflect.Field;
-import java.security.acl.NotOwnerException;
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -20,7 +18,6 @@ import constraints.Constraint;
 import constraints.SimpleConstraint;
 import excepciones.ObjetoInexistente;
 import excepciones.InsertarDuplicado;
-import prueba.Ciclo;
 import prueba.Direccion;
 import prueba.Empleado;
 import prueba.Usuario;
@@ -385,7 +382,7 @@ public class LibreriaBBDD {
 	 * @param class1
 	 * @return
 	 */
-	private Query newQuery(Class class1) {
+	public Query newQuery(Class<?> class1) {
 		
 		return new Query(class1, this);
 	}
@@ -505,24 +502,31 @@ public class LibreriaBBDD {
 
 	public static void main(String[] argv) {
 		LibreriaBBDD lib = null;
+		
+		
+		Direccion dir1 = new Direccion("gua",20);
+		Usuario u1 = new Usuario("manuel", 22);
+		u1.setDireccion(dir1);
+		
+		Direccion dir2 = new Direccion("mad",75);
+		Usuario u2 = new Usuario("pedro", 31);
+		u2.setDireccion(dir2);
+		
+		u1.setCompañero(u2);
+		u2.setCompañero(u1);
+		
+		
+		//Empleado emp=new  Empleado("03798853F", "Alvaro", "Guarrazar", 902202122,	"hombre", "cocinero", "passwd");
+		Usuario u3 = new Usuario("nullencio", 75);
+		
+		
 		try {
-			
 			
 			lib = new LibreriaBBDD("tfg", "root", "");
 			
-			Direccion dir = new Direccion("gua",20);
-			Usuario u = new Usuario("manuel",dir);
+			lib.guardarOactualizar(u3);
 			
-			Empleado e=new  Empleado("03798853F", "Alvaro", "Guarrazar", 902202122,	"hombre", "cocinero", "passwd");
-			
-			Ciclo c1=new Ciclo("pepito", 33);
-			Ciclo c2=new Ciclo("jose", 44);
-			
-			
-			c1.setCiclo(c2);
-			c2.setCiclo(c1);
-			
-			lib.guardarOactualizar(c1);
+			lib.guardarOactualizar(u1);
 
 			
 			/*Usuario u = new Usuario(null,null);
@@ -545,6 +549,7 @@ public class LibreriaBBDD {
 			
 			e.printStackTrace();
 		} 
+		System.out.println("FIN");
 	}
 
 }

@@ -1,10 +1,5 @@
 package prueba;
 
-import java.util.Date;
-
-import prueba2.Plato;
-import tfg.tfg.LibreriaBBDD;
-
 public class Empleado {
 	private String DNI;
 	private String nombre;

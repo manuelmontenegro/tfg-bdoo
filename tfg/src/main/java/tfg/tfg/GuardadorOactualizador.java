@@ -66,39 +66,34 @@ public class GuardadorOactualizador {
 		Field[] fields=o.getClass().getDeclaredFields();
 		int tam=o.getClass().getDeclaredFields().length;
 		for (int i=0; i<tam ;i++) {
+			
 			Field f=fields[i];
 			f.setAccessible(true);
-			if (i != 0)
-				claves += " , ";
-			claves+=f.getName()+" =?";
-			
+			Object atributo=null;
+			try {
+				atributo=f.get(o);
+			} catch (IllegalArgumentException | IllegalAccessException e1) {
+				e1.printStackTrace();
+			}
+
 			if(!esBasico(f)){
-				Object ob=null;
+				Object ob=atributo;//ob va a ser el objeto NO basico
 				
-				try {
-					ob=f.get(o);
-				} catch (IllegalArgumentException | IllegalAccessException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				
-				if(!im.containsKey(ob)){
-					guardarOactualizar(ob, im);
-				}
-				try {
-					valores.add(im.get(f.get(o))+"");
-				} catch (IllegalArgumentException | IllegalAccessException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+				if(ob!=null){					
+					if(!im.containsKey(ob)){
+						guardarOactualizar(ob, im);
+					}
+					valores.add(im.get(atributo)+"");
+					if (i != 0)
+						claves += " , ";
+					claves+=f.getName()+" =?";
 				}
 			}
-			else{//es basico
-				try {
-					valores.add(f.get(o)+"");
-				} catch (IllegalArgumentException | IllegalAccessException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+			else {//es basico
+				valores.add(atributo+"");
+				if (i != 0)
+					claves += " , ";
+				claves+=f.getName()+" =?";
 			}
 		}
 		
@@ -111,6 +106,7 @@ public class GuardadorOactualizador {
 			pst.setObject(i+1, valores.get(i));
 		}
 		pst.setObject(valores.size()+1, im.get(o));	//Añadir la ID parametrizada
+		System.out.println(pst);
 		pst.execute();
 		con.close();
 		
@@ -241,6 +237,7 @@ public class GuardadorOactualizador {
 	private ArrayList<Atributo> sacarAtributos(Object o) throws SQLException {
 		ArrayList<Atributo> atributos = new ArrayList<Atributo>();
 		for (Field f : o.getClass().getDeclaredFields()) {
+			boolean objetoNulo=false;
 			String tipo = "";
 			//System.out.println(f.getName()+" es :"+f.getType().getCanonicalName());
 			if (f.getType().getCanonicalName().equalsIgnoreCase("Java.lang.String"))
@@ -250,16 +247,28 @@ public class GuardadorOactualizador {
 			else{ //Si no es ningun tipo primitivo quiere decir que es una referencia a otro objeto
 				Object ob = null;
 				f.setAccessible(true); 
-				try {
-					ob = f.get(o); // Cargar el objeto en ob
-				} catch (IllegalArgumentException | IllegalAccessException e1) {
-					e1.printStackTrace();
+		
+					try {
+						ob = f.get(o);
+					} catch (IllegalArgumentException | IllegalAccessException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} // Cargar el objeto en ob
+				
+				if(ob==null){
+					objetoNulo=true; 
+					System.out.println("el objeto contiene un objeto null");
+					tipo = "INTEGER";
 				}
-				String nombreTablaReferenciada=crearTabla(ob);
-				tipo = "INTEGER, ADD FOREIGN KEY ("+f.getName()+") REFERENCES "+nombreTablaReferenciada+"(id) ON DELETE SET NULL"; // El tipo ya va a ser una foreign key	
+				else{
+					String nombreTablaReferenciada=crearTabla(ob);
+					tipo = "INTEGER, ADD FOREIGN KEY ("+f.getName()+") REFERENCES "+nombreTablaReferenciada+"(id) ON DELETE SET NULL"; // El tipo ya va a ser una foreign key	
+				}
 			}
-			Atributo a = new Atributo(f.getName(), tipo);
-			atributos.add(a);
+			if(!objetoNulo){
+				Atributo a = new Atributo(f.getName(), tipo);
+				atributos.add(a);
+			}
 		}
 		return atributos;
 	}
@@ -302,7 +311,7 @@ public class GuardadorOactualizador {
 		pst.setString(2, a.getNombre());
 		ResultSet rs = pst.executeQuery();
 
-		if (!rs.next()) {
+		if (!rs.next()) {//hay que insertar en indece columna y alterar su tabla
 			String sql1 = "INSERT INTO indicecolumna (idtabla,atributo,columna) " + " VALUES ( \"" + idIndiceTabla + "\" , \""
 					+ a.getNombre() + "\" , \"" + a.getNombre() + "\"  )";
 			//POR AHORA EL NOMBRE DEL ATRIBUTO DE LA CLASE Y EL NOMBRE DE LA CALUMNA DONDE SE VA A GUARDAR ES EL MISMO

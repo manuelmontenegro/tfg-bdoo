@@ -19,7 +19,7 @@ import constraints.Constraint;
  */
 public class Query {
 	private LibreriaBBDD lib;
-	private Class clase;				//Clase a la que se aplican las constraint
+	private Class<?> clase;				//Clase a la que se aplican las constraint
 	private Constraint restriccion;		//Constraint a aplicar
 	
 	/**
@@ -99,7 +99,7 @@ public class Query {
 	 * @throws IllegalAccessException
 	 * @throws SQLException
 	 */
-	private Object createObject(Class c, ResultSet rs) throws InstantiationException, IllegalAccessException, SQLException{
+	private Object createObject(Class<?> c, ResultSet rs) throws InstantiationException, IllegalAccessException, SQLException{
 		Object o = c.newInstance();
 		Field[] campos = o.getClass().getDeclaredFields();		//Obtener los campos del objecto
 		for(Field f: campos){									//Para cada uno de los campos:

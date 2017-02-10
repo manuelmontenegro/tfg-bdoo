@@ -516,37 +516,37 @@ public class LibreriaBBDD {
 		u2.setCompañero(u1);
 		
 		
-		//Empleado emp=new  Empleado("03798853F", "Alvaro", "Guarrazar", 902202122,	"hombre", "cocinero", "passwd");
+		Empleado emp=new  Empleado("03798853F", "Alvaro", "Guarrazar", 902202122,	"hombre", "cocinero", "passwd");
 		Usuario u3 = new Usuario("nullencio", 75);
+		
+		Usuario u4 = new Usuario("francisco perez", 37);
+		u4.setDireccion(new Direccion("cuenca", 7));
 		
 		
 		try {
 			
 			lib = new LibreriaBBDD("tfg", "root", "");
+						
+			Usuario u=null;
 			
-			lib.guardarOactualizar(u3);
+			Constraint c1=SimpleConstraint.igualQueConstraint("nombre", "francisco perez");
+			Constraint c2=SimpleConstraint.igualQueConstraint("edad", "37");
+			Constraint c=new AndConstraint(c1,c2);
 			
-			lib.guardarOactualizar(u1);
+			Query q=lib.newQuery(prueba.Usuario.class);
+			q.setConstraint(c);
+			u=(Usuario) lib.executeQuery(q).get(0);
 
+			System.out.println(u);
 			
-			/*Usuario u = new Usuario(null,null);
-			Query q = lib.newQuery(u.getClass());
-			List<Object> lo = lib.executeQuery(q);
-			u = (Usuario) lo.get(0);
+			//lib.guardarOactualizar(u3);
+			
+			//lib.guardarOactualizar(u1);
 			
 			
-			System.out.println("Usuario de nombre " + u.getNombre() + " que vive en la calle " + u.getDireccion().getCalle() +  " número " + u.getDireccion().getNumero());
-			u.setNombre("federico");
-			u.getDireccion().setCalle("toledo");
-			u.getDireccion().setNumero(32);
 			
-			lib.updateProfundidad(u);
-
-			System.out.println("Usuario de nombre " + u.getNombre() + " que vive en la calle " + u.getDireccion().getCalle() +  " número " + u.getDireccion().getNumero());
-			*/
 			
-		} catch (SecurityException | IllegalArgumentException | SQLException | PropertyVetoException  e) {
-			
+		} catch (SecurityException | IllegalArgumentException | SQLException | PropertyVetoException | InstantiationException | IllegalAccessException   e) {
 			e.printStackTrace();
 		} 
 		System.out.println("FIN");

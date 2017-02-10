@@ -1,6 +1,5 @@
 package prueba2;
 
-import tfg.tfg.Query;
 
 public class Empleado {
 	private String DNI;

@@ -61,7 +61,8 @@ public class Query {
 		return str;
 	}
 	
-	private String getTableName(Connection con, String className) throws SQLException{
+	private String getTableName(String className) throws SQLException{
+		Connection con=this.lib.getConnection();
 		String str = "";
 		String sqlStatement = "SELECT nombretabla "
 				+ "FROM INDICETABLA "
@@ -101,6 +102,7 @@ public class Query {
 	 */
 	private Object createObject(Class<?> c, ResultSet rs) throws InstantiationException, IllegalAccessException, SQLException{
 		Object o = c.newInstance();
+		//System.out.println(o.getClass().getName());
 		Field[] campos = o.getClass().getDeclaredFields();		//Obtener los campos del objecto
 		for(Field f: campos){									//Para cada uno de los campos:
 			Object campo = rs.getObject(f.getName());			//Obtener de la BD el valor del campo
@@ -108,29 +110,34 @@ public class Query {
 			
 			if(!f.getType().getCanonicalName().contains("java.lang.String") && !f.getType().getCanonicalName().contains("int")) //Si el campo no es ni int ni string:
 			{
-				Identificador iden=new Identificador(rs.getInt("id"), this.clase.getName());
-				if(this.lib.constainsKeyIdMap(iden)){ 
-					campo=this.lib.getIdMap(iden);
-				}
-				else {
-					String tn = this.getTableName(lib.getConnection(),f.getType().getCanonicalName());
-					String sqlStatement = "SELECT * FROM " + tn + " WHERE ID = ?";
-					Connection con = lib.getConnection();
-					PreparedStatement pst;
-					pst = con.prepareStatement(sqlStatement); 			// Preparación de la sentencia
-					pst.setInt(1, (int) campo);
-					ResultSet rset = pst.executeQuery(); 					// Ejecución de la sentencia
-					if(rset.next()){
-						campo = this.createObject(f.getType(),rset);
-						this.lib.putIdMap(iden, campo);
-						this.lib.putObjectMap(campo, rset.getInt("id"));
+				if(campo!=null){
+					//System.out.println(campo);
+					Identificador iden=new Identificador((int)campo, f.getType().getCanonicalName());
+					//System.out.println(" IDENTIFICADOR: id:"+campo+" clase:"+f.getType().getCanonicalName());
+					if(this.lib.constainsKeyIdMap(iden)){ 
+						campo=this.lib.getIdMap(iden);
 					}
-					else
-						campo=null;
-					con.close();
+					else {
+						String tn = this.getTableName(f.getType().getCanonicalName());
+						String sqlStatement = "SELECT * FROM " + tn + " WHERE ID = ?";
+						Connection con = lib.getConnection();
+						PreparedStatement pst;
+						pst = con.prepareStatement(sqlStatement); 			// Preparación de la sentencia
+						pst.setInt(1, (int) campo);
+						ResultSet rset = pst.executeQuery(); 					// Ejecución de la sentencia
+						if(rset.next()){
+							campo = this.createObject(f.getType(),rset);
+							Identificador ident=new Identificador(rset.getInt("id"), campo.getClass().getName());
+							this.lib.putIdMap(ident, campo);
+							this.lib.putObjectMap(campo, rset.getInt("id"));
+						}
+						else
+							campo=null;
+						con.close();
+					}
 				}
 			}
-			
+			//System.out.println("añadir a "+o.getClass().getSimpleName()+" "+campo+f.getType().getCanonicalName());
 			f.set(o, campo);									//campo = valor
 		}
 		return o;
@@ -153,7 +160,6 @@ public class Query {
 		for (int i = 1; i <= values.size(); i++) { 						// Para cada valor:
 			pst.setObject(i, values.get(i - 1)); 						// Añadir el valor a la sentencia
 		}
-		
 		ResultSet rs = pst.executeQuery(); 								// Ejecución de la sentencia
 		Object object; 													// Instancia de la clase 'clase'
 		while (rs.next()) { 											// Mientras aún haya resultados de la sentencia SQL ejecutada

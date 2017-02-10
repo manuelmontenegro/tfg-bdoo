@@ -19,7 +19,6 @@ public class GuardadorOactualizador {
 		this.lib=lib;
 	}
 
-	
 	/**
 	 * Metodo que usa la libreria para guardar un objeto y todos los que tenga a su vez
 	 * si el objeto ya esta previamente guardado actualizarara sus valores
@@ -29,21 +28,11 @@ public class GuardadorOactualizador {
 	 * @throws SQLException
 	 */
 	void guardarOactualizar(Object o, IdentityHashMap<Object, Integer> im) throws SQLException {
-		
 		int id=-1;
 		String nombreTabla=crearTabla(o);
 		if(!im.containsKey(o) && !this.lib.constainsKeyObjectMap(o) ){
-			
 			alterarTabla(nombreTabla, o);
-			String sql = "INSERT INTO "+nombreTabla+" () VALUES ()";
-			Connection c = this.lib.getConnection();
-			PreparedStatement pst = c.prepareStatement(sql,Statement.RETURN_GENERATED_KEYS);
-			pst.executeUpdate();// insertar fila pero todo vacio
-			ResultSet rs = pst.getGeneratedKeys();
-			if (rs.next()) 
-			    id = rs.getInt(1);
-			// obtener id de la fila con getgeneratedkeys()
-			c.close();
+			id=insertarFilaVacia(nombreTabla);
 		}
 		else{//esta en alguno de los dos
 			 if(im.containsKey(o)){// obtener id de la fila con de alguno de los dos mapas
@@ -53,20 +42,55 @@ public class GuardadorOactualizador {
 				 id=this.lib.getObjectMap(o);
 			 }
 		}
-		im.put(o, id);//guardar en im <obj, id>
+		im.put(o, id);//guardar en im <obj, id>	
 		
-		//para cada atributo no basico{
-		//    if(!esta en im)
-		//      guardarOactualizar(im, atributoNObasico);
-		//  }
-		
-		
+		for (Field f : o.getClass().getDeclaredFields()) {//para cada atributo no basico{
+			
+			f.setAccessible(true);
+			Object atributo=null;
+			try {
+				atributo=f.get(o);
+			} catch (IllegalArgumentException | IllegalAccessException e1) {
+				e1.printStackTrace();
+			}
+			if(!esBasico(f)){
+				if(atributo!=null){					
+					if(!im.containsKey(atributo)){//    if(!esta en im)
+						guardarOactualizar(atributo, im);
+					}
+				}
+			}
+		}	
+		update(nombreTabla, o, im);
+	}
+	/**
+	 * Inserta una fila vacia en la tabla pasada como argumento
+	 * @param nombreTabla
+	 * @return
+	 * @throws SQLException
+	 */
+	private int insertarFilaVacia(String nombreTabla) throws SQLException{
+		int id = 0;
+		String sql = "INSERT INTO "+nombreTabla+" () VALUES ()";
+		System.out.println(sql);
+		Connection c = this.lib.getConnection();
+		PreparedStatement pst = c.prepareStatement(sql,Statement.RETURN_GENERATED_KEYS);
+		pst.executeUpdate();// insertar fila pero todo vacio
+		ResultSet rs = pst.getGeneratedKeys();
+		if (rs.next()) 
+		    id = rs.getInt(1);
+		// obtener id de la fila con getgeneratedkeys()
+		c.close();
+		return id;
+	}
+	
+	private void update(String nombreTabla, Object o, IdentityHashMap<Object, Integer> im) throws SQLException{
 		String claves = "";
-		ArrayList<String> valores = new ArrayList<String>();
+		ArrayList<String> valores = new ArrayList<String>();	
+		
 		Field[] fields=o.getClass().getDeclaredFields();
 		int tam=o.getClass().getDeclaredFields().length;
 		for (int i=0; i<tam ;i++) {
-			
 			Field f=fields[i];
 			f.setAccessible(true);
 			Object atributo=null;
@@ -77,12 +101,7 @@ public class GuardadorOactualizador {
 			}
 
 			if(!esBasico(f)){
-				Object ob=atributo;//ob va a ser el objeto NO basico
-				
-				if(ob!=null){					
-					if(!im.containsKey(ob)){
-						guardarOactualizar(ob, im);
-					}
+				if(atributo!=null){					
 					valores.add(im.get(atributo)+"");
 					if (i != 0)
 						claves += " , ";
@@ -94,22 +113,21 @@ public class GuardadorOactualizador {
 				if (i != 0)
 					claves += " , ";
 				claves+=f.getName()+" =?";
-			}
-		}
+			}			
+		}	
 		
 		String sqlUpdate="UPDATE " + nombreTabla +
 				  " SET " + claves +
 				  " WHERE ID = ?";
+		System.out.println(sqlUpdate);
 		Connection con = this.lib.getConnection();
 		PreparedStatement pst = con.prepareStatement(sqlUpdate);
 		for (int i = 0; i < valores.size(); i++) { 
 			pst.setObject(i+1, valores.get(i));
 		}
 		pst.setObject(valores.size()+1, im.get(o));	//Añadir la ID parametrizada
-		System.out.println(pst);
 		pst.execute();
 		con.close();
-		
 	}
 
 	/**
@@ -224,8 +242,9 @@ public class GuardadorOactualizador {
 		ArrayList<Atributo> atributos = sacarAtributos(o);
 		for (Atributo a : atributos) {
 			insertarIndiceColumna(nombreTabla, a);
+			
 		}
-		borrarIndiceColumna(nombreTabla, atributos);
+		//borrarIndiceColumna(nombreTabla, atributos);
 	}
 	/**
 	 * Metodo para sacar el nombre y el tipo de los atributos de un objeto
@@ -251,13 +270,12 @@ public class GuardadorOactualizador {
 					try {
 						ob = f.get(o);
 					} catch (IllegalArgumentException | IllegalAccessException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					} // Cargar el objeto en ob
 				
 				if(ob==null){
 					objetoNulo=true; 
-					System.out.println("el objeto contiene un objeto null");
+					//System.out.println("el objeto contiene un objeto null");
 					tipo = "INTEGER";
 				}
 				else{
@@ -316,7 +334,7 @@ public class GuardadorOactualizador {
 					+ a.getNombre() + "\" , \"" + a.getNombre() + "\"  )";
 			//POR AHORA EL NOMBRE DEL ATRIBUTO DE LA CLASE Y EL NOMBRE DE LA CALUMNA DONDE SE VA A GUARDAR ES EL MISMO
 			//YA QUE NO PUEDE HABER DOS ATRIBUTOS DE UNA CLASE CON EL MISNO NOMBRE
-			System.out.println(sql);
+			//System.out.println(sql);
 			Connection c1 = this.lib.getConnection();
 			PreparedStatement pst1 = c1.prepareStatement(sql1);
 			pst1.execute();
@@ -325,7 +343,7 @@ public class GuardadorOactualizador {
 			String anyadir = "ALTER TABLE " + nombreTabla + " ADD " + a.getNombre() + " " + a.getTipo();
 			Connection c2 = this.lib.getConnection();
 			pst = c2.prepareStatement(anyadir);
-			System.out.println(anyadir);
+			//System.out.println(anyadir);
 			pst.execute();
 			c2.close();
 

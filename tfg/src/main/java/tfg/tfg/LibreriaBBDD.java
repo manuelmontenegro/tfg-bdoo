@@ -577,6 +577,7 @@ este metodo recupera los NULLs que tiene un objeto que se halla recuperado antes
 
 siguente reunion martes 28 de febrero a las cuatro
 
+
 guardar sin prondiadad siempre guarda todo
 profundiadad en cargar y en actualizar
 

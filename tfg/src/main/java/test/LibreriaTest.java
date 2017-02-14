@@ -84,6 +84,10 @@ public class LibreriaTest extends TestCase{
 		assertTrue(u.getDireccion()==this.usuario.getDireccion());	 
     }
     
+    public void testQueryByExample(){
+    	
+    }
+    
     public static Test suite() {
 
         TestSuite suite = new TestSuite(LibreriaTest.class);

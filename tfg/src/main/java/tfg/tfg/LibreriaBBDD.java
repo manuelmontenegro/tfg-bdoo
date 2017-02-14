@@ -494,6 +494,9 @@ public class LibreriaBBDD {
 		}
 		
 		Constraint c = new AndConstraint(constraintList);				//Se crea la restricción AND con las restricciones a cumplir de la lista
+		for (int i = 0; i < constraintList.size(); i++) {
+			System.out.println(constraintList.get(i).toSql() + constraintList.get(i).getValues().get(0));
+		}
 		Query q = new Query(o.getClass(), this);						//Se crea la consulta
 		q.setConstraint(c);												//Se determina que la restricción de la consulta es la AND
 		l = executeQuery(q);											//Se ejecuta la consulta
@@ -527,26 +530,16 @@ public class LibreriaBBDD {
 			
 			lib = new LibreriaBBDD("tfg", "root", "");
 						
-			Usuario u=null;
-			
-			Constraint c1=SimpleConstraint.igualQueConstraint("nombre", "francisco perez");
-			Constraint c2=SimpleConstraint.igualQueConstraint("edad", "37");
-			Constraint c=new AndConstraint(c1,c2);
-			
-			Query q=lib.newQuery(prueba.Usuario.class);
-			q.setConstraint(c);
-			u=(Usuario) lib.executeQuery(q).get(0);
+			Usuario u=(Usuario) lib.queryByExample(u3).get(0);
 
-			System.out.println(u);
+			lib.delete(u);
+		
 			
 			//lib.guardarOactualizar(u3);
 			
 			//lib.guardarOactualizar(u1);
-			
-			
-			
-			
-		} catch (SecurityException | IllegalArgumentException | SQLException | PropertyVetoException | InstantiationException | IllegalAccessException   e) {
+	
+		} catch (SecurityException | IllegalArgumentException | SQLException | PropertyVetoException  | ObjetoInexistente | InstantiationException | IllegalAccessException | NoSuchFieldException   e) {
 			e.printStackTrace();
 		} 
 		System.out.println("FIN");
@@ -576,5 +569,44 @@ si un objeto tiene referencias a varios objetos indicar un nivel maxio de profun
 asi no recupera todos los objetos que tenga este y a partir de esa profundidad maxima poner NULLs
 y si si quieres profundizar mas hacer un metodo acitvate() --en pag 96
 este metodo recupera los NULLs que tiene un objeto que se halla recuperado antes para recuperarlos
+
+
+
+
+-------------------4/02/2017----------
+
+siguente reunion martes 28 de febrero a las cuatro
+
+guardar sin prondiadad siempre guarda todo
+profundiadad en cargar y en actualizar
+
+private int profundidad =5;
+public setProfundiadad(){}
+public void actualizar(Object o, int profundiadad){
+	implementacion con profundidad recibida
+}
+
+public void actualizar(Object o){
+	this.guardar(o, this.pofundiadad);
+}
+----
+Empleado con nombre y Direccion
+Direccion con calle y Num
+Num con piso y letra
+Constraint c1=SimpleConstraint.igualQueConstraint("direccion.numero.letra", "A");
+
+metodo split(".") partiendo por los puntos
+se puede hacer un mapa de nombre de clase a nombres de tablas
+hay que hacer un join en realidad left join para que los empleados que no tengan direccion(direccion a null) tambien aparezcan
+para el left joun con tres clases encadenado primero hacer el sql a mano que funcione y luego la implemantaccion
+empleado1 as t1 LEFT JOIN direccion2 as t2 ON p1.direccion=t2.id LEFT JOIN num3 as t2 ON t2.numero=t3.id
+
+mockito framework para junit
+
+5 junio borrador para profesor pra que le corrija, se puede ir corrijiendo antes
+16 junio entrega memoria final en secretaria,  con el codigo y todo lo demas
+28 29 30 junio exposicion 5 minutos cada uno con su parte en ingles
+
+
 
 */

@@ -230,7 +230,7 @@ public class GuardadorOactualizador {
 	}
 	/**
 	 * Altera la tabla para que coincida en columnas con los atributos del objeto
-	 * primero para cada atributo le intenta insertar en indice columnas si no estaba ya
+	 * primero para cada atributo del objeto si no esta en indie columna le inserta en indice columna
 	 * y despues altera la tabla para que tenga la comuna corespondiente para guardar ese atributo
 	 * segundo elimina las columnas que corresponde
 	 * y despues elimina su entada en indice columnas
@@ -240,12 +240,28 @@ public class GuardadorOactualizador {
 	 */
 	private void alterarTabla(String nombreTabla, Object o) throws SQLException {
 		ArrayList<Atributo> atributos = sacarAtributos(o);
+		String idIndiceTabla=getIDIndiceTabla(nombreTabla);
 		for (Atributo a : atributos) {
-			insertarIndiceColumna(nombreTabla, a);
-			
+			if(!estaIndiceColumna(a, idIndiceTabla))
+				insertarIndiceColumna(nombreTabla, a, idIndiceTabla);
 		}
-		//borrarIndiceColumna(nombreTabla, atributos);
+		//borrarIndiceColumna(nombreTabla, atributos, idIndiceTabla);
 	}
+	private boolean estaIndiceColumna(Atributo a, String idIndiceTabla) throws SQLException {
+		String sql = "SELECT id FROM indicecolumna WHERE idtabla = ? and atributo = ?";
+
+		Connection c = this.lib.getConnection();
+		PreparedStatement pst = c.prepareStatement(sql);
+		pst.setString(1, idIndiceTabla);
+		pst.setString(2, a.getNombre());
+		ResultSet rs = pst.executeQuery();
+
+		if (rs.next())
+			return true;
+		else
+			return false;
+	}
+
 	/**
 	 * Metodo para sacar el nombre y el tipo de los atributos de un objeto
 	 * sirve para saber de que tipo tiene que ser su respactiva columna
@@ -319,38 +335,24 @@ public class GuardadorOactualizador {
 	 * @param a
 	 * @throws SQLException
 	 */
-	private void insertarIndiceColumna(String nombreTabla,  Atributo a) throws SQLException {
-		String idIndiceTabla=getIDIndiceTabla(nombreTabla);
-		String sql = "SELECT id FROM indicecolumna WHERE idtabla = ? and atributo = ?";
+	private void insertarIndiceColumna(String nombreTabla,  Atributo a, String idIndiceTabla) throws SQLException {
 
-		Connection c = this.lib.getConnection();
-		PreparedStatement pst = c.prepareStatement(sql);
-		pst.setString(1, idIndiceTabla);
-		pst.setString(2, a.getNombre());
-		ResultSet rs = pst.executeQuery();
+		String sql1 = "INSERT INTO indicecolumna (idtabla,atributo,columna) " + " VALUES ( \"" + idIndiceTabla + "\" , \""
+				+ a.getNombre() + "\" , \"" + a.getNombre() + "\"  )";
+		//POR AHORA EL NOMBRE DEL ATRIBUTO DE LA CLASE Y EL NOMBRE DE LA CALUMNA DONDE SE VA A GUARDAR ES EL MISMO
+		//YA QUE NO PUEDE HABER DOS ATRIBUTOS DE UNA CLASE CON EL MISNO NOMBRE
+		//System.out.println(sql);
+		Connection c1 = this.lib.getConnection();
+		PreparedStatement pst1 = c1.prepareStatement(sql1);
+		pst1.execute();
+		c1.close();
 
-		if (!rs.next()) {//hay que insertar en indece columna y alterar su tabla
-			String sql1 = "INSERT INTO indicecolumna (idtabla,atributo,columna) " + " VALUES ( \"" + idIndiceTabla + "\" , \""
-					+ a.getNombre() + "\" , \"" + a.getNombre() + "\"  )";
-			//POR AHORA EL NOMBRE DEL ATRIBUTO DE LA CLASE Y EL NOMBRE DE LA CALUMNA DONDE SE VA A GUARDAR ES EL MISMO
-			//YA QUE NO PUEDE HABER DOS ATRIBUTOS DE UNA CLASE CON EL MISNO NOMBRE
-			//System.out.println(sql);
-			Connection c1 = this.lib.getConnection();
-			PreparedStatement pst1 = c1.prepareStatement(sql1);
-			pst1.execute();
-			c1.close();
-
-			String anyadir = "ALTER TABLE " + nombreTabla + " ADD " + a.getNombre() + " " + a.getTipo();
-			Connection c2 = this.lib.getConnection();
-			pst = c2.prepareStatement(anyadir);
-			//System.out.println(anyadir);
-			pst.execute();
-			c2.close();
-
-		}
-		//else ya esta insertado ese atributo en indececolumna
-		c.close();
-		
+		String anyadir = "ALTER TABLE " + nombreTabla + " ADD " + a.getNombre() + " " + a.getTipo();
+		Connection c2 = this.lib.getConnection();
+		PreparedStatement pst = c2.prepareStatement(anyadir);
+		//System.out.println(anyadir);
+		pst.execute();
+		c2.close();
 	}
 	/**
 	 * Metodo para eliminar las culumnas que no tengoa el objeto pero que todavia tenga la tabla usada para guardar el objeto
@@ -359,8 +361,7 @@ public class GuardadorOactualizador {
 	 * @param atributos
 	 * @throws SQLException
 	 */
-	private void borrarIndiceColumna(String nombreTabla, ArrayList<Atributo> atributos) throws SQLException {
-		String idIndiceTabla=getIDIndiceTabla(nombreTabla);
+	private void borrarIndiceColumna(String nombreTabla, ArrayList<Atributo> atributos, String idIndiceTabla) throws SQLException {
 		String sql = "SELECT atributo FROM indicecolumna WHERE idtabla = ?";
 		PreparedStatement pst;
 		Connection c = this.lib.getConnection();

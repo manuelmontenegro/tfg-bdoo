@@ -530,16 +530,14 @@ public class LibreriaBBDD {
 			
 			lib = new LibreriaBBDD("tfg", "root", "");
 						
-			Usuario u=(Usuario) lib.queryByExample(u3).get(0);
-
-			lib.delete(u);
+			//Usuario u=(Usuario) lib.queryByExample(u3).get(0);   lib.delete(u);
 		
 			
-			//lib.guardarOactualizar(u3);
+			lib.guardarOactualizar(u3);
 			
-			//lib.guardarOactualizar(u1);
+			lib.guardarOactualizar(u1);
 	
-		} catch (SecurityException | IllegalArgumentException | SQLException | PropertyVetoException  | ObjetoInexistente | InstantiationException | IllegalAccessException | NoSuchFieldException   e) {
+		} catch (SecurityException | IllegalArgumentException | SQLException | PropertyVetoException  e) {
 			e.printStackTrace();
 		} 
 		System.out.println("FIN");

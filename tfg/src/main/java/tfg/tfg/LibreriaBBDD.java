@@ -530,14 +530,21 @@ public class LibreriaBBDD {
 			
 			lib = new LibreriaBBDD("tfg", "root", "");
 						
-			//Usuario u=(Usuario) lib.queryByExample(u3).get(0);   lib.delete(u);
+			
+			Constraint c1=SimpleConstraint.igualQueConstraint("nombre", "manuel");
+			Constraint c2=SimpleConstraint.igualQueConstraint("edad", "22");
+			Constraint c=new AndConstraint(c1,c2);
+			
+			Query q=lib.newQuery(prueba.Usuario.class);
+			q.setConstraint(c);
+			System.out.println("exequteQuery");
+
+			Usuario u=(Usuario) lib.executeQuery(q).get(0);
+			
+			System.out.println(u);
 		
-			
-			lib.guardarOactualizar(u3);
-			
-			lib.guardarOactualizar(u1);
 	
-		} catch (SecurityException | IllegalArgumentException | SQLException | PropertyVetoException  e) {
+		} catch (SecurityException | IllegalArgumentException | SQLException | PropertyVetoException | InstantiationException | IllegalAccessException   e) {
 			e.printStackTrace();
 		} 
 		System.out.println("FIN");
@@ -580,6 +587,7 @@ guardar sin prondiadad siempre guarda todo
 profundiadad en cargar y en actualizar
 
 private int profundidad =5;
+
 public setProfundiadad(){}
 public void actualizar(Object o, int profundiadad){
 	implementacion con profundidad recibida
@@ -598,7 +606,7 @@ metodo split(".") partiendo por los puntos
 se puede hacer un mapa de nombre de clase a nombres de tablas
 hay que hacer un join en realidad left join para que los empleados que no tengan direccion(direccion a null) tambien aparezcan
 para el left joun con tres clases encadenado primero hacer el sql a mano que funcione y luego la implemantaccion
-empleado1 as t1 LEFT JOIN direccion2 as t2 ON p1.direccion=t2.id LEFT JOIN num3 as t2 ON t2.numero=t3.id
+empleado1 as t1 LEFT JOIN direccion2 as t2 ON t1.direccion=t2.id LEFT JOIN num as t3 ON t2.numero=t3.id
 
 mockito framework para junit
 

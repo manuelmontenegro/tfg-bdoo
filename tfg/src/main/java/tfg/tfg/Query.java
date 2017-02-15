@@ -102,6 +102,10 @@ public class Query {
 	 */
 	private Object createObject(Class<?> c, ResultSet rs) throws InstantiationException, IllegalAccessException, SQLException{
 		Object o = c.newInstance();
+		Identificador idenO=new Identificador((int)rs.getInt("id"), c.getCanonicalName());//identificar del objeto a crear por ahora el objeto esta vacio
+		this.lib.putIdMap(idenO, o);//insertar ese objeto vacio en el mapa
+		this.lib.putObjectMap(o, (int)rs.getInt("id"));//al ser el objeto un puntero se va a ir actualizando con el paso de este metodo
+		
 		//System.out.println(o.getClass().getName());
 		Field[] campos = o.getClass().getDeclaredFields();		//Obtener los campos del objecto
 		for(Field f: campos){									//Para cada uno de los campos:
@@ -127,9 +131,6 @@ public class Query {
 						ResultSet rset = pst.executeQuery(); 					// Ejecución de la sentencia
 						if(rset.next()){
 							campo = this.createObject(f.getType(),rset);
-							Identificador ident=new Identificador(rset.getInt("id"), campo.getClass().getName());
-							this.lib.putIdMap(ident, campo);
-							this.lib.putObjectMap(campo, rset.getInt("id"));
 						}
 						else
 							campo=null;
@@ -169,8 +170,6 @@ public class Query {
 			}
 			else{ 														//Si no esta te creas el objeto y le añades al mapa
 				object = createObject(this.clase,rs); 								// Crea el objeto de la clase
-				this.lib.putIdMap(iden, object);
-				this.lib.putObjectMap(object, rs.getInt("id"));
 			}
 			lista.add(object); 											// Añadir el objeto a la lista que se devolverá
 		}

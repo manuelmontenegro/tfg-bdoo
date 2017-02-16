@@ -85,10 +85,38 @@ public class Query {
 	 */
 	public String toSql(Connection con) throws SQLException {
 		String sqlStatement = "SELECT * FROM ";
-		String tableName = this.getTableName(con); 		//Nombre de la tabla a la que se aplican las constraint
-		sqlStatement += tableName;
-		sqlStatement += " WHERE ";
-		sqlStatement += restriccion.toSql(); 			//Constraint que se aplicarán en la cláusula WHERE
+		String tableName = this.getTableName(con);
+		sqlStatement += tableName + " t1 ";
+		String[] LJOnCond = this.restriccion.getOnConditions();
+		if(LJOnCond.length > 1){
+			String[] atributos = restriccion.getMultiplesAtributos();
+			List<Class> nombreClases = new ArrayList<Class>();
+			int it = 0;
+			Class ini = this.clase;
+			while((!(ini.getCanonicalName().equalsIgnoreCase("Java.lang.String")) && !(ini.getCanonicalName().equalsIgnoreCase("Int"))) && it < atributos.length){
+				Field aux = null;
+				for (Field n : ini.getDeclaredFields()) {
+					if(n.getName().equalsIgnoreCase(atributos[it])){
+						aux = n;
+					}
+				}
+				nombreClases.add(aux.getType());
+				it++;
+				ini = aux.getType();
+			}
+			String[] clases = new String[nombreClases.size()];
+			it = 0;
+			for(Class c: nombreClases){
+				clases[it] = this.getTableName(c.getCanonicalName());
+				it++;
+			}
+			for (int i = 0; i < LJOnCond.length; i++) {
+				sqlStatement += "LEFT JOIN ";
+				sqlStatement += clases[i] + " t" + (i+2) + " ON ";
+				sqlStatement += LJOnCond[i];
+			}
+		}
+		sqlStatement += " WHERE " + restriccion.toSql();;
 		return sqlStatement;
 	}
 	

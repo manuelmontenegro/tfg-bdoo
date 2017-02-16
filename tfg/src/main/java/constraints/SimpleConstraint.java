@@ -3,6 +3,8 @@ package constraints;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
+
 /***
  * Clase que representa una restricción simple del tipo "Campo - Operando - Valor".
  * @author Carlos
@@ -54,8 +56,9 @@ public class SimpleConstraint implements Constraint{
 	 * Devuelve la restricción en forma de sentencia SQL a incluir en la cláusula WHERE.
 	 */
 	public String toSql(){
+		String classCond = "t" + (StringUtils.split(this.campo,".").length) + ".";
 		if(valor != null)
-			return "(" + campo + " " + operando + " ?)";
+			return "(" + classCond + campo + " " + operando + " ?)";
 		else
 			return "(" + campo + " IS NULL)";
 	}
@@ -68,6 +71,24 @@ public class SimpleConstraint implements Constraint{
 		if(this.valor != null)
 			l.add(this.valor);
 		return l;
+	}
+
+	public String[] getOnConditions(){
+		String[] classes = StringUtils.split(this.campo,".");
+		String[] ret = new String[classes.length - 1];
+		for (int i = 0; i < ret.length; i++) {
+			ret[i] = "t" + (i+1) + "." + classes[i] + " = " + "t" + (i+2) + ".id ";
+		}
+		return ret;
+	}
+	
+	public String[] getMultiplesAtributos() {
+		String[] campos = StringUtils.split(this.campo,".");
+		String[] ret = new String[campos.length-1];
+		for (int i = 0; i < ret.length; i++){
+			ret[i] = campos[i];	
+		}
+		return ret;
 	}
 
 }

@@ -19,8 +19,11 @@ import constraints.SimpleConstraint;
 import excepciones.ObjetoInexistente;
 import excepciones.InsertarDuplicado;
 import prueba.Direccion;
+import prueba.Direccion2;
 import prueba.Empleado;
+import prueba.Numero;
 import prueba.Usuario;
+import prueba.Usuario2;
 
 public class LibreriaBBDD {
 
@@ -506,48 +509,24 @@ public class LibreriaBBDD {
 	public static void main(String[] argv) {
 		LibreriaBBDD lib = null;
 		
-		
-		Direccion dir1 = new Direccion("gua",20);
-		Usuario u1 = new Usuario("manuel", 22);
-		u1.setDireccion(dir1);
-		
-		Direccion dir2 = new Direccion("mad",75);
-		Usuario u2 = new Usuario("pedro", 31);
-		u2.setDireccion(dir2);
-		
-		u1.setCompañero(u2);
-		u2.setCompañero(u1);
-		
-		
-		Empleado emp=new  Empleado("03798853F", "Alvaro", "Guarrazar", 902202122,	"hombre", "cocinero", "passwd");
-		Usuario u3 = new Usuario("nullencio", 75);
-		
-		Usuario u4 = new Usuario("francisco perez", 37);
-		u4.setDireccion(new Direccion("cuenca", 7));
-		
-		
 		try {
 			
 			lib = new LibreriaBBDD("tfg", "root", "");
-						
 			
-			Constraint c1=SimpleConstraint.igualQueConstraint("nombre", "manuel");
-			Constraint c2=SimpleConstraint.igualQueConstraint("edad", "22");
-			Constraint c=new AndConstraint(c1,c2);
+			Constraint c = SimpleConstraint.igualQueConstraint("direccion.numero.letra", "A");
 			
-			Query q=lib.newQuery(prueba.Usuario.class);
+			Query q=lib.newQuery(prueba.Usuario2.class);
 			q.setConstraint(c);
-			System.out.println("exequteQuery");
-
-			Usuario u=(Usuario) lib.executeQuery(q).get(0);
 			
-			System.out.println(u);
+			System.out.println(q.toSql(lib.getConnection()));
+
+			//Usuario u = (Usuario) lib.executeQuery(q).get(0);
+			
+			//System.out.println(u);
 		
-	
-		} catch (SecurityException | IllegalArgumentException | SQLException | PropertyVetoException | InstantiationException | IllegalAccessException   e) {
+		} catch (SecurityException | IllegalArgumentException | SQLException | PropertyVetoException   e) {
 			e.printStackTrace();
 		} 
-		System.out.println("FIN");
 	}
 
 }

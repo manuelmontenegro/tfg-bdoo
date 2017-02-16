@@ -49,5 +49,17 @@ public class AndConstraint implements Constraint{
 			l.addAll(c.getValues());							//Añadir los valores de la constraint a la lista
 		return l;
 	}
+
+	@Override
+	public String[] getOnConditions() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String[] getMultiplesAtributos() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 	
 }

@@ -31,5 +31,17 @@ public class NotConstraint implements Constraint{
 		l.addAll(this.cons.getValues());
 		return l;
 	}
+
+	@Override
+	public String[] getOnConditions() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String[] getMultiplesAtributos() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 	
 }

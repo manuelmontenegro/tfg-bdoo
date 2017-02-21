@@ -56,9 +56,10 @@ public class SimpleConstraint implements Constraint{
 	 * Devuelve la restricción en forma de sentencia SQL a incluir en la cláusula WHERE.
 	 */
 	public String toSql(){
-		String classCond = "t" + (StringUtils.split(this.campo,".").length) + ".";
+		String[] campos = StringUtils.split(this.campo,".");
+		String classCond = "t" + campos.length + ".";
 		if(valor != null)
-			return "(" + classCond + campo + " " + operando + " ?)";
+			return "(" + classCond + campos[campos.length-1] + " " + operando + " ?)";
 		else
 			return "(" + campo + " IS NULL)";
 	}

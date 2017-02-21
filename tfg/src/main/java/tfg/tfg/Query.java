@@ -84,7 +84,13 @@ public class Query {
 	 * @throws SQLException 
 	 */
 	public String toSql(Connection con) throws SQLException {
-		String sqlStatement = "SELECT * FROM ";
+		String sqlStatement = "SELECT ";
+		Field[] campos = this.clase.getDeclaredFields();
+		for(int i = 0; i < (campos.length-1); i++){
+			sqlStatement+=campos[i].getName() + ", ";
+		}
+		sqlStatement+=campos[campos.length-1].getName();
+		sqlStatement += " FROM ";
 		String tableName = this.getTableName(con);
 		sqlStatement += tableName + " t1 ";
 		String[] LJOnCond = this.restriccion.getOnConditions();

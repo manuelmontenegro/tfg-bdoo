@@ -6,6 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import constraints.AndConstraint;
@@ -84,22 +85,24 @@ public class Query {
 	 * @throws SQLException 
 	 */
 	public String toSql(Connection con) throws SQLException {
-		String sqlStatement = "SELECT ";
+		String sqlStatement = "SELECT t1.id,";
 		Field[] campos = this.clase.getDeclaredFields();
 		for(int i = 0; i < (campos.length-1); i++){
 			sqlStatement+=campos[i].getName() + ", ";
 		}
-		sqlStatement+=campos[campos.length-1].getName();
+		sqlStatement+=campos[campos.length-1].getName();//añadir la seleccion de campos
 		sqlStatement += " FROM ";
-		String tableName = this.getTableName(con);
+		String tableName = this.getTableName(con);//añadir el from de la primera tabla
 		sqlStatement += tableName + " t1 ";
 		String[] LJOnCond = this.restriccion.getOnConditions();
-		if(LJOnCond.length > 1){
-			String[] atributos = restriccion.getMultiplesAtributos();
+		if(LJOnCond.length > 0){//si hay que añadir condicciones on al left join
+			String[] atributos = restriccion.getMultiplesAtributos();//atributos no simples
+	
 			List<Class> nombreClases = new ArrayList<Class>();
 			int it = 0;
-			Class ini = this.clase;
-			while((!(ini.getCanonicalName().equalsIgnoreCase("Java.lang.String")) && !(ini.getCanonicalName().equalsIgnoreCase("Int"))) && it < atributos.length){
+			Class<?> ini = this.clase;
+			while(/*(!(ini.getCanonicalName().equalsIgnoreCase("Java.lang.String")) && !(ini.getCanonicalName().equalsIgnoreCase("Int")))
+					&& */it < atributos.length){
 				Field aux = null;
 				for (Field n : ini.getDeclaredFields()) {
 					if(n.getName().equalsIgnoreCase(atributos[it])){
@@ -122,7 +125,7 @@ public class Query {
 				sqlStatement += LJOnCond[i];
 			}
 		}
-		sqlStatement += " WHERE " + restriccion.toSql();;
+		sqlStatement += " WHERE " + restriccion.toSql();
 		return sqlStatement;
 	}
 	
@@ -135,6 +138,7 @@ public class Query {
 	 * @throws SQLException
 	 */
 	private Object createObject(Class<?> c, ResultSet rs) throws InstantiationException, IllegalAccessException, SQLException{
+		System.out.println(c.getTypeName());
 		Object o = c.newInstance();
 		Identificador idenO=new Identificador((int)rs.getInt("id"), c.getCanonicalName());//identificar del objeto a crear por ahora el objeto esta vacio
 		this.lib.putIdMap(idenO, o);//insertar ese objeto vacio en el mapa
@@ -160,10 +164,12 @@ public class Query {
 						String sqlStatement = "SELECT * FROM " + tn + " WHERE ID = ?";
 						Connection con = lib.getConnection();
 						PreparedStatement pst;
+						System.out.println(sqlStatement+" "+campo);
 						pst = con.prepareStatement(sqlStatement); 			// Preparación de la sentencia
 						pst.setInt(1, (int) campo);
 						ResultSet rset = pst.executeQuery(); 					// Ejecución de la sentencia
 						if(rset.next()){
+							System.out.println(f.getType());
 							campo = this.createObject(f.getType(),rset);
 						}
 						else

@@ -1,5 +1,6 @@
 package constraints;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -82,7 +83,11 @@ public class SimpleConstraint implements Constraint{
 		}
 		return ret;
 	}
-	
+
+	/**
+	 * devuelve un array con atributos no simples de la condiccion
+	 * @return array con atributos no simples de la condiccion
+	 */
 	public String[] getMultiplesAtributos() {
 		String[] campos = StringUtils.split(this.campo,".");
 		String[] ret = new String[campos.length-1];

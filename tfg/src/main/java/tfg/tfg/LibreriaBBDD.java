@@ -17,13 +17,14 @@ import constraints.AndConstraint;
 import constraints.Constraint;
 import constraints.SimpleConstraint;
 import excepciones.ObjetoInexistente;
+
+import profundidad3.Ciudad;
+import profundidad3.Direccion;
+import profundidad3.Numero;
+import profundidad3.Usuario;
+
 import excepciones.InsertarDuplicado;
-import prueba.Direccion;
-import prueba.Direccion2;
-import prueba.Empleado;
-import prueba.Numero;
-import prueba.Usuario;
-import prueba.Usuario2;
+
 
 public class LibreriaBBDD {
 
@@ -509,22 +510,32 @@ public class LibreriaBBDD {
 	public static void main(String[] argv) {
 		LibreriaBBDD lib = null;
 		
+		Numero n=new Numero("A", 13);
+		Ciudad ciu=new Ciudad("Madrid");
+		Direccion d=new Direccion("Alcalá");
+		d.setNumero(n);
+		d.setCiudad(ciu);
+		Usuario u=new Usuario("Carlos");
+		u.setDireccion(d);
+		
 		try {
 			
 			lib = new LibreriaBBDD("tfg", "root", "");
+			//lib.guardarOactualizar(u);
 			
-			Constraint c = SimpleConstraint.igualQueConstraint("direccion.numero.letra", "A");
+			Constraint c1 = SimpleConstraint.igualQueConstraint("nombre", "Carlos");
+			//Constraint c2 = SimpleConstraint.igualQueConstraint("direccion.ciudad.nombre", "Madrid");
 			
-			Query q=lib.newQuery(prueba.Usuario2.class);
-			q.setConstraint(c);
+			//Constraint c=new AndConstraint(c1,c2);
+			
+			Query q=lib.newQuery(profundidad3.Usuario.class);
+			q.setConstraint(c1);
 			
 			System.out.println(q.toSql(lib.getConnection()));
-
-			//Usuario u = (Usuario) lib.executeQuery(q).get(0);
-			
-			//System.out.println(u);
+			Usuario user=(Usuario) lib.executeQuery(q).get(0);
+			System.out.println(user);
 		
-		} catch (SecurityException | IllegalArgumentException | SQLException | PropertyVetoException   e) {
+		} catch (SecurityException | IllegalArgumentException | SQLException | PropertyVetoException | InstantiationException | IllegalAccessException   e) {
 			e.printStackTrace();
 		} 
 	}

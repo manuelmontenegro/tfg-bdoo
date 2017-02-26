@@ -57,5 +57,19 @@ public class OrConstraint implements Constraint{
 		// TODO Auto-generated method stub
 		return null;
 	}
+
+	@Override
+	public List<String> getCampos() {
+		List<String> ret = new ArrayList<String>();
+		for (int i = 0; i < this.cons.size(); i++) {
+			ret.addAll(this.cons.get(i).getCampos());
+		}
+		return ret;
+	}
+
+	@Override
+	public String getUnion() {
+		return " OR ";
+	}
 	
 }

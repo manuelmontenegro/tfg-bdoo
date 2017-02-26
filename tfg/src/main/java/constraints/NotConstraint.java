@@ -43,5 +43,17 @@ public class NotConstraint implements Constraint{
 		// TODO Auto-generated method stub
 		return null;
 	}
+
+	@Override
+	public List<String> getCampos() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String getUnion() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 	
 }

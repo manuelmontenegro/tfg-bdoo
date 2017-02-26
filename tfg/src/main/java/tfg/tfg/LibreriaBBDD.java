@@ -524,12 +524,12 @@ public class LibreriaBBDD {
 			//lib.guardarOactualizar(u);
 			
 			Constraint c1 = SimpleConstraint.igualQueConstraint("nombre", "Carlos");
-			//Constraint c2 = SimpleConstraint.igualQueConstraint("direccion.ciudad.nombre", "Madrid");
+			Constraint c2 = SimpleConstraint.igualQueConstraint("direccion.ciudad.nombre", "Madrid");
 			
-			//Constraint c=new AndConstraint(c1,c2);
+			Constraint c=new AndConstraint(c1,c2);
 			
 			Query q=lib.newQuery(profundidad3.Usuario.class);
-			q.setConstraint(c1);
+			q.setConstraint(c);
 			
 			System.out.println(q.toSql(lib.getConnection()));
 			Usuario user=(Usuario) lib.executeQuery(q).get(0);

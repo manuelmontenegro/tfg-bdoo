@@ -96,5 +96,16 @@ public class SimpleConstraint implements Constraint{
 		}
 		return ret;
 	}
+	
+	public List<String> getCampos(){
+		List<String> ret = new ArrayList<String>();
+		ret.add(this.campo);
+		return ret;
+	}
+
+	@Override
+	public String getUnion() {
+		return "";
+	}
 
 }

@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
+
 import constraints.AndConstraint;
 import constraints.Constraint;
 
@@ -88,44 +90,55 @@ public class Query {
 		String sqlStatement = "SELECT t1.id,";
 		Field[] campos = this.clase.getDeclaredFields();
 		for(int i = 0; i < (campos.length-1); i++){
-			sqlStatement+=campos[i].getName() + ", ";
+			sqlStatement+="t1." + campos[i].getName() + ",";
 		}
-		sqlStatement+=campos[campos.length-1].getName();//añadir la seleccion de campos
+		sqlStatement+="t1." + campos[campos.length-1].getName();//añadir la seleccion de campos
 		sqlStatement += " FROM ";
 		String tableName = this.getTableName(con);//añadir el from de la primera tabla
 		sqlStatement += tableName + " t1 ";
-		String[] LJOnCond = this.restriccion.getOnConditions();
-		if(LJOnCond.length > 0){//si hay que añadir condicciones on al left join
-			String[] atributos = restriccion.getMultiplesAtributos();//atributos no simples
-	
-			List<Class> nombreClases = new ArrayList<Class>();
-			int it = 0;
-			Class<?> ini = this.clase;
-			while(/*(!(ini.getCanonicalName().equalsIgnoreCase("Java.lang.String")) && !(ini.getCanonicalName().equalsIgnoreCase("Int")))
-					&& */it < atributos.length){
-				Field aux = null;
-				for (Field n : ini.getDeclaredFields()) {
-					if(n.getName().equalsIgnoreCase(atributos[it])){
-						aux = n;
+		
+		List<String> camposRestriccion = this.restriccion.getCampos();
+		List<String> tablasCampos = new ArrayList<String>();
+		List<Integer> indiceTablas = new ArrayList<Integer>();
+		List<String> camposTablas = new ArrayList<String>();
+		List<String> whereCondiciones = new ArrayList<String>();
+		int index = 0;
+		
+		for(String s: camposRestriccion){
+			String[] split = StringUtils.split(s,".");
+			Class<?> c = this.clase;
+			Field campoActual = null;
+			int i = 0;
+			if(index != 0) index--;
+			while(!c.getCanonicalName().equalsIgnoreCase("Java.lang.String") && !c.getCanonicalName().equalsIgnoreCase("Int")){
+				for (Field f: c.getDeclaredFields()) {
+					if(f.getName().equalsIgnoreCase(split[i])){
+						campoActual = f;
 					}
 				}
-				nombreClases.add(aux.getType());
-				it++;
-				ini = aux.getType();
+				c = campoActual.getType();
+				if(!c.getCanonicalName().equalsIgnoreCase("Java.lang.String") && !c.getCanonicalName().equalsIgnoreCase("Int")){
+					tablasCampos.add(this.getTableName(campoActual.getType().getName()));
+					indiceTablas.add(i+1);
+					camposTablas.add(campoActual.getName());
+				}
+				i++;
+				index++;
 			}
-			String[] clases = new String[nombreClases.size()];
-			it = 0;
-			for(Class c: nombreClases){
-				clases[it] = this.getTableName(c.getCanonicalName());
-				it++;
-			}
-			for (int i = 0; i < LJOnCond.length; i++) {
-				sqlStatement += "LEFT JOIN ";
-				sqlStatement += clases[i] + " t" + (i+2) + " ON ";
-				sqlStatement += LJOnCond[i];
-			}
+			whereCondiciones.add("t" + index +"."+campoActual.getName());
 		}
-		sqlStatement += " WHERE " + restriccion.toSql();
+		for(int i=0; i < tablasCampos.size(); i++){
+			sqlStatement += " LEFT JOIN " + tablasCampos.get(i) + " t" + (i+2) + " ON " + "t" + indiceTablas.get(i) + "." + camposTablas.get(i) + " = " + "t" + (i+2) + ".id "; 
+		}
+		
+		sqlStatement += " WHERE ";
+		List<String> clausulasWhere  = new ArrayList<String>();
+		
+		for(String st: whereCondiciones)
+			clausulasWhere.add(st + " = ?");
+		
+		sqlStatement += StringUtils.join(clausulasWhere, this.restriccion.getUnion());;
+		
 		return sqlStatement;
 	}
 	
@@ -217,28 +230,3 @@ public class Query {
 		return lista;
 	}
 }
-
-
-/*
-Cosas que faltan:
- * En el método createObject, dentro del if (en el caso que no sea int o String) mirar si el objeto que queremos esta en el mapa, 
-   ahora lo recupera de la BD sin mirar antes.(HECHO)¸
-
- * Actualizar con profundidad (si uno de los campos del objeto no es int o String llamar recursivamente a actualizar)
-   Para controlar si queremos o no actualizar con profundidad el profesor dio 2 alternativas: añadir un bool al método (si está
-   a true se llamará recursivamente y si está a false hará lo que hace el método que tenemos ahora) o hacer otro método distinto 
-   que haga la función de la primera alternativa con el bool a true (updateRecursivo o como queramos llamarlo) y el método 
-   update que tenemos hecho dejarlo tal cual está(HECHO)
-   
-   
- * Borrar creo que no tenemos que tocar nada - on delete set null linea 150
-
- * Recuperación con límite: al método createObject añadirle un entero que vaya aumentando a medida que se llama a la función 
-   recursivamente, cuando llegue a un límite devuelve NULL en vez de recuperar el objeto que toque en la base de datos.
-   El límite creo que el profesor dijo que lo pusiese el usuario, podemos añadir un int lim_recuperacion a la LibreriaBBDD 
-   y un método set público para que el programador lo cambie. En el método createObject compara el int que aumenta recursivamente
-   con lib.getLim_Recuperacion para saber cuando parar. (num < lim.getLim_Recuperación)
-   
-
-   
- */

@@ -87,56 +87,63 @@ public class Query {
 	 * @throws SQLException 
 	 */
 	public String toSql(Connection con) throws SQLException {
+		//EJEMPLO: restriccion: campo1.campo2.campo3 = X AND campo1.campo2 = Y
+		
+		//PARTE SELECT...FROM TABLA T1
 		String sqlStatement = "SELECT t1.id,";
 		Field[] campos = this.clase.getDeclaredFields();
 		for(int i = 0; i < (campos.length-1); i++){
 			sqlStatement+="t1." + campos[i].getName() + ",";
 		}
-		sqlStatement+="t1." + campos[campos.length-1].getName();//añadir la seleccion de campos
+		sqlStatement+="t1." + campos[campos.length-1].getName();
 		sqlStatement += " FROM ";
-		String tableName = this.getTableName(con);//añadir el from de la primera tabla
+		String tableName = this.getTableName(con);
 		sqlStatement += tableName + " t1 ";
+		//FIN PARTE SELECT...FROM TABLA T1
 		
-		List<String> camposRestriccion = this.restriccion.getCampos();
-		List<String> tablasCampos = new ArrayList<String>();
-		List<Integer> indiceTablas = new ArrayList<Integer>();
-		List<String> camposTablas = new ArrayList<String>();
-		List<String> whereCondiciones = new ArrayList<String>();
-		int index = 0;
+		List<String> camposRestriccion = this.restriccion.getCampos(); //Lista que contiene: {campo1.campo2.campo3, campo1.campo2}
+		List<String> tablasCampos = new ArrayList<String>();	//Lista para guardar las tablas que corresponden a cada campo, al final de ejecutar queda: {tablacampo1, tablacampo2, tablacampo3, tablacampo4, tablacampo5, tablacampo6}
+		List<Integer> indiceTablas = new ArrayList<Integer>(); //Lista para guardar los indices de las tablas anteriores, por ejemplo para la tabla de campo1 (que tiene indice t2) guarda t1 que es el t necesario para hacer t1.campo1 = t2.id
+		List<String> camposTablas = new ArrayList<String>(); //Lista para guardar el nombre de los campos que se necesitan para hacer la condición de los LEFT JOIN, por ejemplo campo1 para hacer el t1.campo1 = t2.id
+		List<String> whereCondiciones = new ArrayList<String>(); //Lista con las condiciones que van a ir en el where, en el caso del ejemplo guarda: {campo3 = ?, campo2 = ?}
+		int index = 0; //indice necesario para saber donde estan los ultimos campos de cada conjunto, se usa en la linea 132
 		
 		for(String s: camposRestriccion){
-			String[] split = StringUtils.split(s,".");
-			Class<?> c = this.clase;
-			Field campoActual = null;
-			int i = 0;
-			if(index != 0) index--;
-			while(!c.getCanonicalName().equalsIgnoreCase("Java.lang.String") && !c.getCanonicalName().equalsIgnoreCase("Int")){
-				for (Field f: c.getDeclaredFields()) {
+			String[] split = StringUtils.split(s,"."); //dividimos los campos por los puntos
+			Class<?> c = this.clase; //La clase en la que tenemos que buscar el primer campo es la de la consulta
+			Field campoActual = null; //esta variable es para facilitar todo, si no es muy lioso
+			int i = 0; //indice para recorrer el array de los campos split
+			if(index != 0) index--; //Resta necesaria para ajustar la t que corresponde a cada ultima tabla de cada conjunto. Sin esta resta, en el ejemplo, en where condiciones se guardaria que campo2 del segundo conjunto pertenece a la tabla t6 cuando en realidad es t5. Sirve para ajustar eso
+			while(!c.getCanonicalName().equalsIgnoreCase("Java.lang.String") && !c.getCanonicalName().equalsIgnoreCase("Int")){ //Mientras la clase que estamos analizando no sea basica
+				for (Field f: c.getDeclaredFields()) { //Para cada campo de esa clase buscamos el que se llame igual que el del indice i del conjunto y lo guardamos en la variable campoActual para usarlo despues
 					if(f.getName().equalsIgnoreCase(split[i])){
 						campoActual = f;
 					}
 				}
-				c = campoActual.getType();
-				if(!c.getCanonicalName().equalsIgnoreCase("Java.lang.String") && !c.getCanonicalName().equalsIgnoreCase("Int")){
-					tablasCampos.add(this.getTableName(campoActual.getType().getName()));
-					indiceTablas.add(i+1);
-					camposTablas.add(campoActual.getName());
+				c = campoActual.getType(); //Ahora la clase que vamos a analizar es la del campo que estabamos buscando
+				if(!c.getCanonicalName().equalsIgnoreCase("Java.lang.String") && !c.getCanonicalName().equalsIgnoreCase("Int")){ //Si esa clase no es basica
+					tablasCampos.add(this.getTableName(campoActual.getType().getName())); //Buscamos su tabla y la guardamos en la lista de tablas
+					indiceTablas.add(i+1); //guardamos el indice de la tabla de la clase que estabamos analizando antes (para hacer el t1.campo1 = t2.id)
+					camposTablas.add(campoActual.getName()); //guardamos el nombre del campo (para hacer el t1.campo1 = t2.id)
 				}
-				i++;
-				index++;
+				i++; //aumentamos i
+				index++; //aumentamos index
 			}
-			whereCondiciones.add("t" + index +"."+campoActual.getName());
+			//esta parte se ejecuta cuando hemos llegado al ultimo campo del conjunto
+			whereCondiciones.add("t" + index +"."+campoActual.getName()); //guardamos en la lista de where: t + index (que correspondera a la tabla del ultimo campo) . nombre del campo que estabamos analizando. Es decir se guarda t3.campo3
 		}
-		for(int i=0; i < tablasCampos.size(); i++){
+		for(int i=0; i < tablasCampos.size(); i++){ //construir los left join usando todas las listas de antes
 			sqlStatement += " LEFT JOIN " + tablasCampos.get(i) + " t" + (i+2) + " ON " + "t" + indiceTablas.get(i) + "." + camposTablas.get(i) + " = " + "t" + (i+2) + ".id "; 
 		}
 		
 		sqlStatement += " WHERE ";
 		List<String> clausulasWhere  = new ArrayList<String>();
 		
+		//construccion de las clausulas where usando la tabla de condiciones
 		for(String st: whereCondiciones)
-			clausulasWhere.add(st + " = ?");
+			clausulasWhere.add(st + " = ?"); 
 		
+		//unimos las condiciones con la union que tenga la restriccion (en el caso de AND/OR se unen condicion1 AND/OR condicion2. Si es simple no se unen mediante nada, solo habria una condicion en la lista)
 		sqlStatement += StringUtils.join(clausulasWhere, this.restriccion.getUnion());;
 		
 		return sqlStatement;

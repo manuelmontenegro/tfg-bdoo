@@ -38,6 +38,7 @@ public class LibreriaBBDD {
 	private int profundidad;
 	private Guardador gua;
 	private GuardadorOactualizador guaOa;
+	private Activador act;
 
 	/**
 	 * Constructor
@@ -63,6 +64,7 @@ public class LibreriaBBDD {
 		crearColumnaIndice();
 		this.gua=new Guardador(this);
 		this.guaOa=new GuardadorOactualizador(this);
+		this.act=new Activador(this);
 	}
 
 	public Connection getConnection() throws SQLException {
@@ -377,9 +379,28 @@ public class LibreriaBBDD {
 	 */
 	public List<Object> executeQuery(Query q) throws SQLException, InstantiationException, IllegalAccessException {
 		Connection c = this.getConnection();
-		List<Object> lista = q.executeQuery(c);
+		List<Object> lista = q.executeQuery(c, this.profundidad);
 		c.close();
 		return lista;
+	}
+	
+	/**
+	 * Ejecuta la consulta recibida 
+	 * @param q
+	 * @return Lista de objetos recibidos por la consulta
+	 * @throws SQLException
+	 * @throws InstantiationException
+	 * @throws IllegalAccessException
+	 */
+	public List<Object> executeQuery(Query q, int profundidad) throws SQLException, InstantiationException, IllegalAccessException {
+		Connection c = this.getConnection();
+		List<Object> lista = q.executeQuery(c, profundidad);
+		c.close();
+		return lista;
+	}
+	
+	public void activar(Object o) throws ObjetoInexistente{
+		this.act.activar(o);
 	}
 	/**
 	 * Devuelve una nueva Query
@@ -512,9 +533,11 @@ public class LibreriaBBDD {
 		
 		Numero n=new Numero("A", 13);
 		Ciudad ciu=new Ciudad("Madrid");
+		
 		Direccion d=new Direccion("Alcalá");
 		d.setNumero(n);
 		d.setCiudad(ciu);
+		
 		Usuario u=new Usuario("Carlos");
 		u.setDireccion(d);
 		
@@ -524,18 +547,18 @@ public class LibreriaBBDD {
 			//lib.guardarOactualizar(u);
 			
 			Constraint c1 = SimpleConstraint.igualQueConstraint("nombre", "Carlos");
-			Constraint c2 = SimpleConstraint.igualQueConstraint("direccion.ciudad.nombre", "Madrid");
 			
-			Constraint c=new AndConstraint(c1,c2);
 			
 			Query q=lib.newQuery(profundidad3.Usuario.class);
-			q.setConstraint(c);
+			q.setConstraint(c1);
 			
 			System.out.println(q.toSql(lib.getConnection()));
 			Usuario user=(Usuario) lib.executeQuery(q).get(0);
 			System.out.println(user);
+			lib.activar(user);
+			System.out.println(user);
 		
-		} catch (SecurityException | IllegalArgumentException | SQLException | PropertyVetoException | InstantiationException | IllegalAccessException   e) {
+		} catch (SecurityException | IllegalArgumentException | SQLException | PropertyVetoException | InstantiationException | IllegalAccessException | ObjetoInexistente   e) {
 			e.printStackTrace();
 		} 
 	}

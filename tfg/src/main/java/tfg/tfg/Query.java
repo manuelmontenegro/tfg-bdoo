@@ -144,7 +144,7 @@ public class Query {
 			clausulasWhere.add(st + " = ?"); 
 		
 		//unimos las condiciones con la union que tenga la restriccion (en el caso de AND/OR se unen condicion1 AND/OR condicion2. Si es simple no se unen mediante nada, solo habria una condicion en la lista)
-		sqlStatement += StringUtils.join(clausulasWhere, this.restriccion.getUnion());;
+		sqlStatement += StringUtils.join(clausulasWhere, this.restriccion.getUnion());
 		
 		return sqlStatement;
 	}
@@ -157,14 +157,12 @@ public class Query {
 	 * @throws IllegalAccessException
 	 * @throws SQLException
 	 */
-	private Object createObject(Class<?> c, ResultSet rs) throws InstantiationException, IllegalAccessException, SQLException{
-		System.out.println(c.getTypeName());
+	protected Object createObject(Class<?> c, ResultSet rs, int profundidad) throws InstantiationException, IllegalAccessException, SQLException{
 		Object o = c.newInstance();
 		Identificador idenO=new Identificador((int)rs.getInt("id"), c.getCanonicalName());//identificar del objeto a crear por ahora el objeto esta vacio
 		this.lib.putIdMap(idenO, o);//insertar ese objeto vacio en el mapa
 		this.lib.putObjectMap(o, (int)rs.getInt("id"));//al ser el objeto un puntero se va a ir actualizando con el paso de este metodo
 		
-		//System.out.println(o.getClass().getName());
 		Field[] campos = o.getClass().getDeclaredFields();		//Obtener los campos del objecto
 		for(Field f: campos){									//Para cada uno de los campos:
 			Object campo = rs.getObject(f.getName());			//Obtener de la BD el valor del campo
@@ -172,10 +170,10 @@ public class Query {
 			
 			if(!f.getType().getCanonicalName().contains("java.lang.String") && !f.getType().getCanonicalName().contains("int")) //Si el campo no es ni int ni string:
 			{
+				if(profundidad==1)//se recorta aqui la recusividad para evitar hacer una consulta y crear el objeto cuando va ser null
+					campo=null;
 				if(campo!=null){
-					//System.out.println(campo);
 					Identificador iden=new Identificador((int)campo, f.getType().getCanonicalName());
-					//System.out.println(" IDENTIFICADOR: id:"+campo+" clase:"+f.getType().getCanonicalName());
 					if(this.lib.constainsKeyIdMap(iden)){ 
 						campo=this.lib.getIdMap(iden);
 					}
@@ -184,13 +182,11 @@ public class Query {
 						String sqlStatement = "SELECT * FROM " + tn + " WHERE ID = ?";
 						Connection con = lib.getConnection();
 						PreparedStatement pst;
-						System.out.println(sqlStatement+" "+campo);
 						pst = con.prepareStatement(sqlStatement); 			// Preparación de la sentencia
 						pst.setInt(1, (int) campo);
 						ResultSet rset = pst.executeQuery(); 					// Ejecución de la sentencia
 						if(rset.next()){
-							System.out.println(f.getType());
-							campo = this.createObject(f.getType(),rset);
+							campo = this.createObject(f.getType(),rset, profundidad-1);
 						}
 						else
 							campo=null;
@@ -198,7 +194,6 @@ public class Query {
 					}
 				}
 			}
-			//System.out.println("añadir a "+o.getClass().getSimpleName()+" "+campo+f.getType().getCanonicalName());
 			f.set(o, campo);									//campo = valor
 		}
 		return o;
@@ -213,7 +208,7 @@ public class Query {
 	 * @throws IllegalAccessException 
 	 * @throws InstantiationException 
 	 */
-	protected List<Object> executeQuery(Connection con) throws SQLException, InstantiationException, IllegalAccessException{
+	protected List<Object> executeQuery(Connection con, int profundidad) throws SQLException, InstantiationException, IllegalAccessException{
 		String sql = this.toSql(con); 									//Sentencia SQL a ejecutar
 		List<Object> lista = new ArrayList<Object>(); 					//Lista en la que se introducirán los objetos
 		PreparedStatement pst = con.prepareStatement(sql); 				// Preparación de la sentencia
@@ -221,6 +216,7 @@ public class Query {
 		for (int i = 1; i <= values.size(); i++) { 						// Para cada valor:
 			pst.setObject(i, values.get(i - 1)); 						// Añadir el valor a la sentencia
 		}
+		System.out.println(pst);
 		ResultSet rs = pst.executeQuery(); 								// Ejecución de la sentencia
 		Object object; 													// Instancia de la clase 'clase'
 		while (rs.next()) { 											// Mientras aún haya resultados de la sentencia SQL ejecutada
@@ -229,7 +225,7 @@ public class Query {
 				object = this.lib.getIdMap(iden);
 			}
 			else{ 														//Si no esta te creas el objeto y le añades al mapa
-				object = createObject(this.clase,rs); 								// Crea el objeto de la clase
+				object = createObject(this.clase,rs, profundidad); 								// Crea el objeto de la clase
 			}
 			lista.add(object); 											// Añadir el objeto a la lista que se devolverá
 		}

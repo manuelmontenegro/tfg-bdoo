@@ -146,6 +146,22 @@ public class LibreriaBBDD {
 		return str;
 	}
 	
+	public String getTableName(String nombreClase) throws SQLException{
+		Connection con = this.cpds.getConnection();
+		String str = "";
+		String sqlStatement = "SELECT nombretabla "
+				+ "FROM INDICETABLA "
+				+ "WHERE nombreclase = \'" 
+				+ nombreClase + "\'"; 		//Sentencia sql para obtener el nombre de la tabla asociado a la clase 'clase'
+		PreparedStatement pst;
+		pst = con.prepareStatement(sqlStatement); 			// Preparación de la sentencia
+		ResultSet rs = pst.executeQuery(); 					// Ejecución de la sentencia
+		rs.next();
+		str = rs.getString("nombretabla"); 					// str = nombre de la tabla
+		con.close();
+		return str;
+	}
+	
 	/**
 	 * Devuelve una cadena con el formato atributo1=?,atributo2=?,... para usar en la sentencia SQL
 	 */
@@ -555,6 +571,7 @@ public class LibreriaBBDD {
 			System.out.println(q.toSql(lib.getConnection()));
 			Usuario user=(Usuario) lib.executeQuery(q).get(0);
 			System.out.println(user);
+
 			lib.activar(user);
 			System.out.println(user);
 		

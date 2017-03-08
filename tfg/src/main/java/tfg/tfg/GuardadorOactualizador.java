@@ -43,7 +43,9 @@ public class GuardadorOactualizador {
 			 }
 		}
 		im.put(o, id);//guardar en im <obj, id>	
-		
+		Identificador key=new Identificador(id, o.getClass().getName());
+		this.lib.putIdMap(key, o);//hay que insertar tambien en idMap para no perder consistencia
+				
 		for (Field f : o.getClass().getDeclaredFields()) {//para cada atributo no basico{
 			
 			f.setAccessible(true);

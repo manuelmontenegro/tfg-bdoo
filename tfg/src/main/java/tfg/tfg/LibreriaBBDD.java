@@ -415,8 +415,12 @@ public class LibreriaBBDD {
 		return lista;
 	}
 	
+	public void activar(Object o, int profundidad) throws ObjetoInexistente{
+		this.act.activar(o, profundidad);
+	}
+	
 	public void activar(Object o) throws ObjetoInexistente{
-		this.act.activar(o);
+		this.act.activar(o, this.profundidad);
 	}
 	/**
 	 * Devuelve una nueva Query
@@ -569,10 +573,10 @@ public class LibreriaBBDD {
 			q.setConstraint(c1);
 			
 			System.out.println(q.toSql(lib.getConnection()));
-			Usuario user=(Usuario) lib.executeQuery(q).get(0);
+			Usuario user=(Usuario) lib.executeQuery(q, 1).get(0);
 			System.out.println(user);
 
-			lib.activar(user);
+			lib.activar(user, 3);
 			System.out.println(user);
 		
 		} catch (SecurityException | IllegalArgumentException | SQLException | PropertyVetoException | InstantiationException | IllegalAccessException | ObjetoInexistente   e) {

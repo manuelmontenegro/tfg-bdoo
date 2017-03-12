@@ -6,6 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import excepciones.LibreriaBBDDException;
 import excepciones.ObjetoInexistente;
 
 public class Activador {
@@ -22,9 +23,9 @@ public class Activador {
  * @param o
  * @throws ObjetoInexistente
  */
-	protected void activar(Object o, int profundidad) throws ObjetoInexistente {
+	protected void activar(Object o, int profundidad) throws LibreriaBBDDException {
 		if(!this.lib.constainsKeyObjectMap(o))
-			throw new ObjetoInexistente();
+			throw new LibreriaBBDDException(new ObjetoInexistente());
 		if(profundidad>0){
 			for(Field f: o.getClass().getDeclaredFields()){										
 				f.setAccessible(true);	
@@ -34,17 +35,15 @@ public class Activador {
 					try {
 						obj = f.get(o); 
 					} catch (IllegalArgumentException | IllegalAccessException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						throw new LibreriaBBDDException(e);
 					}
 					
 					if(obj==null){ //Si el objeto es nulo hay que recuperarle de la base de datos
 						try {
 							f.set(o, recuperar(o, f.getName(), f.getType(), profundidad-1) );//Sustituir el null por el objeto recuperado de la BBDD
-						} catch (IllegalArgumentException | IllegalAccessException  e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}	
+						} catch (IllegalArgumentException | IllegalAccessException e) {
+							throw new LibreriaBBDDException(e);
+						}
 					}
 					else{ //Si el objeto no es nulo llamaremos activar con este objeto para recuperar sus objetos hijos
 						activar(obj, profundidad-1);
@@ -85,17 +84,17 @@ public class Activador {
 				if(rsHijo.next()){
 					try {
 						objeto = q.createObject(class1, rsHijo, profundidad); //Te creas el objeto hijo que es el que tienes que devolver
-					} catch (InstantiationException | IllegalAccessException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+					} catch (InstantiationException e) {
+						throw new LibreriaBBDDException(e);
+					} catch (IllegalAccessException e) {
+						throw new LibreriaBBDDException(e);
 					}
 				}
 				c.close();
 				return objeto;
 			}
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			throw new LibreriaBBDDException(e);
 		}
 		return null;
 	}

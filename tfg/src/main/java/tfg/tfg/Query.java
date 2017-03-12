@@ -86,7 +86,7 @@ public class Query {
 	 * @return Sentencia SQL.
 	 * @throws SQLException 
 	 */
-	public String toSql(Connection con) throws SQLException {
+	protected String toSql(Connection con) throws SQLException {
 		//EJEMPLO: restriccion: campo1.campo2.campo3 = X AND campo1.campo2 = Y
 		
 		//PARTE SELECT...FROM TABLA T1

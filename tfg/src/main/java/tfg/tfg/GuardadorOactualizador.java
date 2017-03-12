@@ -10,6 +10,8 @@ import java.util.IdentityHashMap;
 
 import com.mysql.jdbc.Statement;
 
+import excepciones.LibreriaBBDDException;
+
 
 public class GuardadorOactualizador {
 	
@@ -27,12 +29,22 @@ public class GuardadorOactualizador {
 	 * @param im mapa parcial de objetos guardados para no volver a guardar uno ya guardado
 	 * @throws SQLException
 	 */
-	void guardarOactualizar(Object o, IdentityHashMap<Object, Integer> im) throws SQLException {
+	void guardarOactualizar(Object o, IdentityHashMap<Object, Integer> im) throws LibreriaBBDDException {
 		int id=-1;
-		String nombreTabla=crearTabla(o);
+		String nombreTabla;
+		try {
+			nombreTabla = crearTabla(o);
+		} catch (SQLException e) {
+			throw new LibreriaBBDDException(e);
+		}
 		if(!im.containsKey(o) && !this.lib.constainsKeyObjectMap(o) ){
-			alterarTabla(nombreTabla, o);
-			id=insertarFilaVacia(nombreTabla);
+			try {
+				alterarTabla(nombreTabla, o);
+				id=insertarFilaVacia(nombreTabla);
+			} catch (SQLException e) {
+				throw new LibreriaBBDDException(e);
+			}
+			
 		}
 		else{//esta en alguno de los dos
 			 if(im.containsKey(o)){// obtener id de la fila con de alguno de los dos mapas
@@ -52,8 +64,8 @@ public class GuardadorOactualizador {
 			Object atributo=null;
 			try {
 				atributo=f.get(o);
-			} catch (IllegalArgumentException | IllegalAccessException e1) {
-				e1.printStackTrace();
+			} catch (IllegalArgumentException | IllegalAccessException e) {
+				throw new LibreriaBBDDException(e);
 			}
 			if(!esBasico(f)){
 				if(atributo!=null){					
@@ -86,7 +98,7 @@ public class GuardadorOactualizador {
 		return id;
 	}
 	
-	private void update(String nombreTabla, Object o, IdentityHashMap<Object, Integer> im) throws SQLException{
+	private void update(String nombreTabla, Object o, IdentityHashMap<Object, Integer> im) throws LibreriaBBDDException{
 		String claves = "";
 		ArrayList<String> valores = new ArrayList<String>();	
 		
@@ -98,8 +110,8 @@ public class GuardadorOactualizador {
 			Object atributo=null;
 			try {
 				atributo=f.get(o);
-			} catch (IllegalArgumentException | IllegalAccessException e1) {
-				e1.printStackTrace();
+			} catch (IllegalArgumentException | IllegalAccessException e) {
+				throw new LibreriaBBDDException(e);
 			}
 
 			if(!esBasico(f)){
@@ -122,14 +134,20 @@ public class GuardadorOactualizador {
 				  " SET " + claves +
 				  " WHERE ID = ?";
 		System.out.println(sqlUpdate);
-		Connection con = this.lib.getConnection();
-		PreparedStatement pst = con.prepareStatement(sqlUpdate);
-		for (int i = 0; i < valores.size(); i++) { 
-			pst.setObject(i+1, valores.get(i));
+		Connection con;
+		try {
+			con = this.lib.getConnection();
+			PreparedStatement pst = con.prepareStatement(sqlUpdate);
+			for (int i = 0; i < valores.size(); i++) { 
+				pst.setObject(i+1, valores.get(i));
+			}
+			pst.setObject(valores.size()+1, im.get(o));	//Añadir la ID parametrizada
+			pst.execute();
+			con.close();
+		} catch (SQLException e) {
+			throw new LibreriaBBDDException(e);
 		}
-		pst.setObject(valores.size()+1, im.get(o));	//Añadir la ID parametrizada
-		pst.execute();
-		con.close();
+		
 	}
 
 	/**
@@ -288,7 +306,7 @@ public class GuardadorOactualizador {
 					try {
 						ob = f.get(o);
 					} catch (IllegalArgumentException | IllegalAccessException e) {
-						e.printStackTrace();
+						throw new LibreriaBBDDException(e);
 					} // Cargar el objeto en ob
 				
 				if(ob==null){

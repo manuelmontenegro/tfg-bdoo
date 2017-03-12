@@ -24,6 +24,7 @@ import profundidad3.Numero;
 import profundidad3.Usuario;
 
 import excepciones.InsertarDuplicado;
+import excepciones.LibreriaBBDDException;
 
 
 public class LibreriaBBDD {
@@ -185,7 +186,7 @@ public class LibreriaBBDD {
 	 * @throws IllegalAccessException
 	 * @throws InsertarDuplicado
 	 */
-	public void guardar(Object o) throws SQLException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, InsertarDuplicado {
+	public void guardar(Object o) throws LibreriaBBDDException {
 		this.gua.guardar(o);
 	}
 	
@@ -241,21 +242,27 @@ public class LibreriaBBDD {
 	 * @throws SQLException
 	 * @throws ObjetoInexistente 
 	 */
-	public void delete(Object o) throws SQLException, ObjetoInexistente{
+	public void delete(Object o) throws LibreriaBBDDException{
 		if(!this.objectMap.containsKey(o)){
-			throw new ObjetoInexistente();
+			throw new LibreriaBBDDException(new ObjetoInexistente());
 		}
-		String tableName = this.getTableName(o);
-		String sqlStatement = "DELETE FROM " + tableName +
-				  " WHERE ID = ?";							//Sentencia SQL de eliminación
-		Connection con = this.cpds.getConnection();
-		PreparedStatement pst;
-		Integer id = this.objectMap.get(o);
-		pst = con.prepareStatement(sqlStatement);			//Preparación de la sentencia
-		pst.setObject(1, id);			//Añadir la ID parametrizada
-		System.out.println(pst);
-		pst.execute();
-		con.close();
+		String tableName;
+		Integer id;
+		try {
+			tableName = this.getTableName(o);
+			String sqlStatement = "DELETE FROM " + tableName +
+					  " WHERE ID = ?";							//Sentencia SQL de eliminación
+			Connection con = this.cpds.getConnection();
+			PreparedStatement pst;
+			id = this.objectMap.get(o);
+			pst = con.prepareStatement(sqlStatement);			//Preparación de la sentencia
+			pst.setObject(1, id);			//Añadir la ID parametrizada
+			System.out.println(pst);
+			pst.execute();
+			con.close();
+		} catch (SQLException e) {
+			throw new LibreriaBBDDException(e);
+		}
 		this.objectMap.remove(o);
 		this.idMap.remove(o.getClass().getName()+"-"+id);
 
@@ -270,11 +277,16 @@ public class LibreriaBBDD {
 	 * @throws IllegalArgumentException 
 	 * @throws ObjetoInexistente 
 	 */
-	public void update(Object o) throws SQLException, IllegalArgumentException, IllegalAccessException, ObjetoInexistente{
+	public void update(Object o) throws LibreriaBBDDException{
 		if(!this.objectMap.containsKey(o)){
-			throw new ObjetoInexistente();
+			throw new LibreriaBBDDException(new ObjetoInexistente());
 		}
-		ArrayList<Atributo> atributos = sacarAtributosNoNulos(o);
+		ArrayList<Atributo> atributos;
+		try {
+			atributos = sacarAtributosNoNulos(o);
+		} catch (IllegalArgumentException | IllegalAccessException e) {
+			throw new LibreriaBBDDException(e);
+		}
 		String claves = "";
 		for (int i = 0; i < atributos.size(); i++) {
 			if (i != 0)
@@ -291,35 +303,53 @@ public class LibreriaBBDD {
 				try {
 					val = o.getClass().getDeclaredField(a.getNombre());
 				} catch (NoSuchFieldException | SecurityException e) {
-					e.printStackTrace();
+					throw new LibreriaBBDDException(e);
 				}
 				val.setAccessible(true);
 				if(!val.getType().getCanonicalName().contains("java.lang.String") && !val.getType().getCanonicalName().contains("int")){ //Si el campo no es ni int ni string:
-					valores.add(this.objectMap.get(val.get(o)));
+					try {
+						valores.add(this.objectMap.get(val.get(o)));
+					} catch (IllegalArgumentException | IllegalAccessException e) {
+						throw new LibreriaBBDDException(e);
+					}
 				}
 				else{
-					valores.add(val.get(o));
+					try {
+						valores.add(val.get(o));
+					} catch (IllegalArgumentException | IllegalAccessException e) {
+						throw new LibreriaBBDDException(e);
+					}
 				}
 		
 		}
 		
-		String tableName = this.getTableName(o);											//Nombre de la tabla de la base de datos perteneciente a la clase del objeto
-		String sqlStatement = "UPDATE " + tableName +
-							  " SET " + claves +
-							  " WHERE ID = ?";		
-		Connection con = this.cpds.getConnection();
-		PreparedStatement pst;
-		pst = con.prepareStatement(sqlStatement);											//Preparación de la sentencia
-		for (int i = 1; i <= valores.size(); i++) { 
-			pst.setObject(i, valores.get(i-1)); 						// Añadir el valor a la sentencia
-		}
-		pst.setObject(o.getClass().getDeclaredFields().length+1, this.objectMap.get(o));	//Añadir la ID parametrizada
-		pst.execute();
-		con.close();
+		String tableName;
+		try {
+			tableName = this.getTableName(o);//Nombre de la tabla de la base de datos perteneciente a la clase del objeto
+			String sqlStatement = "UPDATE " + tableName +
+					  " SET " + claves +
+					  " WHERE ID = ?";		
+			Connection con = this.cpds.getConnection();
+			PreparedStatement pst;
+			pst = con.prepareStatement(sqlStatement);											//Preparación de la sentencia
+			for (int i = 1; i <= valores.size(); i++) { 
+				pst.setObject(i, valores.get(i-1)); 						// Añadir el valor a la sentencia
+			}
+			pst.setObject(o.getClass().getDeclaredFields().length+1, this.objectMap.get(o));	//Añadir la ID parametrizada
+			pst.execute();
+			con.close();
+		} catch (SQLException e) {
+			throw new LibreriaBBDDException(e);
+		}											
+		
 	}
 	
-	public void updateProfundidad(Object o) throws IllegalArgumentException, IllegalAccessException, SQLException, ObjetoInexistente{
-		updateProfundidad(o,this.profundidad);
+	public void updateProfundidad(Object o) throws LibreriaBBDDException{
+		try {
+			updateProfundidad(o,this.profundidad);
+		} catch (IllegalArgumentException | IllegalAccessException | SQLException | ObjetoInexistente e) {
+			throw new LibreriaBBDDException(e);
+		}
 	}
 	
 	/**
@@ -352,7 +382,7 @@ public class LibreriaBBDD {
 				try {
 					val = o.getClass().getDeclaredField(a.getNombre());
 				} catch (NoSuchFieldException | SecurityException e) {
-					e.printStackTrace();
+					throw new LibreriaBBDDException(e);
 				}
 				val.setAccessible(true);
 				if(!val.getType().getCanonicalName().contains("java.lang.String") && !val.getType().getCanonicalName().contains("int")){ 					//Si el campo no es ni int ni string:
@@ -408,18 +438,25 @@ public class LibreriaBBDD {
 	 * @throws InstantiationException
 	 * @throws IllegalAccessException
 	 */
-	public List<Object> executeQuery(Query q, int profundidad) throws SQLException, InstantiationException, IllegalAccessException {
-		Connection c = this.getConnection();
-		List<Object> lista = q.executeQuery(c, profundidad);
-		c.close();
+	public List<Object> executeQuery(Query q, int profundidad) throws LibreriaBBDDException {
+		Connection c;
+		List<Object> lista;
+		try {
+			c = this.getConnection();
+			lista = q.executeQuery(c, profundidad);
+			c.close();
+		} catch (SQLException | InstantiationException | IllegalAccessException e) {
+			throw new LibreriaBBDDException(e);
+		}
+		
 		return lista;
 	}
 	
-	public void activar(Object o, int profundidad) throws ObjetoInexistente{
+	public void activar(Object o, int profundidad) throws LibreriaBBDDException{
 		this.act.activar(o, profundidad);
 	}
 	
-	public void activar(Object o) throws ObjetoInexistente{
+	public void activar(Object o) throws LibreriaBBDDException{
 		this.act.activar(o, this.profundidad);
 	}
 	/**
@@ -500,8 +537,12 @@ public class LibreriaBBDD {
 	 * @throws SecurityException
 	 * @throws SQLException
 	 */
-	public List<Object> queryByExample(Object o) throws InstantiationException, IllegalAccessException, NoSuchFieldException, SecurityException, SQLException{
-		return queryByExample(o, new ArrayList<String>());		//Devuelve la lista recibida del método QueryByExample con una lista en la que se ignoran todos los campos que sean 0 o nulos
+	public List<Object> queryByExample(Object o) throws LibreriaBBDDException{
+		try {
+			return queryByExample(o, new ArrayList<String>());
+		} catch (SecurityException e) {
+			throw new LibreriaBBDDException(e);
+		}		//Devuelve la lista recibida del método QueryByExample con una lista en la que se ignoran todos los campos que sean 0 o nulos
 	}
 	
 	/**
@@ -516,7 +557,7 @@ public class LibreriaBBDD {
 	 * @throws NoSuchFieldException
 	 * @throws SecurityException
 	 */
-	public List<Object> queryByExample(Object o, List<String> notToIgnore) throws InstantiationException, IllegalAccessException, SQLException, NoSuchFieldException, SecurityException{
+	public List<Object> queryByExample(Object o, List<String> notToIgnore) throws LibreriaBBDDException{
 		List<Object> l = new ArrayList<Object>();						//Lista a devolver
 		List<Constraint> constraintList = new ArrayList<Constraint>();	//Lista de rectricciones que se aplicarán
 		Field[] campos = o.getClass().getDeclaredFields();				//Obtener los campos del objecto
@@ -525,17 +566,30 @@ public class LibreriaBBDD {
 			boolean notIgnoring = false;								//Booleano para comprobar si el campo se ignorará en caso de ser 0 o nulo
 			
 			if(f.getType().getCanonicalName().contains("int")){			//Si el campo es un entero:
-				int n = (int)f.get(o);									//Obtener el valor del entero
+				int n;
+				try {
+					n = (int)f.get(o);
+				} catch (IllegalArgumentException | IllegalAccessException e) {
+					throw new LibreriaBBDDException(e);
+				}									//Obtener el valor del entero
 				if(n != 0)												//Si el entero es distinto de 0:
 					notIgnoring = true;									//El campo no se ignora
 			}
 			else{														//Si el campo no es un entero:
-				if(f.get(o) != null)									//Si es distinto de nulo:
-					notIgnoring = true;									//El campo no se ignora
+				try {
+					if(f.get(o) != null)									//Si es distinto de nulo:
+						notIgnoring = true;
+				} catch (IllegalArgumentException | IllegalAccessException e) {
+					throw new LibreriaBBDDException(e);
+				}									//El campo no se ignora
 			}
 			
-			if(notToIgnore.contains(f.getName()) || notIgnoring)		//Si el campo aparece en la lista de no ignorados o se ha determinado que no se va a ignorar:
-				constraintList.add(SimpleConstraint.igualQueConstraint(f.getName(), f.get(o)));		//Se añade a la lista de restricciones
+			if(notToIgnore.contains(f.getName()) || notIgnoring)
+				try {
+					constraintList.add(SimpleConstraint.igualQueConstraint(f.getName(), f.get(o)));
+				} catch (IllegalArgumentException | IllegalAccessException e) {
+					throw new LibreriaBBDDException(e);
+				}		//Se añade a la lista de restricciones
 		}
 		
 		Constraint c = new AndConstraint(constraintList);				//Se crea la restricción AND con las restricciones a cumplir de la lista
@@ -544,7 +598,11 @@ public class LibreriaBBDD {
 		}
 		Query q = new Query(o.getClass(), this);						//Se crea la consulta
 		q.setConstraint(c);												//Se determina que la restricción de la consulta es la AND
-		l = executeQuery(q);											//Se ejecuta la consulta
+		try {
+			l = executeQuery(q);
+		} catch (InstantiationException | IllegalAccessException | SQLException e) {
+			throw new LibreriaBBDDException(e);
+		}											//Se ejecuta la consulta
 		return l;
 	}
 
@@ -579,8 +637,8 @@ public class LibreriaBBDD {
 			lib.activar(user, 3);
 			System.out.println(user);
 		
-		} catch (SecurityException | IllegalArgumentException | SQLException | PropertyVetoException | InstantiationException | IllegalAccessException | ObjetoInexistente   e) {
-			e.printStackTrace();
+		} catch (SecurityException | IllegalArgumentException | SQLException | PropertyVetoException   e) {
+			throw new LibreriaBBDDException(e);
 		} 
 	}
 

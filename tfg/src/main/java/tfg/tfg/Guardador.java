@@ -7,6 +7,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import excepciones.InsertarDuplicado;
+import excepciones.LibreriaBBDDException;
 
 public class Guardador {
 	
@@ -18,18 +19,28 @@ public class Guardador {
 		this.nombreTabla = "";
 	}
 	
-	void guardar(Object o) throws SQLException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, InsertarDuplicado{
+	void guardar(Object o) throws LibreriaBBDDException{
 		ArrayList<Atributo> atributos = sacarAtributos(o);
 		this.nombreTabla = o.getClass().getSimpleName();
 		String nombreClase = o.getClass().getName();
-		crearTabla(atributos, nombreClase);
+		try {
+			crearTabla(atributos, nombreClase);
+		} catch (SQLException e) {
+			throw new LibreriaBBDDException(e);
+		}
 		if(!this.lib.constainsKeyObjectMap(o)) {
-			int id = insertarObjeto(o, this.lib.sacarAtributosNoNulos(o));
+			int id;
+			try {
+				id = insertarObjeto(o, this.lib.sacarAtributosNoNulos(o));
+			} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException
+					| SQLException e) {
+				throw new LibreriaBBDDException(e);
+			}
 			this.lib.putObjectMap(o, id);
 			Identificador iden=new Identificador(id, o.getClass().getName());
 			this.lib.putIdMap(iden, o);
 		} else {
-			throw new InsertarDuplicado();
+			throw new LibreriaBBDDException(new InsertarDuplicado());
 		}
 	}
 	
@@ -55,9 +66,8 @@ public class Guardador {
 				}
 				try {
 					guardar(ob); 
-				} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException
-						| SQLException | InsertarDuplicado e1) {
-					e1.printStackTrace();
+				} catch (SecurityException | IllegalArgumentException e) {
+					throw new LibreriaBBDDException(e);
 				}
 				tipo = "INTEGER, ADD FOREIGN KEY ("+n.getName()+") REFERENCES "+this.nombreTabla+"(id)"; // El tipo ya va a ser una foreign key	
 			}

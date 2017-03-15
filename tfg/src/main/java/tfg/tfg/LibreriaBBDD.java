@@ -17,12 +17,8 @@ import constraints.AndConstraint;
 import constraints.Constraint;
 import constraints.SimpleConstraint;
 import excepciones.ObjetoInexistente;
-
-import profundidad3.Ciudad;
-import profundidad3.Direccion;
-import profundidad3.Numero;
-import profundidad3.Usuario;
-
+import pruebaList.Direccion;
+import pruebaList.Usuario;
 import excepciones.InsertarDuplicado;
 import excepciones.LibreriaBBDDException;
 
@@ -50,7 +46,7 @@ public class LibreriaBBDD {
 	 * @throws PropertyVetoException 
 	 * @throws SQLException 
 	 */
-	public LibreriaBBDD(String nombrebbdd, String user, String pass) throws PropertyVetoException, SQLException {
+	public LibreriaBBDD(String nombrebbdd, String user, String pass) throws LibreriaBBDDException{
 
 		this.cpds = new ComboPooledDataSource();
 
@@ -77,14 +73,20 @@ public class LibreriaBBDD {
 	/**
 	 * Metodo para crear tabla indiceTabla
 	 */
-	private void crearTablaIndice() throws SQLException {
+	private void crearTablaIndice() throws LibreriaBBDDException{
 		String sql = "CREATE TABLE IF NOT EXISTS indicetabla " + "(id INTEGER not NULL AUTO_INCREMENT, "
 				+ " nombreclase VARCHAR(255)," + " nombretabla VARCHAR(255)," + " PRIMARY KEY ( id ))";
 		PreparedStatement pst;
-		Connection c = this.getConnection();
-		pst = c.prepareStatement(sql);
-		pst.execute();
-		c.close();
+		Connection c;
+		try {
+			c = this.getConnection();
+			pst = c.prepareStatement(sql);
+			pst.execute();
+			c.close();
+		} catch (SQLException e) {
+			throw new LibreriaBBDDException(e);
+		}
+		
 
 	}
 
@@ -93,7 +95,7 @@ public class LibreriaBBDD {
 	 * 
 	 * @throws SQLException
 	 */
-	private void crearColumnaIndice() throws SQLException {
+	private void crearColumnaIndice() throws LibreriaBBDDException {
 		String sql = "CREATE TABLE IF NOT EXISTS indicecolumna " 
 				+ "(id INTEGER not NULL AUTO_INCREMENT, "
 				+ " idtabla INTEGER, " 
@@ -102,10 +104,17 @@ public class LibreriaBBDD {
 				+"  CONSTRAINT fk_table FOREIGN KEY (idtabla) REFERENCES indicetabla(id)) ";
 		PreparedStatement pst;
 		//System.out.println(sql);
-		Connection c = this.getConnection();
-		pst = c.prepareStatement(sql);
-		pst.execute();
-		c.close();
+		Connection c;
+		try {
+			c = this.getConnection();
+			pst = c.prepareStatement(sql);
+			pst.execute();
+			c.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 
 	}
 
@@ -113,9 +122,13 @@ public class LibreriaBBDD {
 	 * Metodo para conectar a la base de datos
 	 * @throws PropertyVetoException 
 	 */
-	private void conectar() throws PropertyVetoException {
+	private void conectar()throws LibreriaBBDDException{
 
-		this.cpds.setDriverClass("com.mysql.jdbc.Driver");
+		try {
+			this.cpds.setDriverClass("com.mysql.jdbc.Driver");
+		} catch (PropertyVetoException e) {
+			throw new LibreriaBBDDException(e);
+		}
 
 		this.cpds.setJdbcUrl("jdbc:mysql://localhost/" + this.nombrebbdd);
 		this.cpds.setUser(this.user);
@@ -609,37 +622,23 @@ public class LibreriaBBDD {
 	public static void main(String[] argv) {
 		LibreriaBBDD lib = null;
 		
-		Numero n=new Numero("A", 13);
-		Ciudad ciu=new Ciudad("Madrid");
-		
-		Direccion d=new Direccion("Alcalá");
-		d.setNumero(n);
-		d.setCiudad(ciu);
-		
-		Usuario u=new Usuario("Carlos");
-		u.setDireccion(d);
-		
-		try {
-			
-			lib = new LibreriaBBDD("tfg", "root", "");
-			//lib.guardarOactualizar(u);
-			
-			Constraint c1 = SimpleConstraint.igualQueConstraint("nombre", "Carlos");
-			
-			
-			Query q=lib.newQuery(profundidad3.Usuario.class);
-			q.setConstraint(c1);
-			
-			System.out.println(q.toSql(lib.getConnection()));
-			Usuario user=(Usuario) lib.executeQuery(q, 1).get(0);
-			System.out.println(user);
 
-			lib.activar(user, 3);
-			System.out.println(user);
+		Usuario u=new Usuario("pablo", 22);
+		u.addDireccion(new Direccion("alcala", 7));
 		
-		} catch (SecurityException | IllegalArgumentException | SQLException | PropertyVetoException   e) {
-			throw new LibreriaBBDDException(e);
-		} 
+			
+	
+		lib = new LibreriaBBDD("tfg", "root", "");
+	
+		try {
+			lib.guardarOactualizar(u);
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		
 	}
 
 }

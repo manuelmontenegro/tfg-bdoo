@@ -1,12 +1,15 @@
 package tfg.tfg;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
+import java.util.List;
 
 import com.mysql.jdbc.Statement;
 
@@ -42,7 +45,8 @@ public class GuardadorOactualizador {
 				alterarTabla(nombreTabla, o);
 				id=insertarFilaVacia(nombreTabla);
 			} catch (SQLException e) {
-				throw new LibreriaBBDDException(e);
+				//throw new LibreriaBBDDException(e);
+				e.printStackTrace();
 			}
 			
 		}
@@ -68,7 +72,10 @@ public class GuardadorOactualizador {
 				throw new LibreriaBBDDException(e);
 			}
 			if(!esBasico(f)){
-				if(atributo!=null){					
+				if(atributo!=null){		
+					//si es una lista hay que tratarlo aparte
+					//te recorres la lista insertando las direcciones y quedandote con su id
+					//con el id del usuario y la id de la direccion recien insertada si inserta la fila en la tabla intermedia
 					if(!im.containsKey(atributo)){//    if(!esta en im)
 						guardarOactualizar(atributo, im);
 					}
@@ -189,7 +196,7 @@ public class GuardadorOactualizador {
 	}
 	
 	/**
-	 * inserta una fia en el indice de tablas
+	 * inserta una fila en el indice de tablas
 	 * primero solo introduce el nombre de completo de la clase y deja que se elija solo el id
 	 * despues con ese id el nombre simple de la clase los concatena para crear el nombre de la tabla
 	 * finalmente actualiza esa fila con el nombre de tabla 
@@ -299,24 +306,46 @@ public class GuardadorOactualizador {
 				tipo = "VARCHAR(255)";
 			else if (f.getType().getCanonicalName().equalsIgnoreCase("Int"))
 				tipo = "INTEGER";
-			else{ //Si no es ningun tipo primitivo quiere decir que es una referencia a otro objeto
-				Object ob = null;
+			else{
 				f.setAccessible(true); 
-		
-					try {
-						ob = f.get(o);
-					} catch (IllegalArgumentException | IllegalAccessException e) {
-						throw new LibreriaBBDDException(e);
-					} // Cargar el objeto en ob
-				
-				if(ob==null){
-					objetoNulo=true; 
-					//System.out.println("el objeto contiene un objeto null");
-					tipo = "INTEGER";
-				}
-				else{
-					String nombreTablaReferenciada=crearTabla(ob);
-					tipo = "INTEGER, ADD FOREIGN KEY ("+f.getName()+") REFERENCES "+nombreTablaReferenciada+"(id) ON DELETE SET NULL"; // El tipo ya va a ser una foreign key	
+				try {
+					if(f.get(o) instanceof List<?>){ // Si el atributo es una lista
+						
+						Type friendsGenericType = f.getGenericType();
+						ParameterizedType friendsParameterizedType = (ParameterizedType) friendsGenericType;
+						Type[] friendsType = friendsParameterizedType.getActualTypeArguments();
+						Class userClass = (Class) friendsType[0];
+						/*if(si es string)
+						else if(si es entero)*/
+						//else
+						Object param = userClass.newInstance();
+						String nombreTablaParametro = crearTabla(param);
+						String nombreTablaObjeto = lib.getTableName(o);
+						crearTablaIntermedia(nombreTablaObjeto,nombreTablaParametro);
+						objetoNulo=true;
+					
+					}
+					else{ //Si no es ningun tipo primitivo quiere decir que es una referencia a otro objeto
+						Object ob = null;
+							try {
+								ob = f.get(o);
+							} catch (IllegalArgumentException | IllegalAccessException e) {
+								throw new LibreriaBBDDException(e);
+							} // Cargar el objeto en ob
+						
+						if(ob==null){
+							objetoNulo=true; 
+							//System.out.println("el objeto contiene un objeto null");
+							tipo = "INTEGER";
+						}
+						else{
+							String nombreTablaReferenciada=crearTabla(ob);
+							tipo = "INTEGER, ADD FOREIGN KEY ("+f.getName()+") REFERENCES "+nombreTablaReferenciada+"(id) ON DELETE SET NULL"; // El tipo ya va a ser una foreign key	
+						}
+					}
+				} catch (IllegalArgumentException | IllegalAccessException | SecurityException | InstantiationException e) {
+					//throw new LibreriaBBDDException(e);
+					e.printStackTrace();
 				}
 			}
 			if(!objetoNulo){
@@ -326,6 +355,23 @@ public class GuardadorOactualizador {
 		}
 		return atributos;
 	}
+	private void crearTablaIntermedia(String nto, String ntp) throws SQLException {
+		String sql = "CREATE TABLE IF NOT EXISTS "+nto+"_"+ntp
+				+" (id INTEGER not NULL AUTO_INCREMENT,"
+				+ "id_"+nto+" INTEGER, "
+				+ "id_"+ntp+" INTEGER, "
+				+ "posicion INTEGER, "
+				+ " PRIMARY KEY ( id ),"
+				+ " CONSTRAINT fk_"+nto+"_"+ntp+"_"+nto+" FOREIGN KEY (id_"+nto+") REFERENCES "+ntp+"(id),"
+				+ " CONSTRAINT fk_"+nto+"_"+ntp+"_"+ntp+" FOREIGN KEY (id_"+ntp+") REFERENCES "+nto+"(id) )";
+		
+		System.out.println(sql);
+		Connection c = this.lib.getConnection();
+		PreparedStatement pst = c.prepareStatement(sql);
+		pst.execute();
+		c.close();
+	}
+
 	/**
 	 * dado un nombre de tabla busca en indice tabla su id y lo devuelve
 	 * @param nombreTabla

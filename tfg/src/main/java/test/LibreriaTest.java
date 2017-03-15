@@ -26,11 +26,7 @@ public class LibreriaTest extends TestCase{
 
 	
     protected void setUp() {
-    	try {
-			this.lib=new LibreriaBBDD("tfg", "root", "");
-		} catch (PropertyVetoException | SQLException e) {
-			e.printStackTrace();
-		}
+    	this.lib=new LibreriaBBDD("tfg", "root", "");
     	
 		this.usuario = new Usuario("manuel", 22);
 		this.usuario.setDireccion( new Direccion("Toledo",20) );

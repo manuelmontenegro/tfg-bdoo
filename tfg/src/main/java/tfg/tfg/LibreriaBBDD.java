@@ -625,6 +625,8 @@ public class LibreriaBBDD {
 
 		Usuario u=new Usuario("pablo", 22);
 		u.addDireccion(new Direccion("alcala", 7));
+		u.addGusto("paella");
+		u.addNumero(3);
 		
 			
 	

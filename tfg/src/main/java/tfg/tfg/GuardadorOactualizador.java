@@ -315,14 +315,21 @@ public class GuardadorOactualizador {
 						ParameterizedType friendsParameterizedType = (ParameterizedType) friendsGenericType;
 						Type[] friendsType = friendsParameterizedType.getActualTypeArguments();
 						Class userClass = (Class) friendsType[0];
-						/*if(si es string)
-						else if(si es entero)*/
-						//else
-						Object param = userClass.newInstance();
-						String nombreTablaParametro = crearTabla(param);
+						System.out.println("Nombre de la clase del parametro lista: " + userClass.getName());
+						System.out.println("Nombre del atributo: " + f.getName());
 						String nombreTablaObjeto = lib.getTableName(o);
-						crearTablaIntermedia(nombreTablaObjeto,nombreTablaParametro);
-						objetoNulo=true;
+						if(userClass.getName().equalsIgnoreCase("Java.lang.String") ){
+							crearTablaMultivalorado(nombreTablaObjeto, f.getName(),"VARCHAR(255)");
+						}
+						else if(userClass.getName().equalsIgnoreCase("Java.lang.Integer")){
+							crearTablaMultivalorado(nombreTablaObjeto, f.getName(), "INTEGER");
+						}
+						else{
+							Object param = userClass.newInstance();
+							String nombreTablaParametro = crearTabla(param);
+							crearTablaIntermedia(nombreTablaObjeto,nombreTablaParametro);
+							objetoNulo=true;
+						}
 					
 					}
 					else{ //Si no es ningun tipo primitivo quiere decir que es una referencia a otro objeto
@@ -355,6 +362,22 @@ public class GuardadorOactualizador {
 		}
 		return atributos;
 	}
+	private void crearTablaMultivalorado(String nto, String nombreCampo, String tipo) throws SQLException {
+		String sql = "CREATE TABLE IF NOT EXISTS "+nto+"_"+nombreCampo
+				+" (id INTEGER not NULL AUTO_INCREMENT,"
+				+ "id_"+nto+" INTEGER, "
+				+ nombreCampo+ " "+tipo+", "
+				+ "posicion INTEGER, "
+				+ " PRIMARY KEY ( id ),"
+				+ " CONSTRAINT fk_"+nto+"_"+nombreCampo+"_"+nombreCampo+" FOREIGN KEY (id_"+nto+") REFERENCES "+nto+"(id) )";
+		
+		System.out.println(sql);
+		Connection c = this.lib.getConnection();
+		PreparedStatement pst = c.prepareStatement(sql);
+		pst.execute();
+		c.close();
+	}
+
 	private void crearTablaIntermedia(String nto, String ntp) throws SQLException {
 		String sql = "CREATE TABLE IF NOT EXISTS "+nto+"_"+ntp
 				+" (id INTEGER not NULL AUTO_INCREMENT,"

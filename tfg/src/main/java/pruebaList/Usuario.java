@@ -30,9 +30,15 @@ public class Usuario {
 	public void addGusto(String gusto){
 		this.gustos.add(gusto);
 	}
+	public void setGusto(String gusto, int pos){
+		this.gustos.set(pos, gusto);
+	}
 	
 	public void addNumero(int numero){
 		this.numeros.add(numero);
+	}
+	public void setNumero(int numero, int pos){
+		this.numeros.set(pos, numero);
 	}
 
 }

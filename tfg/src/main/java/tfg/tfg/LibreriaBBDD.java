@@ -634,6 +634,11 @@ public class LibreriaBBDD {
 	
 		try {
 			lib.guardarOactualizar(u);
+			
+			u.setGusto("morcilla", 0);
+			u.setNumero(7, 0);
+			lib.guardarOactualizar(u);
+			
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

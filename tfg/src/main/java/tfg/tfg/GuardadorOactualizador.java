@@ -61,7 +61,7 @@ public class GuardadorOactualizador {
 		im.put(o, id);//guardar en im <obj, id>	
 		Identificador key=new Identificador(id, o.getClass().getName());
 		this.lib.putIdMap(key, o);//hay que insertar tambien en idMap para no perder consistencia
-				
+			
 		for (Field f : o.getClass().getDeclaredFields()) {//para cada atributo no basico{
 			
 			f.setAccessible(true);
@@ -73,17 +73,75 @@ public class GuardadorOactualizador {
 			}
 			if(!esBasico(f)){
 				if(atributo!=null){		
-					//si es una lista hay que tratarlo aparte
-					//te recorres la lista insertando las direcciones y quedandote con su id
-					//con el id del usuario y la id de la direccion recien insertada si inserta la fila en la tabla intermedia
-					if(!im.containsKey(atributo)){//    if(!esta en im)
-						guardarOactualizar(atributo, im);
+					try {
+						if(atributo instanceof List<?>){//si es una lista hay que tratarlo aparte
+							
+							//Aqui sacamos el parametro de la lista
+							Type friendsGenericType = f.getGenericType();
+							ParameterizedType friendsParameterizedType = (ParameterizedType) friendsGenericType;
+							Type[] friendsType = friendsParameterizedType.getActualTypeArguments();
+							Class userClass = (Class) friendsType[0];
+							String nombreTablaObjeto = lib.getTableName(o);
+							
+							//Si son basicos insertamos en la tabla de multivalorado
+							if(userClass.getName().equalsIgnoreCase("Java.lang.String") || userClass.getName().equalsIgnoreCase("Java.lang.Integer") ){
+								for(int i = 0; i < ((List<?>) atributo).size();i++){
+									insertarMultivalorado(nombreTabla, f.getName(), id,  ((List<?>) atributo).get(i), i);
+								}
+							}
+							else{ //Si el parametro es un objeto 
+								//te recorres la lista llamando aguardarOactualizar con cada Drieccion
+								//con el id del usuario, la id de la direccion recien insertada y la posicion que ocupa se inserta la fila en la tabla intermedia	
+	
+							}
+							
+						}
+						else{
+							if(!im.containsKey(atributo)){//    if(!esta en im)
+								guardarOactualizar(atributo, im);
+							}
+						}
+					} catch (IllegalArgumentException | SQLException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
 					}
 				}
 			}
 		}	
 		update(nombreTabla, o, im);
 	}
+	private void insertarMultivalorado(String nombreTablaPadre, String nombreLista, int idPadre, Object elemento, int posicion) throws SQLException {
+		
+		String sql = "SELECT * FROM "+nombreTablaPadre+"_"+nombreLista
+				+" WHERE id_"+nombreTablaPadre+"  = ? AND "+
+				" posicion = ?";
+		System.out.println(sql);
+		PreparedStatement pst;
+		Connection c = this.lib.getConnection();
+		pst = c.prepareStatement(sql);
+		pst.setInt(1, idPadre);
+		pst.setInt(2, posicion);
+		ResultSet rs = pst.executeQuery();
+		if (rs.next()) {//ya esta insertado, se actualiza
+			String sqlUpdate="UPDATE "+nombreTablaPadre+"_"+nombreLista+" SET "+nombreLista+" =? WHERE id = ?";
+			PreparedStatement pstU;
+			pstU = c.prepareStatement(sqlUpdate);
+			pstU.setObject(1, elemento);
+			pstU.setInt(2, rs.getInt("id"));
+			pstU.execute();
+		}
+		else{//hay que insertar
+			String sqlInsert="INSERT INTO "+nombreTablaPadre+"_"+nombreLista+" ( id_"+nombreTablaPadre+", "+nombreLista+", posicion) VALUES (?, ?, ?)";
+			PreparedStatement pstI;
+			pstI = c.prepareStatement(sqlInsert);
+			pstI.setInt(1, idPadre);
+			pstI.setObject(2, elemento);
+			pstI.setInt(3, posicion);
+			pstI.execute();
+		}
+		c.close();
+	}
+
 	/**
 	 * Inserta una fila vacia en la tabla pasada como argumento
 	 * @param nombreTabla
@@ -122,11 +180,21 @@ public class GuardadorOactualizador {
 			}
 
 			if(!esBasico(f)){
-				if(atributo!=null){					
-					valores.add(im.get(atributo)+"");
-					if (i != 0)
-						claves += " , ";
-					claves+=f.getName()+" =?";
+				if(atributo!=null){	
+					try {
+						if( f.get(o) instanceof List<?> ){//si es una lista actualizar la lista
+							
+						}
+						else{//
+							valores.add(im.get(atributo)+"");
+							if (i != 0)
+								claves += " , ";
+							claves+=f.getName()+" =?";
+						}
+					} catch (IllegalArgumentException | IllegalAccessException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 				}
 			}
 			else {//es basico
@@ -311,25 +379,26 @@ public class GuardadorOactualizador {
 				try {
 					if(f.get(o) instanceof List<?>){ // Si el atributo es una lista
 						
+						//Aqui sacamos el parametro de la lista
 						Type friendsGenericType = f.getGenericType();
 						ParameterizedType friendsParameterizedType = (ParameterizedType) friendsGenericType;
 						Type[] friendsType = friendsParameterizedType.getActualTypeArguments();
 						Class userClass = (Class) friendsType[0];
-						System.out.println("Nombre de la clase del parametro lista: " + userClass.getName());
-						System.out.println("Nombre del atributo: " + f.getName());
 						String nombreTablaObjeto = lib.getTableName(o);
+						
+						//Si son basicos creamos una tabla de multivalorado
 						if(userClass.getName().equalsIgnoreCase("Java.lang.String") ){
 							crearTablaMultivalorado(nombreTablaObjeto, f.getName(),"VARCHAR(255)");
 						}
 						else if(userClass.getName().equalsIgnoreCase("Java.lang.Integer")){
 							crearTablaMultivalorado(nombreTablaObjeto, f.getName(), "INTEGER");
 						}
-						else{
+						else{ //Si el parametro es un objeto creamos una tabla intermedia.
 							Object param = userClass.newInstance();
 							String nombreTablaParametro = crearTabla(param);
 							crearTablaIntermedia(nombreTablaObjeto,nombreTablaParametro);
-							objetoNulo=true;
 						}
+						objetoNulo=true;
 					
 					}
 					else{ //Si no es ningun tipo primitivo quiere decir que es una referencia a otro objeto
@@ -362,6 +431,14 @@ public class GuardadorOactualizador {
 		}
 		return atributos;
 	}
+	
+	/**
+	 * Creamos tabla multivalorado para listas con atributos basicos.
+	 * @param nto
+	 * @param nombreCampo
+	 * @param tipo
+	 * @throws SQLException
+	 */
 	private void crearTablaMultivalorado(String nto, String nombreCampo, String tipo) throws SQLException {
 		String sql = "CREATE TABLE IF NOT EXISTS "+nto+"_"+nombreCampo
 				+" (id INTEGER not NULL AUTO_INCREMENT,"
@@ -378,6 +455,12 @@ public class GuardadorOactualizador {
 		c.close();
 	}
 
+	/**
+	 * Creamos una tabla intermedia con los id de las dos tablas mas la posicion.
+	 * @param nto
+	 * @param ntp
+	 * @throws SQLException
+	 */
 	private void crearTablaIntermedia(String nto, String ntp) throws SQLException {
 		String sql = "CREATE TABLE IF NOT EXISTS "+nto+"_"+ntp
 				+" (id INTEGER not NULL AUTO_INCREMENT,"
@@ -430,7 +513,7 @@ public class GuardadorOactualizador {
 				+ a.getNombre() + "\" , \"" + a.getNombre() + "\"  )";
 		//POR AHORA EL NOMBRE DEL ATRIBUTO DE LA CLASE Y EL NOMBRE DE LA CALUMNA DONDE SE VA A GUARDAR ES EL MISMO
 		//YA QUE NO PUEDE HABER DOS ATRIBUTOS DE UNA CLASE CON EL MISNO NOMBRE
-		//System.out.println(sql);
+		System.out.println(sql1);
 		Connection c1 = this.lib.getConnection();
 		PreparedStatement pst1 = c1.prepareStatement(sql1);
 		pst1.execute();

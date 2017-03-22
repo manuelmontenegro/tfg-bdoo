@@ -35,6 +35,7 @@ public class MainTest {
 				e.printStackTrace();
 			}
 			System.out.println(o.getClass().getName());
+			System.out.println(f.getName());
 		}
 		
 	}

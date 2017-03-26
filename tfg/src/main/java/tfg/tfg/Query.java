@@ -168,7 +168,29 @@ public class Query {
 			Object campo = rs.getObject(f.getName());			//Obtener de la BD el valor del campo
 			f.setAccessible(true);								//Permitir acceder a campos privados
 			
-			if(!f.getType().getCanonicalName().contains("java.lang.String") && !f.getType().getCanonicalName().contains("int")) //Si el campo no es ni int ni string:
+			if(f.get(null) instanceof List<?>) //si es de tipo lista:
+			{	
+				//Crear lista
+				List<?> l;
+				l = (List<?>) f.getType().newInstance();
+				//Buscar tabla de la lista
+				String nombreCampo = f.getName();
+				String nombreTabla = this.getTableName(this.lib.getConnection());
+				String nombreTablaMultivalorado = nombreTabla + "_" + nombreCampo;
+				String sqlStatement = "SELECT " + nombreCampo + " FROM " + nombreTablaMultivalorado + " WHERE id_" + nombreTabla + " = " + idenO.getIdentificador() + " ORDER BY posicion";
+				Connection con = lib.getConnection();
+				PreparedStatement pst;
+				pst = con.prepareStatement(sqlStatement);
+				pst.setInt(1, (int) campo);
+				ResultSet rset = pst.executeQuery();
+				if(rset.next()){
+					//l.add(rs.getObject(nombreCampo));
+				}
+				//Recorrer tabla e ir añadiendo a la lista los valores
+				
+				campo = l;
+			}
+			else if(!f.getType().getCanonicalName().contains("java.lang.String") && !f.getType().getCanonicalName().contains("int")) //Si el campo no es ni int ni string:
 			{
 				if(profundidad==1)//se recorta aqui la recusividad para evitar hacer una consulta y crear el objeto cuando va ser null
 					campo=null;

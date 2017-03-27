@@ -622,11 +622,17 @@ public class LibreriaBBDD {
 	public static void main(String[] argv) {
 		LibreriaBBDD lib = null;
 		
+		
+		Usuario u1=new Usuario("marcos", 25);
 
 		Usuario u=new Usuario("pablo", 22);
 		u.addDireccion(new Direccion("alcala", 7));
+		u.addDireccion(new Direccion("marques de Argueso", 14));
 		u.addGusto("paella");
 		u.addNumero(3);
+		
+		u.addUsuario(u1);
+		u1.addUsuario(u);
 		
 			
 	
@@ -635,9 +641,9 @@ public class LibreriaBBDD {
 		try {
 			lib.guardarOactualizar(u);
 			
-			u.setGusto("morcilla", 0);
-			u.setNumero(7, 0);
-			lib.guardarOactualizar(u);
+			//u.setGusto("morcilla", 0);
+			//u.setNumero(7, 0);
+			//lib.guardarOactualizar(u);
 			
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block

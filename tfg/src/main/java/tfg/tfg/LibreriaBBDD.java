@@ -622,36 +622,17 @@ public class LibreriaBBDD {
 	public static void main(String[] argv) {
 		LibreriaBBDD lib = null;
 		
-		
-		Usuario u1=new Usuario("marcos", 25);
-
-		Usuario u=new Usuario("pablo", 22);
-		u.addDireccion(new Direccion("alcala", 7));
-		u.addDireccion(new Direccion("marques de Argueso", 14));
-		u.addGusto("paella");
-		u.addNumero(3);
-		
-		u.addUsuario(u1);
-		u1.addUsuario(u);
-		
-			
-	
 		lib = new LibreriaBBDD("tfg", "root", "");
-	
+		Usuario u = null;
+
+		Query q = lib.newQuery(Usuario.class);
+		SimpleConstraint c = SimpleConstraint.igualQueConstraint("nombre", "pablo");
+		q.setConstraint(c);
 		try {
-			lib.guardarOactualizar(u);
-			
-			//u.setGusto("morcilla", 0);
-			//u.setNumero(7, 0);
-			//lib.guardarOactualizar(u);
-			
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		
-		
+			List<Object> lu = lib.executeQuery(q);
+			u = (Usuario) lu.get(0);
+		} catch (InstantiationException | IllegalAccessException | SQLException e) {e.printStackTrace();}
+
 	}
 
 }

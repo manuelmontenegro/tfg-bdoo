@@ -1,6 +1,8 @@
 package tfg.tfg;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -85,17 +87,23 @@ public class Query {
 	 * @param con (Conexión con la BD).
 	 * @return Sentencia SQL.
 	 * @throws SQLException 
+	 * @throws IllegalAccessException 
+	 * @throws IllegalArgumentException 
 	 */
-	protected String toSql(Connection con) throws SQLException {
+	protected String toSql(Connection con) throws SQLException, IllegalArgumentException, IllegalAccessException {
 		//EJEMPLO: restriccion: campo1.campo2.campo3 = X AND campo1.campo2 = Y
 		
 		//PARTE SELECT...FROM TABLA T1
 		String sqlStatement = "SELECT t1.id,";
 		Field[] campos = this.clase.getDeclaredFields();
-		for(int i = 0; i < (campos.length-1); i++){
-			sqlStatement+="t1." + campos[i].getName() + ",";
+		List<String> selectCampos = new ArrayList<String>();
+		for(int i = 0; i < (campos.length); i++){
+			campos[i].setAccessible(true);
+			if(!campos[i].getType().isAssignableFrom(List.class)){
+				selectCampos.add("t1." + campos[i].getName());
+			}
 		}
-		sqlStatement+="t1." + campos[campos.length-1].getName();
+		sqlStatement+= StringUtils.join(selectCampos,",");
 		sqlStatement += " FROM ";
 		String tableName = this.getTableName(con);
 		sqlStatement += tableName + " t1 ";
@@ -165,30 +173,58 @@ public class Query {
 		
 		Field[] campos = o.getClass().getDeclaredFields();		//Obtener los campos del objecto
 		for(Field f: campos){									//Para cada uno de los campos:
-			Object campo = rs.getObject(f.getName());			//Obtener de la BD el valor del campo
+			Object campo = null;
+			if(!f.getType().isAssignableFrom(List.class))
+				campo = rs.getObject(f.getName());			//Obtener de la BD el valor del campo
 			f.setAccessible(true);								//Permitir acceder a campos privados
 			
-			if(f.get(null) instanceof List<?>) //si es de tipo lista:
+			if(f.getType().isAssignableFrom(List.class)) //si es de tipo lista:
 			{	
-				//Crear lista
-				List<?> l;
-				l = (List<?>) f.getType().newInstance();
-				//Buscar tabla de la lista
-				String nombreCampo = f.getName();
-				String nombreTabla = this.getTableName(this.lib.getConnection());
-				String nombreTablaMultivalorado = nombreTabla + "_" + nombreCampo;
-				String sqlStatement = "SELECT " + nombreCampo + " FROM " + nombreTablaMultivalorado + " WHERE id_" + nombreTabla + " = " + idenO.getIdentificador() + " ORDER BY posicion";
-				Connection con = lib.getConnection();
-				PreparedStatement pst;
-				pst = con.prepareStatement(sqlStatement);
-				pst.setInt(1, (int) campo);
-				ResultSet rset = pst.executeQuery();
-				if(rset.next()){
-					//l.add(rs.getObject(nombreCampo));
+				//CREAR LISTA AQUI
+				//List l;
+				Type friendsGenericType = f.getGenericType();
+				ParameterizedType friendsParameterizedType = (ParameterizedType) friendsGenericType;
+				Type[] friendsType = friendsParameterizedType.getActualTypeArguments();
+				Class userClass = (Class) friendsType[0];
+				if(userClass.getName().equalsIgnoreCase("Java.lang.String") || userClass.getName().equalsIgnoreCase("Java.lang.Integer"))
+				{//Lista de objetos String o int
+					String nombreCampo = f.getName();
+					String nombreTabla = this.getTableName(this.lib.getConnection());
+					String nombreTablaMultivalorado = nombreTabla + "_" + nombreCampo;
+					String sqlStatement = "SELECT " + nombreCampo + " FROM " + nombreTablaMultivalorado + " WHERE id_" + nombreTabla + " = " + idenO.getIdentificador() + " ORDER BY posicion";
+					Connection con = lib.getConnection();
+					PreparedStatement pst;
+					pst = con.prepareStatement(sqlStatement);
+					ResultSet rset = pst.executeQuery();
+					while(rset.next()){
+						System.out.println(rset.getObject(nombreCampo));
+						//Añadir el objeto a la lista
+					}
 				}
-				//Recorrer tabla e ir añadiendo a la lista los valores
-				
-				campo = l;
+				else
+				{
+					String nombreCampo = f.getName();
+					String nombreTabla = this.getTableName(this.lib.getConnection());
+					String nombreTablaObjetoMultivalorado = this.getTableName(userClass.getName());
+					String nombreTablaMultivalorado = nombreTabla + "_" + nombreTablaObjetoMultivalorado;
+					String selectStatement = "id_" + nombreTablaObjetoMultivalorado;
+					String whereStatement = "id_" + nombreTabla;
+					if(nombreTabla.equalsIgnoreCase(nombreTablaObjetoMultivalorado))
+					{
+						selectStatement = "id2_" + nombreTablaObjetoMultivalorado;
+						whereStatement = "id1_" + nombreTabla;
+					}
+					
+					String sqlStatement = "SELECT " + selectStatement + " FROM " + nombreTablaMultivalorado + " WHERE " + whereStatement + " = " + idenO.getIdentificador() + " ORDER BY posicion";
+					Connection con = lib.getConnection();
+					PreparedStatement pst;
+					pst = con.prepareStatement(sqlStatement);
+					ResultSet rset = pst.executeQuery();
+					while(rset.next()){
+						//Seleccionar los objetos de la bd con el id que devuelve el rset y añadir a la lista
+					}
+				}
+				campo = null;
 			}
 			else if(!f.getType().getCanonicalName().contains("java.lang.String") && !f.getType().getCanonicalName().contains("int")) //Si el campo no es ni int ni string:
 			{

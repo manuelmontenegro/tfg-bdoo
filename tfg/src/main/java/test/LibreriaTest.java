@@ -74,7 +74,7 @@ public class LibreriaTest extends TestCase{
 	
 
 			
-		} catch (InstantiationException | IllegalAccessException | SecurityException| SQLException e) {
+		} catch (SecurityException e) {
 			e.printStackTrace();
 			fail();
 		}

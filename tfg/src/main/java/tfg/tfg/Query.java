@@ -158,106 +158,6 @@ public class Query {
 	}
 	
 	/**
-	 * Recibe un ResulSet y devuelve un objeto de la clase 'clase' obteniendo los campos de la BD.
-	 * @param rs
-	 * @return Object o
-	 * @throws InstantiationException
-	 * @throws IllegalAccessException
-	 * @throws SQLException
-	 */
-	protected Object createObject(Class<?> c, ResultSet rs, int profundidad) throws InstantiationException, IllegalAccessException, SQLException{
-		Object o = c.newInstance();
-		Identificador idenO=new Identificador((int)rs.getInt("id"), c.getCanonicalName());//identificar del objeto a crear por ahora el objeto esta vacio
-		this.lib.putIdMap(idenO, o);//insertar ese objeto vacio en el mapa
-		this.lib.putObjectMap(o, (int)rs.getInt("id"));//al ser el objeto un puntero se va a ir actualizando con el paso de este metodo
-		
-		Field[] campos = o.getClass().getDeclaredFields();		//Obtener los campos del objecto
-		for(Field f: campos){									//Para cada uno de los campos:
-			Object campo = null;
-			if(!f.getType().isAssignableFrom(List.class))
-				campo = rs.getObject(f.getName());			//Obtener de la BD el valor del campo
-			f.setAccessible(true);								//Permitir acceder a campos privados
-			
-			if(f.getType().isAssignableFrom(List.class)) //si es de tipo lista:
-			{	
-				//CREAR LISTA AQUI
-				//List l;
-				Type friendsGenericType = f.getGenericType();
-				ParameterizedType friendsParameterizedType = (ParameterizedType) friendsGenericType;
-				Type[] friendsType = friendsParameterizedType.getActualTypeArguments();
-				Class userClass = (Class) friendsType[0];
-				if(userClass.getName().equalsIgnoreCase("Java.lang.String") || userClass.getName().equalsIgnoreCase("Java.lang.Integer"))
-				{//Lista de objetos String o int
-					String nombreCampo = f.getName();
-					String nombreTabla = this.getTableName(this.lib.getConnection());
-					String nombreTablaMultivalorado = nombreTabla + "_" + nombreCampo;
-					String sqlStatement = "SELECT " + nombreCampo + " FROM " + nombreTablaMultivalorado + " WHERE id_" + nombreTabla + " = " + idenO.getIdentificador() + " ORDER BY posicion";
-					Connection con = lib.getConnection();
-					PreparedStatement pst;
-					pst = con.prepareStatement(sqlStatement);
-					ResultSet rset = pst.executeQuery();
-					while(rset.next()){
-						System.out.println(rset.getObject(nombreCampo));
-						//Añadir el objeto a la lista
-					}
-				}
-				else
-				{
-					String nombreCampo = f.getName();
-					String nombreTabla = this.getTableName(this.lib.getConnection());
-					String nombreTablaObjetoMultivalorado = this.getTableName(userClass.getName());
-					String nombreTablaMultivalorado = nombreTabla + "_" + nombreTablaObjetoMultivalorado;
-					String selectStatement = "id_" + nombreTablaObjetoMultivalorado;
-					String whereStatement = "id_" + nombreTabla;
-					if(nombreTabla.equalsIgnoreCase(nombreTablaObjetoMultivalorado))
-					{
-						selectStatement = "id2_" + nombreTablaObjetoMultivalorado;
-						whereStatement = "id1_" + nombreTabla;
-					}
-					
-					String sqlStatement = "SELECT " + selectStatement + " FROM " + nombreTablaMultivalorado + " WHERE " + whereStatement + " = " + idenO.getIdentificador() + " ORDER BY posicion";
-					Connection con = lib.getConnection();
-					PreparedStatement pst;
-					pst = con.prepareStatement(sqlStatement);
-					ResultSet rset = pst.executeQuery();
-					while(rset.next()){
-						//Seleccionar los objetos de la bd con el id que devuelve el rset y añadir a la lista
-					}
-				}
-				campo = null;
-			}
-			else if(!f.getType().getCanonicalName().contains("java.lang.String") && !f.getType().getCanonicalName().contains("int")) //Si el campo no es ni int ni string:
-			{
-				if(profundidad==1)//se recorta aqui la recusividad para evitar hacer una consulta y crear el objeto cuando va ser null
-					campo=null;
-				if(campo!=null){
-					Identificador iden=new Identificador((int)campo, f.getType().getCanonicalName());
-					if(this.lib.constainsKeyIdMap(iden)){ 
-						campo=this.lib.getIdMap(iden);
-					}
-					else {
-						String tn = this.getTableName(f.getType().getCanonicalName());
-						String sqlStatement = "SELECT * FROM " + tn + " WHERE ID = ?";
-						Connection con = lib.getConnection();
-						PreparedStatement pst;
-						pst = con.prepareStatement(sqlStatement); 			// Preparación de la sentencia
-						pst.setInt(1, (int) campo);
-						ResultSet rset = pst.executeQuery(); 					// Ejecución de la sentencia
-						if(rset.next()){
-							campo = this.createObject(f.getType(),rset, profundidad-1);
-						}
-						else
-							campo=null;
-						con.close();
-					}
-				}
-			}
-			f.set(o, campo);									//campo = valor
-		}
-		return o;
-	}
-	
-	/**
 	 * Ejecuta la sentencia SQL con las constraint creadas y devuelve una lista con los resultados.
 	 * @param con (Conexión con la BD).
 	 * @param idMap 
@@ -267,6 +167,7 @@ public class Query {
 	 * @throws InstantiationException 
 	 */
 	protected List<Object> executeQuery(Connection con, int profundidad) throws SQLException, InstantiationException, IllegalAccessException{
+		ObjectCreator objCrtr = new ObjectCreator(this.lib);
 		String sql = this.toSql(con); 									//Sentencia SQL a ejecutar
 		List<Object> lista = new ArrayList<Object>(); 					//Lista en la que se introducirán los objetos
 		PreparedStatement pst = con.prepareStatement(sql); 				// Preparación de la sentencia
@@ -274,7 +175,6 @@ public class Query {
 		for (int i = 1; i <= values.size(); i++) { 						// Para cada valor:
 			pst.setObject(i, values.get(i - 1)); 						// Añadir el valor a la sentencia
 		}
-		System.out.println(pst);
 		ResultSet rs = pst.executeQuery(); 								// Ejecución de la sentencia
 		Object object; 													// Instancia de la clase 'clase'
 		while (rs.next()) { 											// Mientras aún haya resultados de la sentencia SQL ejecutada
@@ -283,7 +183,7 @@ public class Query {
 				object = this.lib.getIdMap(iden);
 			}
 			else{ 														//Si no esta te creas el objeto y le añades al mapa
-				object = createObject(this.clase,rs, profundidad); 								// Crea el objeto de la clase
+				object = objCrtr.createObject(this.clase,rs, profundidad); 								// Crea el objeto de la clase
 			}
 			lista.add(object); 											// Añadir el objeto a la lista que se devolverá
 		}

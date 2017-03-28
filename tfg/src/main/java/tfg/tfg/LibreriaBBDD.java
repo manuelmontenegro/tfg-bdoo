@@ -436,10 +436,21 @@ public class LibreriaBBDD {
 	 * @throws InstantiationException
 	 * @throws IllegalAccessException
 	 */
-	public List<Object> executeQuery(Query q) throws SQLException, InstantiationException, IllegalAccessException {
-		Connection c = this.getConnection();
-		List<Object> lista = q.executeQuery(c, this.profundidad);
-		c.close();
+	public List<Object> executeQuery(Query q) throws LibreriaBBDDException {
+		Connection c;
+		try {
+			c = this.getConnection();
+		} catch (SQLException e) {
+			throw new LibreriaBBDDException(e);
+		}
+		List<Object> lista;
+		try {
+			lista = q.executeQuery(c, this.profundidad);
+			c.close();
+		} catch (InstantiationException | IllegalAccessException | SQLException e) {
+			throw new LibreriaBBDDException(e);
+		}
+		
 		return lista;
 	}
 	
@@ -611,11 +622,7 @@ public class LibreriaBBDD {
 		}
 		Query q = new Query(o.getClass(), this);						//Se crea la consulta
 		q.setConstraint(c);												//Se determina que la restricción de la consulta es la AND
-		try {
-			l = executeQuery(q);
-		} catch (InstantiationException | IllegalAccessException | SQLException e) {
-			throw new LibreriaBBDDException(e);
-		}											//Se ejecuta la consulta
+		l = executeQuery(q);
 		return l;
 	}
 
@@ -628,10 +635,8 @@ public class LibreriaBBDD {
 		Query q = lib.newQuery(Usuario.class);
 		SimpleConstraint c = SimpleConstraint.igualQueConstraint("nombre", "pablo");
 		q.setConstraint(c);
-		try {
-			List<Object> lu = lib.executeQuery(q);
-			u = (Usuario) lu.get(0);
-		} catch (InstantiationException | IllegalAccessException | SQLException e) {e.printStackTrace();}
+		List<Object> lu = lib.executeQuery(q);
+		u = (Usuario) lu.get(0);
 
 	}
 

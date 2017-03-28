@@ -83,7 +83,8 @@ public class Activador {
 				ResultSet rsHijo = psHijo.executeQuery();
 				if(rsHijo.next()){
 					try {
-						objeto = q.createObject(class1, rsHijo, profundidad); //Te creas el objeto hijo que es el que tienes que devolver
+						ObjectCreator objCrtr = new ObjectCreator(this.lib);
+						objeto = objCrtr.createObject(class1, rsHijo, profundidad); //Te creas el objeto hijo que es el que tienes que devolver
 					} catch (InstantiationException e) {
 						throw new LibreriaBBDDException(e);
 					} catch (IllegalAccessException e) {

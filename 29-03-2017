@@ -1,0 +1,13 @@
+siguiente reunion miercoles 19 de abril a las 19:00(7 de la tarde)
+
+el nombre de la tabla intermedia entre dos clases deve llamerse como el nombre de la clase y el nombre del atributo 
+por si hay varis listas de direcciones
+
+incluir en la tabla de usuarios una columna mas por cada atributo complejo
+el nombre de la clase real con la que se ha creado el objeto con getclas
+
+asi para reconstruir el objeto a partir de la columna aunque el tipo se abstracto 
+se puede saber de que clase se ha creado y usar class.forname() para crearle
+
+al guardar o actualizar se deve borrar toda la tabla intermedia para ese usuario y insertar los valores actuales
+al recupera  se hacer order by por posiccion como esta hecho y ir insertando por ese orden asi al borrar y recuperar te devolvera una lista mas pequeña

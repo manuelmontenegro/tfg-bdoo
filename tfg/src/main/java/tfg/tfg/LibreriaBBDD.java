@@ -210,7 +210,7 @@ public class LibreriaBBDD {
 	 * @param o objeto a guardar
 	 * @throws SQLException
 	 */
-	public void guardarOactualizar(Object o) throws SQLException{
+	public void guardarOactualizar(Object o) throws LibreriaBBDDException{
 		IdentityHashMap<Object, Integer> im=new IdentityHashMap<Object, Integer>();
 		this.guaOa.guardarOactualizar(o, im);
 		this.objectMap.putAll(im);
@@ -630,13 +630,34 @@ public class LibreriaBBDD {
 		LibreriaBBDD lib = null;
 		
 		lib = new LibreriaBBDD("tfg", "root", "");
-		Usuario u = null;
+		
+		Usuario u1=new Usuario("andres", 35);
+		Usuario u = new Usuario("pablo", 27);
+		
+		Direccion d1 =new Direccion("alcala", 35);
+		u.addDireccionL(d1);
+		u.addDireccionS(d1);
+		
+		u.addGustoL("potaje");
+		u.addGustoS("potaje");
+		
+		u.addNumeroL(777);
+		u.addNumeroS(777);
+		
+		u.addUsuarioS(u1);
+		u1.addUsuarioS(u);
 
-		Query q = lib.newQuery(Usuario.class);
+		
+		
+		
+		
+		lib.guardarOactualizar(u);
+		
+		/*Query q = lib.newQuery(Usuario.class);
 		SimpleConstraint c = SimpleConstraint.igualQueConstraint("nombre", "pablo");
 		q.setConstraint(c);
 		List<Object> lu = lib.executeQuery(q);
-		u = (Usuario) lu.get(0);
+		u = (Usuario) lu.get(0);*/
 
 	}
 

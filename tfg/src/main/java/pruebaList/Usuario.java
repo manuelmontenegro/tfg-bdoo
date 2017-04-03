@@ -1,16 +1,24 @@
 package pruebaList;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class Usuario {
 	
 	private String nombre;
 	private int edad;
-	private List<Direccion>direcciones;
-	private List<String> gustos;
-	private List<Integer> numeros;
-	private List<Usuario> usuarios;
+	
+	private List<Direccion>direccionesL;
+	private List<String> gustosL;
+	private List<Integer> numerosL;
+	private List<Usuario> usuariosL;
+	
+	private Set<Direccion>direccionesS;
+	private Set<String> gustosS;
+	private Set<Integer> numerosS;
+	private Set<Usuario> usuariosS;
 	
 	public Usuario(){
 		
@@ -19,40 +27,70 @@ public class Usuario {
 	public Usuario(String nombre, int edad){
 		this.nombre=nombre;
 		this.edad=edad;
-		this.direcciones=new ArrayList<Direccion>();
-		this.gustos=new ArrayList<String>();	
-		this.numeros=new ArrayList<Integer>();	
-		this.usuarios=new ArrayList<Usuario>();	
+		
+		this.direccionesL=new ArrayList<Direccion>();
+		this.gustosL=new ArrayList<String>();	
+		this.numerosL=new ArrayList<Integer>();	
+		this.usuariosL=new ArrayList<Usuario>();	
+		
+		this.direccionesS=new HashSet<Direccion>();
+		this.gustosS=new HashSet<String>();	
+		this.numerosS=new HashSet<Integer>();	
+		this.usuariosS=new HashSet<Usuario>();			
 	}
 	
-	public void addDireccion(Direccion direcion){
-		this.direcciones.add(direcion);
+	public void addDireccionL(Direccion direcion){
+		this.direccionesL.add(direcion);
 	}
-	
-	
-	public void addGusto(String gusto){
-		this.gustos.add(gusto);
-	}
-	public void setGusto(String gusto, int pos){
-		this.gustos.set(pos, gusto);
-	}
-	
-	
-	public void addNumero(int numero){
-		this.numeros.add(numero);
-	}
-	public void setNumero(int numero, int pos){
-		this.numeros.set(pos, numero);
+	public void setDireccionL(Direccion direccion, int pos){
+		this.direccionesL.set(pos, direccion);
 	}
 	
 	
-	public void addUsuario(Usuario usuario){
-		this.usuarios.add(usuario);
+	public void addGustoL(String gusto){
+		this.gustosL.add(gusto);
 	}
-	public void setUsuario(Usuario usuario, int pos){
-		this.usuarios.set(pos, usuario);
+	public void setGustoL(String gusto, int pos){
+		this.gustosL.set(pos, gusto);
+	}
+	
+	
+	public void addNumeroL(int numero){
+		this.numerosL.add(numero);
+	}
+	public void setNumeroL(int numero, int pos){
+		this.numerosL.set(pos, numero);
+	}
+	
+	
+	public void addUsuarioL(Usuario usuario){
+		this.usuariosL.add(usuario);
+	}
+	public void setUsuarioL(Usuario usuario, int pos){
+		this.usuariosL.set(pos, usuario);
 	}
 
+	
+	
+	
+	public void addDireccionS(Direccion direcion){
+		this.direccionesS.add(direcion);
+	}
+	
+	
+	public void addGustoS(String gusto){
+		this.gustosS.add(gusto);
+	}
+	
+	public void addNumeroS(int numero){
+		this.numerosS.add(numero);
+	}
+	
+	
+	
+	public void addUsuarioS(Usuario usuario){
+		this.usuariosS.add(usuario);
+	}
 	
 
 }

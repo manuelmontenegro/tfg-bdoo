@@ -36,7 +36,8 @@ public class Usuario {
 		this.direccionesS=new HashSet<Direccion>();
 		this.gustosS=new HashSet<String>();	
 		this.numerosS=new HashSet<Integer>();	
-		this.usuariosS=new HashSet<Usuario>();			
+				
+		this.usuariosS=new HashSet<Usuario>();
 	}
 	
 	public void addDireccionL(Direccion direcion){
@@ -76,14 +77,23 @@ public class Usuario {
 	public void addDireccionS(Direccion direcion){
 		this.direccionesS.add(direcion);
 	}
+	public void setDireccionesS(Set<Direccion> direcciones){
+		this.direccionesS=direcciones;
+	}
 	
 	
 	public void addGustoS(String gusto){
 		this.gustosS.add(gusto);
 	}
+	public void setGustosS(Set<String> gustos){
+		this.gustosS=gustos;
+	}
 	
 	public void addNumeroS(int numero){
 		this.numerosS.add(numero);
+	}
+	public void setNumerosS(Set<Integer> numeros){
+		this.numerosS=numeros;
 	}
 	
 	
@@ -91,6 +101,8 @@ public class Usuario {
 	public void addUsuarioS(Usuario usuario){
 		this.usuariosS.add(usuario);
 	}
-	
+	public void setUsuarioS(Set<Usuario> usuarios){
+		this.usuariosS=usuarios;
+	}
 
 }

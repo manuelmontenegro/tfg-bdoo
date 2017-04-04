@@ -8,8 +8,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Set;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 
@@ -644,14 +646,34 @@ public class LibreriaBBDD {
 		u.addNumeroL(777);
 		u.addNumeroS(777);
 		
+		u.addUsuarioL(u1);
 		u.addUsuarioS(u1);
-		u1.addUsuarioS(u);
 
+
+		try{
+			lib.guardarOactualizar(u);
+		}catch(LibreriaBBDDException e){
+			e.printStackTrace();	
+		}
 		
+		u.setGustoL("arroz", 0);
+		Set<String> gustos=new HashSet<String>();
+		gustos.add("arroz con leche");
+		u.setGustosS(gustos);
 		
+		u.setNumeroL(15, 0);
+		Set<Integer> numeros=new HashSet<Integer>();
+		numeros.add(15);
+		u.setNumerosS(numeros);
+		
+		Direccion d2 =new Direccion("desengaño", 21);
+		u.setDireccionL(d2, 0);
+		Set<Direccion>direcciones=new HashSet<Direccion>();
+		direcciones.add(d2);
 		
 		
 		lib.guardarOactualizar(u);
+		System.out.println("FIN");
 		
 		/*Query q = lib.newQuery(Usuario.class);
 		SimpleConstraint c = SimpleConstraint.igualQueConstraint("nombre", "pablo");

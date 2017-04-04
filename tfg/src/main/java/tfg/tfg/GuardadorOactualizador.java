@@ -76,13 +76,13 @@ public class GuardadorOactualizador {
 				if(atributo!=null){		
 					try {
 						if(atributo instanceof List<?> || atributo instanceof Set<?>){//si es una list o set hay que tratarlo aparte
-							
+							vaciarTablaIntermediaById(nombreTabla,f.getName(),id);
+
 							//Aqui sacamos el tipo del parametro
 							Type friendsGenericType = f.getGenericType();
 							ParameterizedType friendsParameterizedType = (ParameterizedType) friendsGenericType;
 							Type[] friendsType = friendsParameterizedType.getActualTypeArguments();
 							Class userClass = (Class) friendsType[0];
-							String nombreTablaObjeto = lib.getTableName(o);
 							
 							String tipoInstancia = "";
 							if(atributo instanceof List<?>)
@@ -143,91 +143,57 @@ public class GuardadorOactualizador {
 		}	
 		update(nombreTabla, o, im);
 	}
-	private void insertarObjetoLista(String nombreTablaPadre, int idPadre, String nombreTablaParametro, String nombreParametro, Integer idParametro, int posicion, String tipoInstancia) throws SQLException {
-		String sql = "SELECT * FROM "+nombreTablaPadre+"_"+nombreParametro
-				+" WHERE id1_"+nombreTablaPadre+"  = ? "
-				+ " AND id2_"+nombreTablaParametro+" = ? ";
-		if(tipoInstancia.equalsIgnoreCase("List"))
-				sql += " AND posicion = ?";
-		//System.out.println(sql);
+	private void vaciarTablaIntermediaById(String nombreTabla, String nombreAtributo, int id) throws SQLException {
+		String sql = "DELETE FROM "+ nombreTabla +"_"+nombreAtributo + " WHERE id1_"+nombreTabla + " = ?" ;
 		PreparedStatement pst;
 		Connection c = this.lib.getConnection();
 		pst = c.prepareStatement(sql);
-		pst.setInt(1, idPadre);
-		pst.setInt(2, idParametro);
-		if(tipoInstancia.equalsIgnoreCase("List"))
-			pst.setInt(3, posicion);
-		System.out.println("SELECT * FROM "+nombreTablaPadre+"_"+nombreParametro
-				+" WHERE id1_"+nombreTablaPadre+"  =  "+idPadre
-				+ " AND id2_"+nombreTablaParametro+" = "+idParametro
-				+ " AND posicion = "+posicion);
-		ResultSet rs = pst.executeQuery();
-		if (rs.next()) {//ya esta insertado, se actualiza
-			String sqlUpdate="UPDATE "+nombreTablaPadre+"_"+nombreParametro+" SET id2_"+nombreTablaParametro+" =? WHERE id = ?";
-			System.out.println(sqlUpdate);
-			PreparedStatement pstU;
-			pstU = c.prepareStatement(sqlUpdate);
-			pstU.setObject(1, idParametro);
-			pstU.setInt(2, rs.getInt("id"));
-			pstU.execute();
-		}
-		else{//hay que insertar
-			String sqlInsert = "";
-			if(tipoInstancia.equalsIgnoreCase("List"))
-				sqlInsert="INSERT INTO "+nombreTablaPadre+"_"+nombreParametro+" ( id1_"+nombreTablaPadre+", id2_"+nombreTablaParametro+", posicion) VALUES (?, ?, ?)";
-			else
-				sqlInsert="INSERT INTO "+nombreTablaPadre+"_"+nombreParametro+" ( id1_"+nombreTablaPadre+", id2_"+nombreTablaParametro+") VALUES (?, ?)";
+		pst.setInt(1, id);
+		pst.execute();
+		c.close();
+	}
 
-			System.out.println("INSERT INTO "+nombreTablaPadre+"_"+nombreParametro+" ( id1_"+nombreTablaPadre+", id2_"+nombreTablaParametro+", posicion) VALUES ("+idPadre+","+idParametro+", "+posicion+")");
-			PreparedStatement pstI;
-			pstI = c.prepareStatement(sqlInsert);
-			pstI.setInt(1, idPadre);
-			pstI.setObject(2, idParametro);
-			if(tipoInstancia.equalsIgnoreCase("List"))
-				pstI.setInt(3, posicion);
-			pstI.execute();
-		}
-		c.close();		
+	private void insertarObjetoLista(String nombreTablaPadre, int idPadre, String nombreTablaParametro, String nombreParametro, Integer idParametro, int posicion, String tipoInstancia) throws SQLException {
+		Connection c = this.lib.getConnection();
+
+		String sqlInsert = "";
+		if (tipoInstancia.equalsIgnoreCase("List"))
+			sqlInsert = "INSERT INTO " + nombreTablaPadre + "_" + nombreParametro + " ( id1_" + nombreTablaPadre
+					+ ", id2_" + nombreTablaParametro + ", posicion) VALUES (?, ?, ?)";
+		else // Si es un Set
+			sqlInsert = "INSERT INTO " + nombreTablaPadre + "_" + nombreParametro + " ( id1_" + nombreTablaPadre
+					+ ", id2_" + nombreTablaParametro + ") VALUES (?, ?)";
+		
+		PreparedStatement pstI;
+		System.out.println(sqlInsert+ idPadre);
+		pstI = c.prepareStatement(sqlInsert);
+		pstI.setInt(1, idPadre);
+		pstI.setObject(2, idParametro);
+		if (tipoInstancia.equalsIgnoreCase("List"))
+			pstI.setInt(3, posicion);
+		pstI.execute();
+
+		c.close();
 	}
 
 	private void insertarMultivalorado(String nombreTablaPadre, String nombreLista, int idPadre, Object elemento, int posicion, String tipoInstancia) throws SQLException {
 		
-		String sql = "SELECT * FROM "+nombreTablaPadre+"_"+nombreLista
-				+" WHERE id_"+nombreTablaPadre+"  = ? ";
-			if(tipoInstancia.equalsIgnoreCase("List"))
-					sql += "AND "+ "posicion = ?";
-			
-		System.out.println(sql);
-		PreparedStatement pst;
 		Connection c = this.lib.getConnection();
-		pst = c.prepareStatement(sql);
-		pst.setInt(1, idPadre);
-		if(tipoInstancia.equalsIgnoreCase("List"))
-			pst.setInt(2, posicion);
-		ResultSet rs = pst.executeQuery();
-		if (rs.next()) {//ya esta insertado, se actualiza
-			String sqlUpdate="UPDATE "+nombreTablaPadre+"_"+nombreLista+" SET "+nombreLista+" =? WHERE id = ?";
-			PreparedStatement pstU;
-			pstU = c.prepareStatement(sqlUpdate);
-			pstU.setObject(1, elemento);
-			pstU.setInt(2, rs.getInt("id"));
-			pstU.execute();
-		}
-		else{//hay que insertar
-			String sqlInsert = "";
-			if(tipoInstancia.equalsIgnoreCase("List"))
-				sqlInsert="INSERT INTO "+nombreTablaPadre+"_"+nombreLista+" ( id_"+nombreTablaPadre+", "+nombreLista+", posicion) VALUES (?, ?, ?)";
-			else
-				sqlInsert="INSERT INTO "+nombreTablaPadre+"_"+nombreLista+" ( id_"+nombreTablaPadre+", "+nombreLista+") VALUES (?, ?)";
 
-			PreparedStatement pstI;
-			pstI = c.prepareStatement(sqlInsert);
-			pstI.setInt(1, idPadre);
-			pstI.setObject(2, elemento);
-			if(tipoInstancia.equalsIgnoreCase("List"))
-				pstI.setInt(3, posicion);
-			pstI.execute();
-		}
+		String sqlInsert = "";
+		if(tipoInstancia.equalsIgnoreCase("List"))
+			sqlInsert="INSERT INTO "+nombreTablaPadre+"_"+nombreLista+" ( id1_"+nombreTablaPadre+", "+nombreLista+", posicion) VALUES (?, ?, ?)";
+		else
+			sqlInsert="INSERT INTO "+nombreTablaPadre+"_"+nombreLista+" ( id1_"+nombreTablaPadre+", "+nombreLista+") VALUES (?, ?)";
+
+		PreparedStatement pstI;
+		pstI = c.prepareStatement(sqlInsert);
+		pstI.setInt(1, idPadre);
+		pstI.setObject(2, elemento);
+		if(tipoInstancia.equalsIgnoreCase("List"))
+			pstI.setInt(3, posicion);
+		pstI.execute();
+		
 		c.close();
 	}
 
@@ -538,14 +504,14 @@ public class GuardadorOactualizador {
 	private void crearTablaMultivalorado(String nto, String nombreCampo, String tipo, String tipoInstancia) throws SQLException {
 		String sql = "CREATE TABLE IF NOT EXISTS "+nto+"_"+nombreCampo
 				+" (id INTEGER not NULL AUTO_INCREMENT,"
-				+ "id_"+nto+" INTEGER, "
+				+ "id1_"+nto+" INTEGER, "
 				+ nombreCampo+ " "+tipo+", ";
 		
 				if(tipoInstancia.equalsIgnoreCase("List"))
 					sql +=  " posicion INTEGER, ";
 						
 				sql+= " PRIMARY KEY ( id ),"
-				+ " CONSTRAINT fk_"+nto+"_"+nombreCampo+"_"+nombreCampo+" FOREIGN KEY (id_"+nto+") REFERENCES "+nto+"(id) )";
+				+ " CONSTRAINT fk_"+nto+"_"+nombreCampo+"_"+nombreCampo+" FOREIGN KEY (id1_"+nto+") REFERENCES "+nto+"(id) )";
 		
 		System.out.println(sql);
 		Connection c = this.lib.getConnection();

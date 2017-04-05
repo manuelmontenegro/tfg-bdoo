@@ -19,24 +19,10 @@ public class MainTest {
 	public static void main(String[] args) {
 		MainTest mt = new MainTest();
 		
-		for (Field f : mt.getClass().getDeclaredFields()) {
-			f.setAccessible(true); 
-	
+		List<String> prueba = new ArrayList<String>();
+		System.out.println(prueba.getClass().getName());
 
-			Type friendsGenericType = f.getGenericType();
-			ParameterizedType friendsParameterizedType = (ParameterizedType) friendsGenericType;
-			Type[] friendsType = friendsParameterizedType.getActualTypeArguments();
-			Class userClass = (Class) friendsType[0];
-			Object o = null;
-			try {
-				o = userClass.newInstance();
-			} catch (InstantiationException | IllegalAccessException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			System.out.println(o.getClass().getName());
-			System.out.println(f.getName());
-		}
+		
 		
 	}
 

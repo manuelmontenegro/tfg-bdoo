@@ -8,10 +8,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Set;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 
@@ -21,7 +19,6 @@ import constraints.SimpleConstraint;
 import excepciones.ObjetoInexistente;
 import pruebaList.Direccion;
 import pruebaList.Usuario;
-import excepciones.InsertarDuplicado;
 import excepciones.LibreriaBBDDException;
 
 
@@ -35,7 +32,6 @@ public class LibreriaBBDD {
 	private IdentityHashMap<Object, Integer> objectMap; //objetos con su id
 	private HashMap<Identificador, Object> idMap; //identificador de clase r id con su objeto
 	private int profundidad;
-	private Guardador gua;
 	private GuardadorOactualizador guaOa;
 	private Activador act;
 
@@ -61,7 +57,6 @@ public class LibreriaBBDD {
 		conectar();
 		crearTablaIndice();
 		crearColumnaIndice();
-		this.gua=new Guardador(this);
 		this.guaOa=new GuardadorOactualizador(this);
 		this.act=new Activador(this);
 	}
@@ -191,19 +186,6 @@ public class LibreriaBBDD {
 	}*/
 	
 	
-	/**
-	 *  Metodo para guardar ese objeto en la base de datos
-	 * @param o
-	 * @throws SQLException
-	 * @throws NoSuchFieldException
-	 * @throws SecurityException
-	 * @throws IllegalArgumentException
-	 * @throws IllegalAccessException
-	 * @throws InsertarDuplicado
-	 */
-	public void guardar(Object o) throws LibreriaBBDDException {
-		this.gua.guardar(o);
-	}
 	
 	/**
 	 * Metodo de la libreria para guardar un objeto y todos los que tenga a su vez
@@ -214,7 +196,11 @@ public class LibreriaBBDD {
 	 */
 	public void guardarOactualizar(Object o) throws LibreriaBBDDException{
 		IdentityHashMap<Object, Integer> im=new IdentityHashMap<Object, Integer>();
-		this.guaOa.guardarOactualizar(o, im);
+		try {
+			this.guaOa.guardarOactualizar(o, im);
+		} catch (IllegalArgumentException | IllegalAccessException | SQLException e) {
+			throw new LibreriaBBDDException(e);
+		}
 		this.objectMap.putAll(im);
 	}
 
@@ -242,7 +228,7 @@ public class LibreriaBBDD {
 						tipo = "INTEGER";
 					
 
-					Atributo a = new Atributo(n.getName(), tipo);
+					Atributo a = new Atributo(n.getName(), tipo, false);
 					atributos.add(a);
 				}
 		}
@@ -642,6 +628,7 @@ public class LibreriaBBDD {
 		
 		u.addGustoL("potaje");
 		u.addGustoS("potaje");
+
 		
 		u.addNumeroL(777);
 		u.addNumeroS(777);
@@ -650,13 +637,11 @@ public class LibreriaBBDD {
 		u.addUsuarioS(u1);
 
 
-		try{
-			lib.guardarOactualizar(u);
-		}catch(LibreriaBBDDException e){
-			e.printStackTrace();	
-		}
 		
-		u.setGustoL("arroz", 0);
+		lib.guardarOactualizar(u);
+		
+		
+		/*u.setGustoL("arroz", 0);
 		Set<String> gustos=new HashSet<String>();
 		gustos.add("arroz con leche");
 		u.setGustosS(gustos);
@@ -670,9 +655,10 @@ public class LibreriaBBDD {
 		u.setDireccionL(d2, 0);
 		Set<Direccion>direcciones=new HashSet<Direccion>();
 		direcciones.add(d2);
+		u.setDireccionesS(direcciones);*/
 		
 		
-		lib.guardarOactualizar(u);
+		//lib.guardarOactualizar(u);
 		System.out.println("FIN");
 		
 		/*Query q = lib.newQuery(Usuario.class);

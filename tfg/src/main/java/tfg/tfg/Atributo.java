@@ -4,11 +4,14 @@ public class Atributo {
 
 	private String nombre;
 	private String tipo;
+	private boolean basico;
+	private String claseConstructora;
 	
-	public Atributo(String nombre, String tipo) {
+	public Atributo(String nombre, String tipo, boolean basico) {
 		super();
 		this.nombre = nombre;
 		this.tipo = tipo;
+		this.basico = basico;
 	}
 	
 	public String getNombre() {
@@ -23,7 +26,23 @@ public class Atributo {
 	public void setTipo(String tipo) {
 		this.tipo = tipo;
 	}
-	
+
+	public boolean isBasico() {
+		return basico;
+	}
+
+	public void setBasico(boolean basico) {
+		this.basico = basico;
+	}
+
+	public String getClaseConstructora() {
+		return claseConstructora;
+	}
+
+	public void setClaseConstructora(String claseConstructora) {
+		this.claseConstructora = claseConstructora;
+	}
+
 	@Override
 	public boolean equals(Object obj) {
 		if (obj instanceof Atributo) {
@@ -37,18 +56,5 @@ public class Atributo {
 			return false;
 		}
 	}
-	
-	public static void main(String[] argv) {
-		Atributo a = new Atributo("paco","pao");
-		Atributo b = new Atributo("paco","paco");
-		
-		if(a.equals(b))
-			System.out.println("Iguales");
-		else
-			System.out.println("pues no");
-		
-	}
-	
-	
 	
 }

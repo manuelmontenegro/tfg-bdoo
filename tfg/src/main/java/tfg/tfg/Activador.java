@@ -73,7 +73,6 @@ public class Activador {
 			PreparedStatement psPadre = c.prepareStatement(sql);
 			ResultSet rsPadre = psPadre.executeQuery();
 			if(rsPadre.next()){
-				Query q= this.lib.newQuery(class1); //Te creas una query para llamar al createObject
 				Object objeto = null;
 				int idHijo=rsPadre.getInt(nombreCol);//recupers la id del hiho de la BBDD
 				String tnHijo=this.lib.getTableName(class1.getName());

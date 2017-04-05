@@ -19,6 +19,7 @@ public class Usuario {
 	private Set<String> gustosS;
 	private Set<Integer> numerosS;
 	private Set<Usuario> usuariosS;
+
 	
 	public Usuario(){
 		
@@ -28,6 +29,7 @@ public class Usuario {
 		this.nombre=nombre;
 		this.edad=edad;
 		
+
 		this.direccionesL=new ArrayList<Direccion>();
 		this.gustosL=new ArrayList<String>();	
 		this.numerosL=new ArrayList<Integer>();	

@@ -14,8 +14,6 @@ import java.util.Set;
 
 import com.mysql.jdbc.Statement;
 
-import excepciones.LibreriaBBDDException;
-
 
 public class GuardadorOactualizador {
 	
@@ -32,115 +30,105 @@ public class GuardadorOactualizador {
 	 * @param o objeto que se va a guardar
 	 * @param im mapa parcial de objetos guardados para no volver a guardar uno ya guardado
 	 * @throws SQLException
+	 * @throws IllegalAccessException 
+	 * @throws IllegalArgumentException 
 	 */
-	void guardarOactualizar(Object o, IdentityHashMap<Object, Integer> im) throws LibreriaBBDDException {
-		int id=-1;
+	void guardarOactualizar(Object o, IdentityHashMap<Object, Integer> im)throws SQLException, IllegalArgumentException, IllegalAccessException {
+		int id = -1;
 		String nombreTabla;
-		try {
-			nombreTabla = crearTabla(o);
-		} catch (SQLException e) {
-			throw new LibreriaBBDDException(e);
-		}
-		if(!im.containsKey(o) && !this.lib.constainsKeyObjectMap(o) ){
-			try {
-				alterarTabla(nombreTabla, o);
-				id=insertarFilaVacia(nombreTabla);
-			} catch (SQLException e) {
-				//throw new LibreriaBBDDException(e);
-				e.printStackTrace();
-			}
-			
-		}
-		else{//esta en alguno de los dos
-			 if(im.containsKey(o)){// obtener id de la fila con de alguno de los dos mapas
-				 id=im.get(o);
-			 }
-			 else{
-				 id=this.lib.getObjectMap(o);
-			 }
-		}
-		im.put(o, id);//guardar en im <obj, id>	
-		Identificador key=new Identificador(id, o.getClass().getName());
-		this.lib.putIdMap(key, o);//hay que insertar tambien en idMap para no perder consistencia
-			
-		for (Field f : o.getClass().getDeclaredFields()) {//para cada atributo no basico{
-			
-			f.setAccessible(true);
-			Object atributo=null;
-			try {
-				atributo=f.get(o);
-			} catch (IllegalArgumentException | IllegalAccessException e) {
-				throw new LibreriaBBDDException(e);
-			}
-			if(!esBasico(f)){
-				if(atributo!=null){		
-					try {
-						if(atributo instanceof List<?> || atributo instanceof Set<?>){//si es una list o set hay que tratarlo aparte
-							vaciarTablaIntermediaById(nombreTabla,f.getName(),id);
 
-							//Aqui sacamos el tipo del parametro
-							Type friendsGenericType = f.getGenericType();
-							ParameterizedType friendsParameterizedType = (ParameterizedType) friendsGenericType;
-							Type[] friendsType = friendsParameterizedType.getActualTypeArguments();
-							Class userClass = (Class) friendsType[0];
-							
-							String tipoInstancia = "";
-							if(atributo instanceof List<?>)
-								tipoInstancia = "List";
-							else
-								tipoInstancia = "Set";
-							
-							int i = 0;
-							//Si son basicos insertamos en la tabla de multivalorado
-							if(userClass.getName().equalsIgnoreCase("Java.lang.String") || userClass.getName().equalsIgnoreCase("Java.lang.Integer") ){
-								if(tipoInstancia.equalsIgnoreCase("List")){
-									for(Object obj : ((List<?>) atributo)){
-										insertarMultivalorado(nombreTabla, f.getName(), id,  obj, i, tipoInstancia);
-										i++;
-									}
+		nombreTabla = crearTabla(o);
+
+		if (!im.containsKey(o) && !this.lib.constainsKeyObjectMap(o)) {
+			ArrayList<Atributo> atributos = alterarTabla(nombreTabla, o);
+			id = insertarFilaVacia(nombreTabla,o.getClass().getName(),atributos);
+		} else {// esta en alguno de los dos
+			if (im.containsKey(o)) {// obtener id de la fila con de alguno de
+									// los dos mapas
+				id = im.get(o);
+			} else {
+				id = this.lib.getObjectMap(o);
+			}
+		}
+		im.put(o, id);// guardar en im <obj, id>
+		Identificador key = new Identificador(id, o.getClass().getName());
+		this.lib.putIdMap(key, o);// hay que insertar tambien en idMap para no
+									// perder consistencia
+
+		for (Field f : o.getClass().getDeclaredFields()) {// para cada atributo
+															// no basico{
+
+			f.setAccessible(true);
+			Object atributo = null;
+
+			atributo = f.get(o);
+
+			if (!esBasico(f)) {
+				if (atributo != null) {
+
+					if (atributo instanceof List<?> || atributo instanceof Set<?>) {// si es una lista o set hay que tratarlo aparte
+						vaciarTablaIntermediaById(nombreTabla, f.getName(), id);
+
+						// Aqui sacamos el tipo del parametro
+						Type friendsGenericType = f.getGenericType();
+						ParameterizedType friendsParameterizedType = (ParameterizedType) friendsGenericType;
+						Type[] friendsType = friendsParameterizedType.getActualTypeArguments();
+						Class<?> userClass = (Class<?>) friendsType[0];
+
+						String tipoInstancia = "";
+						if (atributo instanceof List<?>)
+							tipoInstancia = "List";
+						else
+							tipoInstancia = "Set";
+
+						int i = 0;
+						// Si son basicos insertamos en la tabla de
+						// multivalorado
+						if (userClass.getName().equalsIgnoreCase("Java.lang.String")
+								|| userClass.getName().equalsIgnoreCase("Java.lang.Integer")) {
+							if (tipoInstancia.equalsIgnoreCase("List")) {
+								for (Object obj : ((List<?>) atributo)) {
+									insertarMultivalorado(nombreTabla, f.getName(), id, obj, i, tipoInstancia);
+									i++;
 								}
-								else{
-									for(Object obj : ((Set<?>) atributo)){
-										insertarMultivalorado(nombreTabla, f.getName(), id,  obj, i, tipoInstancia);
-										i++;
-									}
+							} else {
+								for (Object obj : ((Set<?>) atributo)) {
+									insertarMultivalorado(nombreTabla, f.getName(), id, obj, i, tipoInstancia);
+									i++;
 								}
 							}
-							else{ //Si el parametro es un objeto 
-								//con el id del usuario, la id de la direccion recien insertada y la posicion que ocupa se inserta la fila en la tabla intermedia	
-								if(tipoInstancia.equalsIgnoreCase("List")){
-									for(Object parametro : ((List<?>) atributo)){
-										if(!im.containsKey(parametro)){
-											guardarOactualizar(parametro,im); //Te recorres la lista guardando cada objeto de la lista	
-										}
-										insertarObjetoLista(nombreTabla,id,lib.getTableName(parametro),f.getName(),im.get(parametro),i,tipoInstancia);
-										i++;
+						} else { // Si el parametro es un objeto con el id del usuario,
+								//la id de la direccion recien insertada y la posicion
+									// que ocupa se inserta la fila en la tabla intermedia
+							if (tipoInstancia.equalsIgnoreCase("List")) {
+								for (Object parametro : ((List<?>) atributo)) {
+									if (!im.containsKey(parametro)) {
+										guardarOactualizar(parametro, im); // Te recorres la lista guardando cada objeto
 									}
+									insertarObjetoLista(nombreTabla, id, lib.getTableName(parametro), f.getName(),im.get(parametro), i, tipoInstancia);
+									i++;
 								}
-								else{
-									for(Object parametro : ((Set<?>) atributo)){
-										if(!im.containsKey(parametro)){
-											guardarOactualizar(parametro,im); //Te recorres la lista guardando cada objeto de la lista	
-										}
-										insertarObjetoLista(nombreTabla,id,lib.getTableName(parametro),f.getName(),im.get(parametro),i,tipoInstancia);
-										i++;
+							} else {
+								for (Object parametro : ((Set<?>) atributo)) {
+									if (!im.containsKey(parametro)) {
+										guardarOactualizar(parametro, im); // Te recorres el set guardando cada objeto
 									}
+									insertarObjetoLista(nombreTabla, id, lib.getTableName(parametro), f.getName(),
+											im.get(parametro), i, tipoInstancia);
+									i++;
 								}
 							}
-							
 						}
-						else{//es un objeto complejo
-							if(!im.containsKey(atributo)){//    if(!esta en im)
-								guardarOactualizar(atributo, im);
-							}
+
+					} else {// es un objeto complejo
+						if (!im.containsKey(atributo)) {// if(!esta en im)
+							guardarOactualizar(atributo, im);
 						}
-					} catch (IllegalArgumentException | SQLException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
 					}
+
 				}
 			}
-		}	
+		}
 		update(nombreTabla, o, im);
 	}
 	private void vaciarTablaIntermediaById(String nombreTabla, String nombreAtributo, int id) throws SQLException {
@@ -200,15 +188,32 @@ public class GuardadorOactualizador {
 	/**
 	 * Inserta una fila vacia en la tabla pasada como argumento
 	 * @param nombreTabla
+	 * @param atributos 
 	 * @return
 	 * @throws SQLException
 	 */
-	private int insertarFilaVacia(String nombreTabla) throws SQLException{
+	private int insertarFilaVacia(String nombreTabla, String tipo, ArrayList<Atributo> atributos) throws SQLException{
 		int id = 0;
-		String sql = "INSERT INTO "+nombreTabla+" () VALUES ()";
-		System.out.println(sql);
+		ArrayList<String> valores = new ArrayList<String>();
+		String nombres = "";
+		String claves = "";
+		for(Atributo a : atributos){
+			if(!a.isBasico()){
+				valores.add(a.getClaseConstructora());	
+				claves+=",? ";
+				nombres+=" , "+a.getNombre();
+			}
+		}
+		String sql = "INSERT INTO "+nombreTabla+" (1_tipo"+nombres+") VALUES (? "+claves+")";
 		Connection c = this.lib.getConnection();
 		PreparedStatement pst = c.prepareStatement(sql,Statement.RETURN_GENERATED_KEYS);
+		pst.setString(1, tipo);
+		int i = 2;
+		for(String valor : valores){
+			pst.setString(i,valor);
+			i++;
+		}
+		System.out.println(pst.unwrap(PreparedStatement.class).toString().split(":")[1]);
 		pst.executeUpdate();// insertar fila pero todo vacio
 		ResultSet rs = pst.getGeneratedKeys();
 		if (rs.next()) 
@@ -218,7 +223,7 @@ public class GuardadorOactualizador {
 		return id;
 	}
 	
-	private void update(String nombreTabla, Object o, IdentityHashMap<Object, Integer> im) throws LibreriaBBDDException{
+	private void update(String nombreTabla, Object o, IdentityHashMap<Object, Integer> im) throws SQLException, IllegalArgumentException, IllegalAccessException{
 		String claves = "";
 		ArrayList<String> valores = new ArrayList<String>();	
 		
@@ -228,31 +233,25 @@ public class GuardadorOactualizador {
 			Field f=fields[i];
 			f.setAccessible(true);
 			Object atributo=null;
-			try {
-				atributo=f.get(o);
-			} catch (IllegalArgumentException | IllegalAccessException e) {
-				throw new LibreriaBBDDException(e);
-			}
+			
+			atributo=f.get(o);
 
 			if(!esBasico(f)){
 				if(atributo!=null){	
-					try {
-						if( f.get(o) instanceof List<?> ){//si es una lista actualizar la lista
-							
-						}
-						else if (f.get(o) instanceof Set<?>){
-							
-						}
-						else{//
-							valores.add(im.get(atributo)+"");
-							if (i != 0)
-								claves += " , ";
-							claves+=f.getName()+" =?";
-						}
-					} catch (IllegalArgumentException | IllegalAccessException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+					
+					if( f.get(o) instanceof List<?> ){//si es una lista actualizar la lista
+						
 					}
+					else if (f.get(o) instanceof Set<?>){
+						
+					}
+					else{//
+						valores.add(im.get(atributo)+"");
+						if (i != 0)
+							claves += " , ";
+						claves+=f.getName()+" =?";
+					}
+					
 				}
 			}
 			else {//es basico
@@ -268,18 +267,16 @@ public class GuardadorOactualizador {
 				  " WHERE ID = ?";
 		System.out.println(sqlUpdate);
 		Connection con;
-		try {
-			con = this.lib.getConnection();
-			PreparedStatement pst = con.prepareStatement(sqlUpdate);
-			for (int i = 0; i < valores.size(); i++) { 
-				pst.setObject(i+1, valores.get(i));
-			}
-			pst.setObject(valores.size()+1, im.get(o));	//Añadir la ID parametrizada
-			pst.execute();
-			con.close();
-		} catch (SQLException e) {
-			throw new LibreriaBBDDException(e);
+		
+		con = this.lib.getConnection();
+		PreparedStatement pst = con.prepareStatement(sqlUpdate);
+		for (int i = 0; i < valores.size(); i++) { 
+			pst.setObject(i+1, valores.get(i));
 		}
+		pst.setObject(valores.size()+1, im.get(o));	//Añadir la ID parametrizada
+		pst.execute();
+		con.close();
+		
 		
 	}
 
@@ -374,7 +371,7 @@ public class GuardadorOactualizador {
 	 */
 	private void crearTabla(String nombreTabla) throws SQLException {
 
-		String sql = "CREATE TABLE IF NOT EXISTS "+nombreTabla+" (id INTEGER not NULL AUTO_INCREMENT, PRIMARY KEY ( id ))";
+		String sql = "CREATE TABLE IF NOT EXISTS "+nombreTabla+" (id INTEGER not NULL AUTO_INCREMENT, 1_tipo VARCHAR(255), PRIMARY KEY ( id ))";
 		Connection c = this.lib.getConnection();
 		PreparedStatement pst = c.prepareStatement(sql);
 		
@@ -391,13 +388,15 @@ public class GuardadorOactualizador {
 	 * @param o
 	 * @throws SQLException
 	 */
-	private void alterarTabla(String nombreTabla, Object o) throws SQLException {
+	private ArrayList<Atributo> alterarTabla(String nombreTabla, Object o) throws SQLException {
 		ArrayList<Atributo> atributos = sacarAtributos(o);
 		String idIndiceTabla=getIDIndiceTabla(nombreTabla);
 		for (Atributo a : atributos) {
 			if(!estaIndiceColumna(a, idIndiceTabla))
 				insertarIndiceColumna(nombreTabla, a, idIndiceTabla);
 		}
+		return atributos;
+		
 		//borrarIndiceColumna(nombreTabla, atributos, idIndiceTabla);
 	}
 	private boolean estaIndiceColumna(Atributo a, String idIndiceTabla) throws SQLException {
@@ -408,11 +407,10 @@ public class GuardadorOactualizador {
 		pst.setString(1, idIndiceTabla);
 		pst.setString(2, a.getNombre());
 		ResultSet rs = pst.executeQuery();
-
-		if (rs.next())
-			return true;
-		else
-			return false;
+		
+		boolean ret=rs.next();
+		c.close();
+		return ret;
 	}
 
 	/**
@@ -426,7 +424,10 @@ public class GuardadorOactualizador {
 		ArrayList<Atributo> atributos = new ArrayList<Atributo>();
 		for (Field f : o.getClass().getDeclaredFields()) {
 			boolean objetoNulo=false;
+			boolean basico = true;
+			String nombre = f.getName();
 			String tipo = "";
+			String claseConstructora = "";
 			//System.out.println(f.getName()+" es :"+f.getType().getCanonicalName());
 			if (f.getType().getCanonicalName().equalsIgnoreCase("Java.lang.String"))
 				tipo = "VARCHAR(255)";
@@ -442,12 +443,11 @@ public class GuardadorOactualizador {
 				}
 				try {
 					if(ob instanceof Set<?> || ob instanceof List<?>){
-						System.out.println(ob);
 						//Aqui sacamos el parametro de la lista
 						Type friendsGenericType = f.getGenericType();
 						ParameterizedType friendsParameterizedType = (ParameterizedType) friendsGenericType;
 						Type[] friendsType = friendsParameterizedType.getActualTypeArguments();
-						Class userClass = (Class) friendsType[0];
+						Class<?> userClass = (Class<?>) friendsType[0];
 						String nombreTablaObjeto = lib.getTableName(o);
 						String tipoInstancia = "";
 						if( ob instanceof List<?>)
@@ -467,7 +467,10 @@ public class GuardadorOactualizador {
 							String nombreTablaParametro =crearTabla(param);
 							crearTablaIntermedia(nombreTablaObjeto,nombreTablaParametro,f.getName(),tipoInstancia);
 						}
-						objetoNulo=true;
+						nombre = "2_"+f.getName();
+						tipo = "VARCHAR(255)";
+						basico = false;
+						claseConstructora = ob.getClass().getName();
 					}
 					else{ //Si no es ningun tipo primitivo quiere decir que es una referencia a otro objeto
 						
@@ -486,7 +489,9 @@ public class GuardadorOactualizador {
 				}
 			}
 			if(!objetoNulo){
-				Atributo a = new Atributo(f.getName(), tipo);
+				Atributo a = new Atributo(nombre, tipo,basico);
+				if(!basico)
+					a.setClaseConstructora(claseConstructora);
 				atributos.add(a);
 			}
 		}
@@ -594,6 +599,7 @@ public class GuardadorOactualizador {
 		//System.out.println(anyadir);
 		pst.execute();
 		c2.close();
+		
 	}
 	/**
 	 * Metodo para eliminar las culumnas que no tengoa el objeto pero que todavia tenga la tabla usada para guardar el objeto

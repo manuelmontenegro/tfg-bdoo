@@ -44,7 +44,7 @@ public class ObjectCreator {
 				Type friendsGenericType = f.getGenericType();
 				ParameterizedType friendsParameterizedType = (ParameterizedType) friendsGenericType;
 				Type[] friendsType = friendsParameterizedType.getActualTypeArguments();
-				Class userClass = (Class) friendsType[0];
+				Class<?> userClass = (Class<?>) friendsType[0];
 				if(userClass.getName().equalsIgnoreCase("Java.lang.String") || userClass.getName().equalsIgnoreCase("Java.lang.Integer"))
 				{//Lista de objetos String o int
 					String nombreCampo = f.getName();
@@ -62,7 +62,6 @@ public class ObjectCreator {
 				}
 				else
 				{
-					String nombreCampo = f.getName();
 					String nombreTabla = lib.getTableName(c.getName());
 					String nombreTablaObjetoMultivalorado = lib.getTableName(userClass.getName());
 					String nombreTablaMultivalorado = nombreTabla + "_" + nombreTablaObjetoMultivalorado;

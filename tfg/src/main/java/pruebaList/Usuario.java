@@ -69,6 +69,74 @@ public class Usuario {
 	public void addUsuarioL(Usuario usuario){
 		this.usuariosL.add(usuario);
 	}
+	public String getNombre() {
+		return nombre;
+	}
+
+	public void setNombre(String nombre) {
+		this.nombre = nombre;
+	}
+
+	public int getEdad() {
+		return edad;
+	}
+
+	public void setEdad(int edad) {
+		this.edad = edad;
+	}
+
+	public List<Direccion> getDireccionesL() {
+		return direccionesL;
+	}
+
+	public void setDireccionesL(List<Direccion> direccionesL) {
+		this.direccionesL = direccionesL;
+	}
+
+	public List<String> getGustosL() {
+		return gustosL;
+	}
+
+	public void setGustosL(List<String> gustosL) {
+		this.gustosL = gustosL;
+	}
+
+	public List<Integer> getNumerosL() {
+		return numerosL;
+	}
+
+	public void setNumerosL(List<Integer> numerosL) {
+		this.numerosL = numerosL;
+	}
+
+	public List<Usuario> getUsuariosL() {
+		return usuariosL;
+	}
+
+	public void setUsuariosL(List<Usuario> usuariosL) {
+		this.usuariosL = usuariosL;
+	}
+
+	public Set<Usuario> getUsuariosS() {
+		return usuariosS;
+	}
+
+	public void setUsuariosS(Set<Usuario> usuariosS) {
+		this.usuariosS = usuariosS;
+	}
+
+	public Set<Direccion> getDireccionesS() {
+		return direccionesS;
+	}
+
+	public Set<String> getGustosS() {
+		return gustosS;
+	}
+
+	public Set<Integer> getNumerosS() {
+		return numerosS;
+	}
+
 	public void setUsuarioL(Usuario usuario, int pos){
 		this.usuariosL.set(pos, usuario);
 	}
@@ -105,6 +173,12 @@ public class Usuario {
 	}
 	public void setUsuarioS(Set<Usuario> usuarios){
 		this.usuariosS=usuarios;
+	}
+
+	public void showGustos() {
+		System.out.println("start");
+		for(String s: gustosS)
+			System.out.println(s);
 	}
 
 }

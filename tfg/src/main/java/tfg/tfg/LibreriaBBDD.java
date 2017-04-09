@@ -435,7 +435,7 @@ public class LibreriaBBDD {
 		try {
 			lista = q.executeQuery(c, this.profundidad);
 			c.close();
-		} catch (InstantiationException | IllegalAccessException | SQLException e) {
+		} catch (InstantiationException | IllegalAccessException | SQLException | ClassNotFoundException e) {
 			throw new LibreriaBBDDException(e);
 		}
 		
@@ -457,7 +457,7 @@ public class LibreriaBBDD {
 			c = this.getConnection();
 			lista = q.executeQuery(c, profundidad);
 			c.close();
-		} catch (SQLException | InstantiationException | IllegalAccessException e) {
+		} catch (SQLException | InstantiationException | IllegalAccessException | ClassNotFoundException e) {
 			throw new LibreriaBBDDException(e);
 		}
 		
@@ -465,11 +465,19 @@ public class LibreriaBBDD {
 	}
 	
 	public void activar(Object o, int profundidad) throws LibreriaBBDDException{
-		this.act.activar(o, profundidad);
+		try {
+			this.act.activar(o, profundidad);
+		} catch (ClassNotFoundException e) {
+			throw new LibreriaBBDDException(e);
+		}
 	}
 	
 	public void activar(Object o) throws LibreriaBBDDException{
-		this.act.activar(o, this.profundidad);
+		try {
+			this.act.activar(o, this.profundidad);
+		} catch (ClassNotFoundException e) {
+			throw new LibreriaBBDDException(e);
+		}
 	}
 	/**
 	 * Devuelve una nueva Query
@@ -619,53 +627,15 @@ public class LibreriaBBDD {
 		
 		lib = new LibreriaBBDD("tfg", "root", "");
 		
-		Usuario u1=new Usuario("andres", 35);
-		Usuario u = new Usuario("pablo", 27);
 		
-		Direccion d1 =new Direccion("alcala", 35);
-		u.addDireccionL(d1);
-		u.addDireccionS(d1);
+		Query q = lib.newQuery(Usuario.class);
+		q.setConstraint(SimpleConstraint.igualQueConstraint("nombre", "pablo"));
 		
-		u.addGustoL("potaje");
-		u.addGustoS("potaje");
-
+		Usuario u = (Usuario) lib.executeQuery(q).get(0);
 		
-		u.addNumeroL(777);
-		u.addNumeroS(777);
+		System.out.println(u.getGustosS());
 		
-		u.addUsuarioL(u1);
-		u.addUsuarioS(u1);
-
-
-		
-		lib.guardarOactualizar(u);
-		
-		
-		/*u.setGustoL("arroz", 0);
-		Set<String> gustos=new HashSet<String>();
-		gustos.add("arroz con leche");
-		u.setGustosS(gustos);
-		
-		u.setNumeroL(15, 0);
-		Set<Integer> numeros=new HashSet<Integer>();
-		numeros.add(15);
-		u.setNumerosS(numeros);
-		
-		Direccion d2 =new Direccion("desengaño", 21);
-		u.setDireccionL(d2, 0);
-		Set<Direccion>direcciones=new HashSet<Direccion>();
-		direcciones.add(d2);
-		u.setDireccionesS(direcciones);*/
-		
-		
-		//lib.guardarOactualizar(u);
 		System.out.println("FIN");
-		
-		/*Query q = lib.newQuery(Usuario.class);
-		SimpleConstraint c = SimpleConstraint.igualQueConstraint("nombre", "pablo");
-		q.setConstraint(c);
-		List<Object> lu = lib.executeQuery(q);
-		u = (Usuario) lu.get(0);*/
 
 	}
 

@@ -7,6 +7,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -96,8 +97,11 @@ public class Query {
 		List<String> selectCampos = new ArrayList<String>();
 		for(int i = 0; i < (campos.length); i++){
 			campos[i].setAccessible(true);
-			if(!campos[i].getType().isAssignableFrom(List.class)){
+			if(!campos[i].getType().isAssignableFrom(List.class) && !campos[i].getType().isAssignableFrom(Set.class)){
 				selectCampos.add("t1." + campos[i].getName());
+			}
+			else{
+				selectCampos.add("t1.2_" + campos[i].getName());
 			}
 		}
 		sqlStatement+= StringUtils.join(selectCampos,",");
@@ -162,8 +166,9 @@ public class Query {
 	 * @throws SQLException 
 	 * @throws IllegalAccessException 
 	 * @throws InstantiationException 
+	 * @throws ClassNotFoundException 
 	 */
-	protected List<Object> executeQuery(Connection con, int profundidad) throws SQLException, InstantiationException, IllegalAccessException{
+	protected List<Object> executeQuery(Connection con, int profundidad) throws SQLException, InstantiationException, IllegalAccessException, ClassNotFoundException{
 		ObjectCreator objCrtr = new ObjectCreator(this.lib);
 		String sql = this.toSql(con); 									//Sentencia SQL a ejecutar
 		List<Object> lista = new ArrayList<Object>(); 					//Lista en la que se introducirán los objetos
@@ -181,6 +186,7 @@ public class Query {
 			}
 			else{ 														//Si no esta te creas el objeto y le añades al mapa
 				object = objCrtr.createObject(this.clase,rs, profundidad); 								// Crea el objeto de la clase
+			System.out.println("eeeee");
 			}
 			lista.add(object); 											// Añadir el objeto a la lista que se devolverá
 		}

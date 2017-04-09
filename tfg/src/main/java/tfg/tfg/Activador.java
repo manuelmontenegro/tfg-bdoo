@@ -21,9 +21,10 @@ public class Activador {
  *  Dado un objeto recupera de la BBDD el objeto hijo que es nulo  
  *  y se llama a si mismo para activar sus objetos hijos
  * @param o
+ * @throws ClassNotFoundException 
  * @throws ObjetoInexistente
  */
-	protected void activar(Object o, int profundidad) throws LibreriaBBDDException {
+	protected void activar(Object o, int profundidad) throws LibreriaBBDDException, ClassNotFoundException {
 		if(!this.lib.constainsKeyObjectMap(o))
 			throw new LibreriaBBDDException(new ObjetoInexistente());
 		if(profundidad>0){
@@ -59,8 +60,9 @@ public class Activador {
 	 * @param nombreCol
 	 * @param class1
 	 * @return
+	 * @throws ClassNotFoundException 
 	 */
-	private Object recuperar(Object o, String nombreCol, Class<?> class1, int profundidad){
+	private Object recuperar(Object o, String nombreCol, Class<?> class1, int profundidad) throws ClassNotFoundException{
 		if(profundidad==0)//si la profundidad es cero no hay que recuperar el objeto de la BBDD ya se ha llegado al maximo
 			return null;
 		int idPadre=this.lib.getObjectMap(o); 

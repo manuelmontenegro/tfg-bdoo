@@ -228,7 +228,7 @@ public class LibreriaBBDD {
 						tipo = "INTEGER";
 					
 
-					Atributo a = new Atributo(n.getName(), tipo, false);
+					Atributo a = new Atributo(n.getName(), tipo, false,false);
 					atributos.add(a);
 				}
 		}
@@ -627,13 +627,56 @@ public class LibreriaBBDD {
 		
 		lib = new LibreriaBBDD("tfg", "root", "");
 		
+		Usuario u1=new Usuario("andres", 35);
+		Usuario u = new Usuario("pablo", 27);
 		
-		Query q = lib.newQuery(Usuario.class);
-		q.setConstraint(SimpleConstraint.igualQueConstraint("nombre", "pablo"));
+		Direccion d1 =new Direccion("alcala", 35);
+		u.addDireccionL(d1);
+		u.addDireccionS(d1);
 		
-		Usuario u = (Usuario) lib.executeQuery(q).get(0);
+		u.addGustoL("potaje");
+		u.addGustoS("potaje");
+
 		
-		System.out.println(u.getGustosS());
+		u.addNumeroL(777);
+		u.addNumeroS(777);
+		
+		u.addUsuarioL(u1);
+		u.addUsuarioS(u1);
+		u.setUsuario(u1);
+
+
+		
+		lib.guardarOactualizar(u);
+		
+		
+		/*u.setGustoL("arroz", 0);
+		Set<String> gustos=new HashSet<String>();
+		gustos.add("arroz con leche");
+		u.setGustosS(gustos);
+		
+		u.setNumeroL(15, 0);
+		Set<Integer> numeros=new HashSet<Integer>();
+		numeros.add(15);
+		u.setNumerosS(numeros);
+		
+		Direccion d2 =new Direccion("desengaño", 21);
+		u.setDireccionL(d2, 0);
+		Set<Direccion>direcciones=new HashSet<Direccion>();
+		direcciones.add(d2);
+		u.setDireccionesS(direcciones);*/
+		
+		
+		//lib.guardarOactualizar(u);
+		
+		/*Query q = lib.newQuery(Usuario.class);
+		SimpleConstraint c = SimpleConstraint.igualQueConstraint("nombre", "pablo");
+		q.setConstraint(c);
+		List<Object> lu = lib.executeQuery(q);
+		u = (Usuario) lu.get(0);*/
+		
+		
+	
 		
 		System.out.println("FIN");
 
@@ -643,61 +686,7 @@ public class LibreriaBBDD {
 
 
 /*
-patron que podemos usar para hacer esto
-Foreign Key Mapping
 
-
-
-
-1)cadena de punteros
-si objeto apunta a otro que apunta a otro se deben guardar todos
-2)los ciclos
-si un objeto tiene otro que tiene otro que a su vez tie al primero no debe quedarse en u buqle infinito
-3)actualizar en cadena con un boolean o otro nombre para que actualize en cascada o no
-al actualizar un objeto actualizar tambien los objetos que tiene
-4)borrar 
-on delete set NULL
-al borrar un empleado no borrar su direccion
-5)al recuperar
-si un objeto tiene referencias a varios objetos indicar un nivel maxio de profundiada por ejemplo 5
-asi no recupera todos los objetos que tenga este y a partir de esa profundidad maxima poner NULLs
-y si si quieres profundizar mas hacer un metodo acitvate() --en pag 96
-este metodo recupera los NULLs que tiene un objeto que se halla recuperado antes para recuperarlos
-
-
-
-
--------------------4/02/2017----------
-
-siguente reunion martes 28 de febrero a las cuatro
-
-
-guardar sin prondiadad siempre guarda todo
-profundiadad en cargar y en actualizar
-
-private int profundidad =5;
-
-public setProfundiadad(){}
-public void actualizar(Object o, int profundiadad){
-	implementacion con profundidad recibida
-}
-
-public void actualizar(Object o){
-	this.guardar(o, this.pofundiadad);
-}
-----
-Empleado con nombre y Direccion
-Direccion con calle y Num
-Num con piso y letra
-Constraint c1=SimpleConstraint.igualQueConstraint("direccion.numero.letra", "A");
-
-metodo split(".") partiendo por los puntos
-se puede hacer un mapa de nombre de clase a nombres de tablas
-hay que hacer un join en realidad left join para que los empleados que no tengan direccion(direccion a null) tambien aparezcan
-para el left joun con tres clases encadenado primero hacer el sql a mano que funcione y luego la implemantaccion
-empleado1 as t1 LEFT JOIN direccion2 as t2 ON t1.direccion=t2.id LEFT JOIN num as t3 ON t2.numero=t3.id
-
-mockito framework para junit
 
 5 junio borrador para profesor pra que le corrija, se puede ir corrijiendo antes
 16 junio entrega memoria final en secretaria,  con el codigo y todo lo demas

@@ -9,6 +9,7 @@ public class Usuario {
 	
 	private String nombre;
 	private int edad;
+	private Usuario usuario;
 	
 	private List<Direccion>direccionesL;
 	private List<String> gustosL;
@@ -27,46 +28,48 @@ public class Usuario {
 	
 	public Usuario(String nombre, int edad){
 		this.nombre=nombre;
-		this.edad=edad;
-		
-
-		this.direccionesL=new ArrayList<Direccion>();
-		this.gustosL=new ArrayList<String>();	
-		this.numerosL=new ArrayList<Integer>();	
-		this.usuariosL=new ArrayList<Usuario>();	
-		
-		this.direccionesS=new HashSet<Direccion>();
-		this.gustosS=new HashSet<String>();	
-		this.numerosS=new HashSet<Integer>();	
-				
-		this.usuariosS=new HashSet<Usuario>();
+		this.edad=edad;		
 	}
 	
 	public void addDireccionL(Direccion direcion){
+		if(this.direccionesL==null)
+			this.direccionesL=new ArrayList<Direccion>();
 		this.direccionesL.add(direcion);
 	}
 	public void setDireccionL(Direccion direccion, int pos){
+		if(this.direccionesL==null)
+			this.direccionesL=new ArrayList<Direccion>();
 		this.direccionesL.set(pos, direccion);
 	}
 	
 	
 	public void addGustoL(String gusto){
+		if(this.gustosL==null)
+			this.gustosL=new ArrayList<String>();	
 		this.gustosL.add(gusto);
 	}
 	public void setGustoL(String gusto, int pos){
+		if(this.gustosL==null)
+			this.gustosL=new ArrayList<String>();	
 		this.gustosL.set(pos, gusto);
 	}
 	
 	
 	public void addNumeroL(int numero){
+		if(this.numerosL==null)
+			this.numerosL=new ArrayList<Integer>();	
 		this.numerosL.add(numero);
 	}
 	public void setNumeroL(int numero, int pos){
+		if(this.numerosL==null)
+			this.numerosL=new ArrayList<Integer>();
 		this.numerosL.set(pos, numero);
 	}
 	
 	
 	public void addUsuarioL(Usuario usuario){
+		if(this.usuariosL==null)
+			this.usuariosL=new ArrayList<Usuario>();	
 		this.usuariosL.add(usuario);
 	}
 	public String getNombre() {
@@ -138,6 +141,8 @@ public class Usuario {
 	}
 
 	public void setUsuarioL(Usuario usuario, int pos){
+		if(this.usuariosL==null)
+			this.usuariosL=new ArrayList<Usuario>();
 		this.usuariosL.set(pos, usuario);
 	}
 
@@ -145,6 +150,8 @@ public class Usuario {
 	
 	
 	public void addDireccionS(Direccion direcion){
+		if(this.direccionesS==null)
+			this.direccionesS=new HashSet<Direccion>();
 		this.direccionesS.add(direcion);
 	}
 	public void setDireccionesS(Set<Direccion> direcciones){
@@ -153,6 +160,8 @@ public class Usuario {
 	
 	
 	public void addGustoS(String gusto){
+		if(this.gustosS==null)
+			this.gustosS=new HashSet<String>();	
 		this.gustosS.add(gusto);
 	}
 	public void setGustosS(Set<String> gustos){
@@ -160,6 +169,8 @@ public class Usuario {
 	}
 	
 	public void addNumeroS(int numero){
+		if(this.numerosS==null)
+			this.numerosS=new HashSet<Integer>();	
 		this.numerosS.add(numero);
 	}
 	public void setNumerosS(Set<Integer> numeros){
@@ -169,6 +180,8 @@ public class Usuario {
 	
 	
 	public void addUsuarioS(Usuario usuario){
+		if(this.usuariosS==null)
+			this.usuariosS=new HashSet<Usuario>();
 		this.usuariosS.add(usuario);
 	}
 	public void setUsuarioS(Set<Usuario> usuarios){
@@ -179,6 +192,14 @@ public class Usuario {
 		System.out.println("start");
 		for(String s: gustosS)
 			System.out.println(s);
+	}
+
+	public Usuario getUsuario() {
+		return usuario;
+	}
+
+	public void setUsuario(Usuario usuario) {
+		this.usuario = usuario;
 	}
 
 }

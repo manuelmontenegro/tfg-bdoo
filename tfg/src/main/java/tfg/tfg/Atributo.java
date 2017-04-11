@@ -6,12 +6,14 @@ public class Atributo {
 	private String tipo;
 	private boolean basico;
 	private String claseConstructora;
+	private boolean multi;
 	
-	public Atributo(String nombre, String tipo, boolean basico) {
+	public Atributo(String nombre, String tipo, boolean basico, boolean multi) {
 		super();
 		this.nombre = nombre;
 		this.tipo = tipo;
 		this.basico = basico;
+		this.multi=multi;
 	}
 	
 	public String getNombre() {
@@ -29,6 +31,9 @@ public class Atributo {
 
 	public boolean isBasico() {
 		return basico;
+	}
+	public boolean isMulti() {
+		return multi;
 	}
 
 	public void setBasico(boolean basico) {

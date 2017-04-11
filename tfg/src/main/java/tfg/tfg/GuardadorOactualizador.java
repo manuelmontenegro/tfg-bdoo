@@ -9,10 +9,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
 import com.mysql.jdbc.Statement;
+
+import pruebaList.Direccion;
+import pruebaList.Usuario;
 
 
 public class GuardadorOactualizador {
@@ -41,7 +45,7 @@ public class GuardadorOactualizador {
 
 		if (!im.containsKey(o) && !this.lib.constainsKeyObjectMap(o)) {
 			ArrayList<Atributo> atributos = alterarTabla(nombreTabla, o);
-			id = insertarFilaVacia(nombreTabla,o.getClass().getName(),atributos);
+			id = insertarFilaVacia(nombreTabla,atributos);
 		} else {// esta en alguno de los dos
 			if (im.containsKey(o)) {// obtener id de la fila con de alguno de
 									// los dos mapas
@@ -192,23 +196,29 @@ public class GuardadorOactualizador {
 	 * @return
 	 * @throws SQLException
 	 */
-	private int insertarFilaVacia(String nombreTabla, String tipo, ArrayList<Atributo> atributos) throws SQLException{
+	private int insertarFilaVacia(String nombreTabla, ArrayList<Atributo> atributos) throws SQLException{
 		int id = 0;
 		ArrayList<String> valores = new ArrayList<String>();
 		String nombres = "";
 		String claves = "";
-		for(Atributo a : atributos){
-			if(!a.isBasico()){
-				valores.add(a.getClaseConstructora());	
-				claves+=",? ";
-				nombres+=" , "+a.getNombre();
+		boolean primero=true;
+		for(int i=0; i<atributos.size();i++){
+			if(!atributos.get(i).isBasico()){
+				
+				if(!primero){
+					claves+=" , ";
+					nombres+=" , ";
+				}
+				valores.add(atributos.get(i).getClaseConstructora());	
+				claves+=" ? ";
+				nombres+="2_"+atributos.get(i).getNombre();
+				primero=false;
 			}
 		}
-		String sql = "INSERT INTO "+nombreTabla+" (1_tipo"+nombres+") VALUES (? "+claves+")";
+		String sql = "INSERT INTO "+nombreTabla+" ("+nombres+") VALUES ("+claves+")";
 		Connection c = this.lib.getConnection();
 		PreparedStatement pst = c.prepareStatement(sql,Statement.RETURN_GENERATED_KEYS);
-		pst.setString(1, tipo);
-		int i = 2;
+		int i = 1;
 		for(String valor : valores){
 			pst.setString(i,valor);
 			i++;
@@ -312,7 +322,13 @@ public class GuardadorOactualizador {
 		}
 		else{//hay que crearla
 			nombreTabla=insertarIndiceTabla(o.getClass().getName(), o.getClass().getSimpleName());
-			crearTabla(nombreTabla);//crea la tabla solo con id
+			
+			String sql1 = "CREATE TABLE IF NOT EXISTS "+nombreTabla+" (id INTEGER not NULL AUTO_INCREMENT, PRIMARY KEY ( id ))";
+			Connection c1 = this.lib.getConnection();
+			PreparedStatement pst1 = c1.prepareStatement(sql1);
+			
+			pst1.execute();
+			c1.close();
 		}
 		c.close();
 		return nombreTabla;
@@ -363,21 +379,7 @@ public class GuardadorOactualizador {
 		return nombreTabla;		
 	}
 	
-	/**
-	 * Crea una tablo con el nombre dado
-	 * La tabla solo tendra id
-	 * @param nombreTabla nombre de la tabla que se va a crear
-	 * @throws SQLException
-	 */
-	private void crearTabla(String nombreTabla) throws SQLException {
 
-		String sql = "CREATE TABLE IF NOT EXISTS "+nombreTabla+" (id INTEGER not NULL AUTO_INCREMENT, 1_tipo VARCHAR(255), PRIMARY KEY ( id ))";
-		Connection c = this.lib.getConnection();
-		PreparedStatement pst = c.prepareStatement(sql);
-		
-		pst.execute();
-		c.close();
-	}
 	/**
 	 * Altera la tabla para que coincida en columnas con los atributos del objeto
 	 * primero para cada atributo del objeto si no esta en indie columna le inserta en indice columna
@@ -390,6 +392,7 @@ public class GuardadorOactualizador {
 	 */
 	private ArrayList<Atributo> alterarTabla(String nombreTabla, Object o) throws SQLException {
 		ArrayList<Atributo> atributos = sacarAtributos(o);
+		
 		String idIndiceTabla=getIDIndiceTabla(nombreTabla);
 		for (Atributo a : atributos) {
 			if(!estaIndiceColumna(a, idIndiceTabla))
@@ -405,7 +408,9 @@ public class GuardadorOactualizador {
 		Connection c = this.lib.getConnection();
 		PreparedStatement pst = c.prepareStatement(sql);
 		pst.setString(1, idIndiceTabla);
+	
 		pst.setString(2, a.getNombre());
+
 		ResultSet rs = pst.executeQuery();
 		
 		boolean ret=rs.next();
@@ -425,6 +430,7 @@ public class GuardadorOactualizador {
 		for (Field f : o.getClass().getDeclaredFields()) {
 			boolean objetoNulo=false;
 			boolean basico = true;
+			boolean multi = false;
 			String nombre = f.getName();
 			String tipo = "";
 			String claseConstructora = "";
@@ -467,9 +473,10 @@ public class GuardadorOactualizador {
 							String nombreTablaParametro =crearTabla(param);
 							crearTablaIntermedia(nombreTablaObjeto,nombreTablaParametro,f.getName(),tipoInstancia);
 						}
-						nombre = "2_"+f.getName();
+						nombre = f.getName();
 						tipo = "VARCHAR(255)";
 						basico = false;
+						multi = true;
 						claseConstructora = ob.getClass().getName();
 					}
 					else{ //Si no es ningun tipo primitivo quiere decir que es una referencia a otro objeto
@@ -480,6 +487,9 @@ public class GuardadorOactualizador {
 						}
 						else{
 							String nombreTablaReferenciada=crearTabla(ob);
+							basico = false;
+							nombre = f.getName();
+							claseConstructora = ob.getClass().getName();
 							tipo = "INTEGER, ADD FOREIGN KEY ("+f.getName()+") REFERENCES "+nombreTablaReferenciada+"(id) ON DELETE SET NULL"; // El tipo ya va a ser una foreign key	
 						}
 					}
@@ -489,12 +499,13 @@ public class GuardadorOactualizador {
 				}
 			}
 			if(!objetoNulo){
-				Atributo a = new Atributo(nombre, tipo,basico);
+				Atributo a = new Atributo(nombre, tipo, basico, multi);
 				if(!basico)
 					a.setClaseConstructora(claseConstructora);
 				atributos.add(a);
 			}
 		}
+		
 		return atributos;
 	}
 	
@@ -512,13 +523,12 @@ public class GuardadorOactualizador {
 				+ "id1_"+nto+" INTEGER, "
 				+ nombreCampo+ " "+tipo+", ";
 		
-				if(tipoInstancia.equalsIgnoreCase("List"))
-					sql +=  " posicion INTEGER, ";
-						
-				sql+= " PRIMARY KEY ( id ),"
-				+ " CONSTRAINT fk_"+nto+"_"+nombreCampo+"_"+nombreCampo+" FOREIGN KEY (id1_"+nto+") REFERENCES "+nto+"(id) )";
+		if(tipoInstancia.equalsIgnoreCase("List"))
+			sql +=  " posicion INTEGER, ";
+				
+		sql+= " PRIMARY KEY ( id ),"
+		+ " CONSTRAINT fk_"+nto+"_"+nombreCampo+"_"+nombreCampo+" FOREIGN KEY (id1_"+nto+") REFERENCES "+nto+"(id) )";
 		
-		System.out.println(sql);
 		Connection c = this.lib.getConnection();
 		PreparedStatement pst = c.prepareStatement(sql);
 		pst.execute();
@@ -538,14 +548,13 @@ public class GuardadorOactualizador {
 				+ "id1_"+nto+" INTEGER, "
 				+ "id2_"+ntp+" INTEGER, ";
 		
-				if(tipoInstancia.equalsIgnoreCase("List"))
-					sql +=  " posicion INTEGER, ";
-						
-				sql+= " PRIMARY KEY ( id ),"
-				+ " CONSTRAINT fk1_"+nto+"_"+nombreParametro+" FOREIGN KEY (id1_"+nto+") REFERENCES "+nto+"(id),"
-				+ " CONSTRAINT fk2_"+nto+"_"+nombreParametro+" FOREIGN KEY (id2_"+ntp+") REFERENCES "+ntp+"(id) )";
+		if(tipoInstancia.equalsIgnoreCase("List"))
+			sql +=  " posicion INTEGER, ";
+				
+		sql+= " PRIMARY KEY ( id ),"
+		+ " CONSTRAINT fk1_"+nto+"_"+nombreParametro+" FOREIGN KEY (id1_"+nto+") REFERENCES "+nto+"(id),"
+		+ " CONSTRAINT fk2_"+nto+"_"+nombreParametro+" FOREIGN KEY (id2_"+ntp+") REFERENCES "+ntp+"(id) )";
 		
-		System.out.println(sql);
 		Connection c = this.lib.getConnection();
 		PreparedStatement pst = c.prepareStatement(sql);
 		pst.execute();
@@ -582,7 +591,7 @@ public class GuardadorOactualizador {
 	 * @throws SQLException
 	 */
 	private void insertarIndiceColumna(String nombreTabla,  Atributo a, String idIndiceTabla) throws SQLException {
-
+	
 		String sql1 = "INSERT INTO indicecolumna (idtabla,atributo,columna) " + " VALUES ( \"" + idIndiceTabla + "\" , \""
 				+ a.getNombre() + "\" , \"" + a.getNombre() + "\"  )";
 		//POR AHORA EL NOMBRE DEL ATRIBUTO DE LA CLASE Y EL NOMBRE DE LA CALUMNA DONDE SE VA A GUARDAR ES EL MISMO
@@ -592,14 +601,43 @@ public class GuardadorOactualizador {
 		PreparedStatement pst1 = c1.prepareStatement(sql1);
 		pst1.execute();
 		c1.close();
-
-		String anyadir = "ALTER TABLE " + nombreTabla + " ADD " + a.getNombre() + " " + a.getTipo();
-		Connection c2 = this.lib.getConnection();
-		PreparedStatement pst = c2.prepareStatement(anyadir);
-		//System.out.println(anyadir);
-		pst.execute();
-		c2.close();
 		
+		if(a.isBasico()){			
+
+			String anyadir = "ALTER TABLE " + nombreTabla + " ADD " + a.getNombre() + " " + a.getTipo();
+			System.out.println(anyadir);
+			Connection c2 = this.lib.getConnection();
+			PreparedStatement pst = c2.prepareStatement(anyadir);
+			//System.out.println(anyadir);
+			pst.execute();
+			c2.close();
+		}
+		else{
+			if(a.isMulti()){				
+
+				String anyadir = "ALTER TABLE " + nombreTabla + " ADD  2_"+a.getNombre()+" VARCHAR(255)";
+				System.out.println(anyadir);
+				Connection c2 = this.lib.getConnection();
+				PreparedStatement pst = c2.prepareStatement(anyadir);
+				//System.out.println(anyadir);
+				pst.execute();
+				
+				c2.close();
+				
+			}
+			else{
+
+				String anyadir = "ALTER TABLE " + nombreTabla + " ADD " + a.getNombre() + " " + a.getTipo()+", ADD 2_"+a.getNombre()+" VARCHAR(255)";
+				System.out.println(anyadir);
+				Connection c2 = this.lib.getConnection();
+				PreparedStatement pst = c2.prepareStatement(anyadir);
+				//System.out.println(anyadir);
+				pst.execute();
+				
+				c2.close();
+			}
+			
+		}
 	}
 	/**
 	 * Metodo para eliminar las culumnas que no tengoa el objeto pero que todavia tenga la tabla usada para guardar el objeto
@@ -645,6 +683,7 @@ public class GuardadorOactualizador {
 			esta = false;
 		}
 		c.close();
-	}	
+	}
+
 
 }

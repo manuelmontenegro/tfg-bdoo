@@ -68,7 +68,7 @@ public class Activador {
 		int idPadre=this.lib.getObjectMap(o); 
 		String tnPadre="";
 		try {
-			tnPadre=this.lib.getTableName(o);
+			tnPadre=this.lib.getTableName(o.getClass().getName());
 		
 			Connection c=this.lib.getConnection();
 			String sql = "Select * from "+ tnPadre + " where id = " + idPadre; //Aqui cogeremos el id en la base de datos del objeto hijo

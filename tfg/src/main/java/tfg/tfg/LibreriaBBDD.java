@@ -31,6 +31,7 @@ public class LibreriaBBDD {
 	private ComboPooledDataSource cpds;
 	private IdentityHashMap<Object, Integer> objectMap; //objetos con su id
 	private HashMap<Identificador, Object> idMap; //identificador de clase r id con su objeto
+	private HashMap<String, String> classMap; //<Nombre de la clase, Nombre de la tabla>
 	private int profundidad;
 	private GuardadorOactualizador guaOa;
 	private Activador act;
@@ -134,43 +135,26 @@ public class LibreriaBBDD {
 		this.cpds.setAcquireRetryAttempts(1);
 		this.cpds.setAcquireRetryDelay(1);
 	}
-
-	
-	/**
-	 * Devuelve el nombre de la tabla que representa la clase del objeto recibido en la base de datos.
-	 * @throws SQLException 
-	 */
-	public String getTableName(Object o) throws SQLException{
-		Connection con = this.cpds.getConnection();
-		String str = "";
-		String sqlStatement = "SELECT nombretabla "
-				+ "FROM INDICETABLA "
-				+ "WHERE nombreclase = \'" 
-				+ o.getClass().getName() + "\'"; 			//Sentencia sql para obtener el nombre de la tabla asociado a la clase 'clase'
-		
-		PreparedStatement pst;
-		pst = con.prepareStatement(sqlStatement); 			// Preparación de la sentencia
-		ResultSet rs = pst.executeQuery(); 					// Ejecución de la sentencia
-		rs.next();
-		str = rs.getString("nombretabla"); 					// str = nombre de la tabla
-		con.close();
-		return str;
-	}
 	
 	public String getTableName(String nombreClase) throws SQLException{
-		Connection con = this.cpds.getConnection();
-		String str = "";
-		String sqlStatement = "SELECT nombretabla "
-				+ "FROM INDICETABLA "
-				+ "WHERE nombreclase = \'" 
-				+ nombreClase + "\'"; 		//Sentencia sql para obtener el nombre de la tabla asociado a la clase 'clase'
-		PreparedStatement pst;
-		pst = con.prepareStatement(sqlStatement); 			// Preparación de la sentencia
-		ResultSet rs = pst.executeQuery(); 					// Ejecución de la sentencia
-		rs.next();
-		str = rs.getString("nombretabla"); 					// str = nombre de la tabla
-		con.close();
-		return str;
+		if(classMap.containsKey(nombreClase))
+			return classMap.get(nombreClase);
+		else{
+			Connection con = this.cpds.getConnection();
+			String str = "";
+			String sqlStatement = "SELECT nombretabla "
+					+ "FROM INDICETABLA "
+					+ "WHERE nombreclase = \'" 
+					+ nombreClase + "\'"; 		//Sentencia sql para obtener el nombre de la tabla asociado a la clase 'clase'
+			PreparedStatement pst;
+			pst = con.prepareStatement(sqlStatement); 			// Preparación de la sentencia
+			ResultSet rs = pst.executeQuery(); 					// Ejecución de la sentencia
+			rs.next();
+			str = rs.getString("nombretabla"); 					// str = nombre de la tabla
+			con.close();
+			classMap.put(nombreClase, str);
+			return str;
+		}
 	}
 	
 	/**
@@ -250,7 +234,7 @@ public class LibreriaBBDD {
 		String tableName;
 		Integer id;
 		try {
-			tableName = this.getTableName(o);
+			tableName = this.getTableName(o.getClass().getName());
 			String sqlStatement = "DELETE FROM " + tableName +
 					  " WHERE ID = ?";							//Sentencia SQL de eliminación
 			Connection con = this.cpds.getConnection();
@@ -326,7 +310,7 @@ public class LibreriaBBDD {
 		
 		String tableName;
 		try {
-			tableName = this.getTableName(o);//Nombre de la tabla de la base de datos perteneciente a la clase del objeto
+			tableName = this.getTableName(o.getClass().getName());//Nombre de la tabla de la base de datos perteneciente a la clase del objeto
 			String sqlStatement = "UPDATE " + tableName +
 					  " SET " + claves +
 					  " WHERE ID = ?";		
@@ -401,7 +385,7 @@ public class LibreriaBBDD {
 		
 		}
 		
-		String tableName = this.getTableName(o);											//Nombre de la tabla de la base de datos perteneciente a la clase del objeto
+		String tableName = this.getTableName(o.getClass().getName());											//Nombre de la tabla de la base de datos perteneciente a la clase del objeto
 		String sqlStatement = "UPDATE " + tableName +
 							  " SET " + claves +
 							  " WHERE ID = ?";		
@@ -627,7 +611,7 @@ public class LibreriaBBDD {
 		
 		lib = new LibreriaBBDD("tfg", "root", "");
 		
-		Usuario u1=new Usuario("andres", 35);
+		/*Usuario u1=new Usuario("andres", 35);
 		Usuario u = new Usuario("pablo", 27);
 		
 		Direccion d1 =new Direccion("alcala", 35);
@@ -637,7 +621,6 @@ public class LibreriaBBDD {
 		u.addGustoL("potaje");
 		u.addGustoS("potaje");
 
-		
 		u.addNumeroL(777);
 		u.addNumeroS(777);
 		
@@ -645,40 +628,14 @@ public class LibreriaBBDD {
 		u.addUsuarioS(u1);
 		u.setUsuario(u1);
 
-
-		
 		lib.guardarOactualizar(u);
 		
+		System.out.println("FIN GUARDADO");*/
 		
-		/*u.setGustoL("arroz", 0);
-		Set<String> gustos=new HashSet<String>();
-		gustos.add("arroz con leche");
-		u.setGustosS(gustos);
-		
-		u.setNumeroL(15, 0);
-		Set<Integer> numeros=new HashSet<Integer>();
-		numeros.add(15);
-		u.setNumerosS(numeros);
-		
-		Direccion d2 =new Direccion("desengaño", 21);
-		u.setDireccionL(d2, 0);
-		Set<Direccion>direcciones=new HashSet<Direccion>();
-		direcciones.add(d2);
-		u.setDireccionesS(direcciones);*/
-		
-		
-		//lib.guardarOactualizar(u);
-		
-		/*Query q = lib.newQuery(Usuario.class);
-		SimpleConstraint c = SimpleConstraint.igualQueConstraint("nombre", "pablo");
-		q.setConstraint(c);
-		List<Object> lu = lib.executeQuery(q);
-		u = (Usuario) lu.get(0);*/
-		
-		
-	
-		
-		System.out.println("FIN");
+		Query q = lib.newQuery(Usuario.class);
+		q.setConstraint(SimpleConstraint.igualQueConstraint("nombre", "pablo"));
+		Usuario u2 = (Usuario) lib.executeQuery(q).get(0);
+		u2.showGustos();
 
 	}
 

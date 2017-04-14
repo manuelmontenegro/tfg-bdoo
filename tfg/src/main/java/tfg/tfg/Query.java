@@ -44,43 +44,6 @@ public class Query {
 	}
 	
 	/**
-	 * Devuelve el nombre de la tabla correspondiente al atributo clase.
-	 * @param con (Conexión a la BD).
-	 * @return Nombre de la tabla.
-	 * @throws SQLException 
-	 */
-	private String getTableName(Connection con) throws SQLException{
-		String str = "";
-		String sqlStatement = "SELECT nombretabla "
-				+ "FROM INDICETABLA "
-				+ "WHERE nombreclase = \'" 
-				+ this.clase.getName() + "\'"; 			//Sentencia sql para obtener el nombre de la tabla asociado a la clase 'clase'
-		
-		PreparedStatement pst;
-		pst = con.prepareStatement(sqlStatement); 		// Preparación de la sentencia
-		ResultSet rs = pst.executeQuery(); 				// Ejecución de la sentencia
-		rs.next();
-		str = rs.getString("nombretabla"); 				// str = nombre de la tabla
-		return str;
-	}
-	
-	private String getTableName(String className) throws SQLException{
-		Connection con=this.lib.getConnection();
-		String str = "";
-		String sqlStatement = "SELECT nombretabla "
-				+ "FROM INDICETABLA "
-				+ "WHERE nombreclase = \'" 
-				+ className + "\'"; 			//Sentencia sql para obtener el nombre de la tabla asociado a la clase 'clase'
-		PreparedStatement pst;
-		pst = con.prepareStatement(sqlStatement); 		// Preparación de la sentencia
-		ResultSet rs = pst.executeQuery(); 				// Ejecución de la sentencia
-		rs.next();
-		str = rs.getString("nombretabla"); 				// str = nombre de la tabla
-		con.close();
-		return str;
-	}
-	
-	/**
 	 * Devuelve la sentencia SQL a ejecutar con la constraint creada.
 	 * @param con (Conexión con la BD).
 	 * @return Sentencia SQL.
@@ -106,7 +69,7 @@ public class Query {
 		}
 		sqlStatement+= StringUtils.join(selectCampos,",");
 		sqlStatement += " FROM ";
-		String tableName = this.getTableName(con);
+		String tableName = lib.getTableName(clase.getName());
 		sqlStatement += tableName + " t1 ";
 		//FIN PARTE SELECT...FROM TABLA T1
 		
@@ -131,7 +94,7 @@ public class Query {
 				}
 				c = campoActual.getType(); //Ahora la clase que vamos a analizar es la del campo que estabamos buscando
 				if(!c.getCanonicalName().equalsIgnoreCase("Java.lang.String") && !c.getCanonicalName().equalsIgnoreCase("Int")){ //Si esa clase no es basica
-					tablasCampos.add(this.getTableName(campoActual.getType().getName())); //Buscamos su tabla y la guardamos en la lista de tablas
+					tablasCampos.add(lib.getTableName(campoActual.getType().getName())); //Buscamos su tabla y la guardamos en la lista de tablas
 					indiceTablas.add(i+1); //guardamos el indice de la tabla de la clase que estabamos analizando antes (para hacer el t1.campo1 = t2.id)
 					camposTablas.add(campoActual.getName()); //guardamos el nombre del campo (para hacer el t1.campo1 = t2.id)
 				}
@@ -186,7 +149,7 @@ public class Query {
 			}
 			else{ 														//Si no esta te creas el objeto y le añades al mapa
 				object = objCrtr.createObject(this.clase,rs, profundidad); 								// Crea el objeto de la clase
-			System.out.println("eeeee");
+				System.out.println("eeeee");
 			}
 			lista.add(object); 											// Añadir el objeto a la lista que se devolverá
 		}

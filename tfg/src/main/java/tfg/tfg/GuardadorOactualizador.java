@@ -109,7 +109,7 @@ public class GuardadorOactualizador {
 									if (!im.containsKey(parametro)) {
 										guardarOactualizar(parametro, im); // Te recorres la lista guardando cada objeto
 									}
-									insertarObjetoLista(nombreTabla, id, lib.getTableName(parametro), f.getName(),im.get(parametro), i, tipoInstancia);
+									insertarObjetoLista(nombreTabla, id, lib.getTableName(parametro.getClass().getName()), f.getName(),im.get(parametro), i, tipoInstancia);
 									i++;
 								}
 							} else {
@@ -117,7 +117,7 @@ public class GuardadorOactualizador {
 									if (!im.containsKey(parametro)) {
 										guardarOactualizar(parametro, im); // Te recorres el set guardando cada objeto
 									}
-									insertarObjetoLista(nombreTabla, id, lib.getTableName(parametro), f.getName(),
+									insertarObjetoLista(nombreTabla, id, lib.getTableName(parametro.getClass().getName()), f.getName(),
 											im.get(parametro), i, tipoInstancia);
 									i++;
 								}
@@ -454,7 +454,7 @@ public class GuardadorOactualizador {
 						ParameterizedType friendsParameterizedType = (ParameterizedType) friendsGenericType;
 						Type[] friendsType = friendsParameterizedType.getActualTypeArguments();
 						Class<?> userClass = (Class<?>) friendsType[0];
-						String nombreTablaObjeto = lib.getTableName(o);
+						String nombreTablaObjeto = lib.getTableName(o.getClass().getName());
 						String tipoInstancia = "";
 						if( ob instanceof List<?>)
 							tipoInstancia = "List";

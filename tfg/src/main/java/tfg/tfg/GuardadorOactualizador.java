@@ -592,52 +592,43 @@ public class GuardadorOactualizador {
 	 */
 	private void insertarIndiceColumna(String nombreTabla,  Atributo a, String idIndiceTabla) throws SQLException {
 	
-		String sql1 = "INSERT INTO indicecolumna (idtabla,atributo,columna) " + " VALUES ( \"" + idIndiceTabla + "\" , \""
-				+ a.getNombre() + "\" , \"" + a.getNombre() + "\"  )";
-		//POR AHORA EL NOMBRE DEL ATRIBUTO DE LA CLASE Y EL NOMBRE DE LA CALUMNA DONDE SE VA A GUARDAR ES EL MISMO
-		//YA QUE NO PUEDE HABER DOS ATRIBUTOS DE UNA CLASE CON EL MISNO NOMBRE
+		String sql1;
+		String alter;
+		
+		if(a.isBasico()){	
+			sql1 = "INSERT INTO indicecolumna (idtabla,atributo,columna) " + " VALUES ( \"" + idIndiceTabla + "\" , \""
+					+ a.getNombre() + "\" , \"" + a.getNombre() + "\"  )";
+
+			alter = "ALTER TABLE " + nombreTabla + " ADD " + a.getNombre() + " " + a.getTipo();
+		}
+		else{
+			if(a.isMulti()){	
+				sql1 = "INSERT INTO indicecolumna (idtabla,atributo,nombrecolumnatipo) " + " VALUES ( \"" + idIndiceTabla + "\" , \""
+						+ a.getNombre() + "\" , \"2_" + a.getNombre() + "\" )";
+				
+				alter = "ALTER TABLE " + nombreTabla + " ADD  2_"+a.getNombre()+" VARCHAR(255)";
+			}
+			else{
+				sql1 = "INSERT INTO indicecolumna (idtabla,atributo,columna,nombrecolumnatipo) " + " VALUES ( \"" + idIndiceTabla + "\" , \""
+						+ a.getNombre() + "\" , \"" + a.getNombre() + "\" , \"2_" + a.getNombre() + "\" )";
+				
+				alter = "ALTER TABLE " + nombreTabla + " ADD " + a.getNombre() + " " + a.getTipo()+", ADD 2_"+a.getNombre()+" VARCHAR(255)";
+			}
+			
+		}
 		System.out.println(sql1);
 		Connection c1 = this.lib.getConnection();
 		PreparedStatement pst1 = c1.prepareStatement(sql1);
 		pst1.execute();
 		c1.close();
 		
-		if(a.isBasico()){			
-
-			String anyadir = "ALTER TABLE " + nombreTabla + " ADD " + a.getNombre() + " " + a.getTipo();
-			System.out.println(anyadir);
-			Connection c2 = this.lib.getConnection();
-			PreparedStatement pst = c2.prepareStatement(anyadir);
-			//System.out.println(anyadir);
-			pst.execute();
-			c2.close();
-		}
-		else{
-			if(a.isMulti()){				
-
-				String anyadir = "ALTER TABLE " + nombreTabla + " ADD  2_"+a.getNombre()+" VARCHAR(255)";
-				System.out.println(anyadir);
-				Connection c2 = this.lib.getConnection();
-				PreparedStatement pst = c2.prepareStatement(anyadir);
-				//System.out.println(anyadir);
-				pst.execute();
-				
-				c2.close();
-				
-			}
-			else{
-
-				String anyadir = "ALTER TABLE " + nombreTabla + " ADD " + a.getNombre() + " " + a.getTipo()+", ADD 2_"+a.getNombre()+" VARCHAR(255)";
-				System.out.println(anyadir);
-				Connection c2 = this.lib.getConnection();
-				PreparedStatement pst = c2.prepareStatement(anyadir);
-				//System.out.println(anyadir);
-				pst.execute();
-				
-				c2.close();
-			}
-			
-		}
+		System.out.println(alter);
+		Connection c2 = this.lib.getConnection();
+		PreparedStatement pst = c2.prepareStatement(alter);
+		//System.out.println(anyadir);
+		pst.execute();
+		
+		c2.close();
 	}
 	/**
 	 * Metodo para eliminar las culumnas que no tengoa el objeto pero que todavia tenga la tabla usada para guardar el objeto

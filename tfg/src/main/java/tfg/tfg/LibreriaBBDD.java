@@ -51,6 +51,7 @@ public class LibreriaBBDD {
 
 		this.objectMap = new IdentityHashMap<Object, Integer>();
 		this.idMap = new HashMap<Identificador, Object>();
+		this.classMap = new HashMap<String,String>();
 		this.user = user;
 		this.pass = pass;
 		this.nombrebbdd = nombrebbdd;
@@ -98,7 +99,8 @@ public class LibreriaBBDD {
 				+ "(id INTEGER not NULL AUTO_INCREMENT, "
 				+ " idtabla INTEGER, " 
 				+ " atributo VARCHAR(255)," 
-				+ " columna VARCHAR(255)," + " PRIMARY KEY ( id ),"
+				+ " columna VARCHAR(255),"
+				+ " nombrecolumnatipo VARCHAR(255)," + " PRIMARY KEY ( id ),"
 				+"  CONSTRAINT fk_table FOREIGN KEY (idtabla) REFERENCES indicetabla(id)) ";
 		PreparedStatement pst;
 		//System.out.println(sql);
@@ -611,7 +613,7 @@ public class LibreriaBBDD {
 		
 		lib = new LibreriaBBDD("tfg", "root", "");
 		
-		/*Usuario u1=new Usuario("andres", 35);
+		Usuario u1=new Usuario("andres", 35);
 		Usuario u = new Usuario("pablo", 27);
 		
 		Direccion d1 =new Direccion("alcala", 35);
@@ -630,7 +632,7 @@ public class LibreriaBBDD {
 
 		lib.guardarOactualizar(u);
 		
-		System.out.println("FIN GUARDADO");*/
+		System.out.println("FIN GUARDADO");
 		
 		Query q = lib.newQuery(Usuario.class);
 		q.setConstraint(SimpleConstraint.igualQueConstraint("nombre", "pablo"));

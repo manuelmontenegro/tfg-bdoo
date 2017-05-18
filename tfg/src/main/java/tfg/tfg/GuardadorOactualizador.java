@@ -366,7 +366,7 @@ public class GuardadorOactualizador {
 	    }
 	    c.close();
 	    
-	    nombreTabla=casiNombreTabla+id;
+	    nombreTabla=id+casiNombreTabla;
 	    
 	    c = this.lib.getConnection();
 	    sql = "UPDATE indicetabla SET nombretabla=? where id=?";

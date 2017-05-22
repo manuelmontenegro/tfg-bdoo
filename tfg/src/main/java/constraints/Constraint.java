@@ -4,9 +4,7 @@ import java.util.List;
 
 public interface Constraint {
 	public String toSql();
+	public List<Constraint> getInnerConstraint();
+	public String getCampo();
 	public List<Object> getValues();
-	public String[] getOnConditions();
-	public String[] getMultiplesAtributos();
-	public List<String> getCampos();
-	public String getUnion();
 }

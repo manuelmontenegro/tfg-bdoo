@@ -33,27 +33,16 @@ public class NotConstraint implements Constraint{
 	}
 
 	@Override
-	public String[] getOnConditions() {
-		// TODO Auto-generated method stub
-		return null;
+	public List<Constraint> getInnerConstraint() {
+		List<Constraint> l = new ArrayList<Constraint>();
+		l.add(this.cons);
+		return l;
 	}
 
 	@Override
-	public String[] getMultiplesAtributos() {
-		// TODO Auto-generated method stub
+	public String getCampo() {
 		return null;
 	}
-
-	@Override
-	public List<String> getCampos() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public String getUnion() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+	
 	
 }

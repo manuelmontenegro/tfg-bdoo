@@ -17,8 +17,8 @@ import constraints.AndConstraint;
 import constraints.Constraint;
 import constraints.SimpleConstraint;
 import excepciones.ObjetoInexistente;
-import pruebaList.Direccion;
-import pruebaList.Usuario;
+import prueba.Usuario;
+import prueba.Direccion;
 import excepciones.LibreriaBBDDException;
 
 
@@ -157,6 +157,10 @@ public class LibreriaBBDD {
 			classMap.put(nombreClase, str);
 			return str;
 		}
+	}
+	
+	int getId(Object obj){
+		return this.objectMap.get(obj);
 	}
 	
 	/**
@@ -607,37 +611,25 @@ public class LibreriaBBDD {
 		l = executeQuery(q);
 		return l;
 	}
+	
+	boolean atributoBasico(Class<?> c){
+		return c.getCanonicalName().equalsIgnoreCase("Java.lang.String") 
+				|| c.getCanonicalName().equalsIgnoreCase("Int");
+	}
 
 	public static void main(String[] argv) {
 		LibreriaBBDD lib = null;
 		
 		lib = new LibreriaBBDD("tfg", "root", "");
 		
-		Usuario u1=new Usuario("andres", 35);
-		Usuario u = new Usuario("pablo", 27);
-		
-		Direccion d1 =new Direccion("alcala", 35);
-		u.addDireccionL(d1);
-		u.addDireccionS(d1);
-		
-		u.addGustoL("potaje");
-		u.addGustoS("potaje");
-
-		u.addNumeroL(777);
-		u.addNumeroS(777);
-		
-		u.addUsuarioL(u1);
-		u.addUsuarioS(u1);
-		u.setUsuario(u1);
-
-		lib.guardarOactualizar(u);
-		
-		System.out.println("FIN GUARDADO");
-		
+		Direccion d = new Direccion();
 		Query q = lib.newQuery(Usuario.class);
-		q.setConstraint(SimpleConstraint.igualQueConstraint("nombre", "pablo"));
-		Usuario u2 = (Usuario) lib.executeQuery(q).get(0);
-		u2.showGustos();
+		Constraint c1 = SimpleConstraint.igualQueConstraint("domicilio", new Direccion());
+		Constraint c2 = SimpleConstraint.igualQueConstraint("compañero.domicilio.calle", "i");
+		Constraint c = new AndConstraint(c1,c2);
+		q.setConstraint(c);
+		lib.executeQuery(q);
+
 
 	}
 

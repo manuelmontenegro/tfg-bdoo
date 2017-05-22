@@ -52,9 +52,8 @@ public class Query {
 	 * @throws IllegalArgumentException 
 	 */
 	protected String toSql(Connection con) throws SQLException, IllegalArgumentException, IllegalAccessException {
-		//EJEMPLO: restriccion: campo1.campo2.campo3 = X AND campo1.campo2 = Y
-		
-		//PARTE SELECT...FROM TABLA T1
+
+		//PARTE SELECT
 		String sqlStatement = "SELECT t1.id,";
 		Field[] campos = this.clase.getDeclaredFields();
 		List<String> selectCampos = new ArrayList<String>();
@@ -68,57 +67,67 @@ public class Query {
 			}
 		}
 		sqlStatement+= StringUtils.join(selectCampos,",");
-		sqlStatement += " FROM ";
-		String tableName = lib.getTableName(clase.getName());
-		sqlStatement += tableName + " t1 ";
-		//FIN PARTE SELECT...FROM TABLA T1
+		//FIN PARTE SELECT
 		
-		List<String> camposRestriccion = this.restriccion.getCampos(); //Lista que contiene: {campo1.campo2.campo3, campo1.campo2}
-		List<String> tablasCampos = new ArrayList<String>();	//Lista para guardar las tablas que corresponden a cada campo, al final de ejecutar queda: {tablacampo1, tablacampo2, tablacampo3, tablacampo4, tablacampo5, tablacampo6}
-		List<Integer> indiceTablas = new ArrayList<Integer>(); //Lista para guardar los indices de las tablas anteriores, por ejemplo para la tabla de campo1 (que tiene indice t2) guarda t1 que es el t necesario para hacer t1.campo1 = t2.id
-		List<String> camposTablas = new ArrayList<String>(); //Lista para guardar el nombre de los campos que se necesitan para hacer la condición de los LEFT JOIN, por ejemplo campo1 para hacer el t1.campo1 = t2.id
-		List<String> whereCondiciones = new ArrayList<String>(); //Lista con las condiciones que van a ir en el where, en el caso del ejemplo guarda: {campo3 = ?, campo2 = ?}
-		int index = 0; //indice necesario para saber donde estan los ultimos campos de cada conjunto, se usa en la linea 132
-		
-		for(String s: camposRestriccion){
-			String[] split = StringUtils.split(s,"."); //dividimos los campos por los puntos
-			Class<?> c = this.clase; //La clase en la que tenemos que buscar el primer campo es la de la consulta
-			Field campoActual = null; //esta variable es para facilitar todo, si no es muy lioso
-			int i = 0; //indice para recorrer el array de los campos split
-			if(index != 0) index--; //Resta necesaria para ajustar la t que corresponde a cada ultima tabla de cada conjunto. Sin esta resta, en el ejemplo, en where condiciones se guardaria que campo2 del segundo conjunto pertenece a la tabla t6 cuando en realidad es t5. Sirve para ajustar eso
-			while(!c.getCanonicalName().equalsIgnoreCase("Java.lang.String") && !c.getCanonicalName().equalsIgnoreCase("Int")){ //Mientras la clase que estamos analizando no sea basica
-				for (Field f: c.getDeclaredFields()) { //Para cada campo de esa clase buscamos el que se llame igual que el del indice i del conjunto y lo guardamos en la variable campoActual para usarlo despues
-					if(f.getName().equalsIgnoreCase(split[i])){
-						campoActual = f;
-					}
-				}
-				c = campoActual.getType(); //Ahora la clase que vamos a analizar es la del campo que estabamos buscando
-				if(!c.getCanonicalName().equalsIgnoreCase("Java.lang.String") && !c.getCanonicalName().equalsIgnoreCase("Int")){ //Si esa clase no es basica
-					tablasCampos.add(lib.getTableName(campoActual.getType().getName())); //Buscamos su tabla y la guardamos en la lista de tablas
-					indiceTablas.add(i+1); //guardamos el indice de la tabla de la clase que estabamos analizando antes (para hacer el t1.campo1 = t2.id)
-					camposTablas.add(campoActual.getName()); //guardamos el nombre del campo (para hacer el t1.campo1 = t2.id)
-				}
-				i++; //aumentamos i
-				index++; //aumentamos index
-			}
-			//esta parte se ejecuta cuando hemos llegado al ultimo campo del conjunto
-			whereCondiciones.add("t" + index +"."+campoActual.getName()); //guardamos en la lista de where: t + index (que correspondera a la tabla del ultimo campo) . nombre del campo que estabamos analizando. Es decir se guarda t3.campo3
-		}
-		for(int i=0; i < tablasCampos.size(); i++){ //construir los left join usando todas las listas de antes
-			sqlStatement += " LEFT JOIN " + tablasCampos.get(i) + " t" + (i+2) + " ON " + "t" + indiceTablas.get(i) + "." + camposTablas.get(i) + " = " + "t" + (i+2) + ".id "; 
+		sqlStatement += " FROM " + this.lib.getTableName(this.clase.getName()) + " t1";
+		List<String> listaTablas = new ArrayList<String>();
+		List<String> listaCampos = new ArrayList<String>();
+		String constraintSQL = this.constraintToSql(this.restriccion, listaTablas, listaCampos);
+		for(int i = 0; i < listaTablas.size(); i++){
+			sqlStatement += " LEFT JOIN " + listaTablas.get(i) 
+							+ " t" + (i+2) + " ON " + listaCampos.get(i) 
+							+ " = " + "t" + (i+2) + ".id";
 		}
 		
-		sqlStatement += " WHERE ";
-		List<String> clausulasWhere  = new ArrayList<String>();
-		
-		//construccion de las clausulas where usando la tabla de condiciones
-		for(String st: whereCondiciones)
-			clausulasWhere.add(st + " = ?"); 
-		
-		//unimos las condiciones con la union que tenga la restriccion (en el caso de AND/OR se unen condicion1 AND/OR condicion2. Si es simple no se unen mediante nada, solo habria una condicion en la lista)
-		sqlStatement += StringUtils.join(clausulasWhere, this.restriccion.getUnion());
-		
+		sqlStatement += " WHERE " + constraintSQL;
+				
 		return sqlStatement;
+	}
+	
+	private String constraintToSql(Constraint c, List<String> lt, List<String> lc) throws SQLException{
+		
+		if(c.getClass().getName().contains("NotConstraint")){
+			return "NOT " + constraintToSql(c.getInnerConstraint().get(0),lt,lc);
+		}
+		else if(c.getClass().getName().contains("AndConstraint")){
+			List<String> ls = new ArrayList<String>();
+			for(Constraint con: c.getInnerConstraint()){
+				ls.add(constraintToSql(con, lt,lc));
+			}
+			return StringUtils.join(ls," AND ");
+		}
+		else if(c.getClass().getName().contains("OrConstraint")){
+			List<String> ls = new ArrayList<String>();
+			for(Constraint con: c.getInnerConstraint()){
+				ls.add(constraintToSql(con, lt,lc));
+			}
+			return StringUtils.join(ls," OR ");	
+		}
+		else{
+			String constraint;
+			String[] campos = StringUtils.split(c.getCampo(),".");
+			Field campoActual = null;
+			Class<?> clase = this.clase;
+			int i = 1;
+			for(String s: campos){
+				Field[] camposClase = clase.getDeclaredFields();
+				for(Field f: camposClase){
+					if(f.getName().equals(s))
+						campoActual = f;
+				}
+				clase = campoActual.getType();
+				if(!this.lib.atributoBasico(clase)){
+					lt.add(this.lib.getTableName(clase.getName()));
+					lc.add("t" + i + "." + campoActual.getName());
+				}
+				i += 2;
+			}
+			int index = lt.size()+1;
+			if(!this.lib.atributoBasico(campoActual.getType())) index--;
+			constraint = "t" + index + "." + campoActual.getName() + " = ?";
+			
+			return "( " + constraint + " )";
+		}
 	}
 	
 	/**
@@ -138,8 +147,15 @@ public class Query {
 		PreparedStatement pst = con.prepareStatement(sql); 				// Preparación de la sentencia
 		List<Object> values = this.restriccion.getValues(); 			// Lista de valores de las restricciones
 		for (int i = 1; i <= values.size(); i++) { 						// Para cada valor:
-			pst.setObject(i, values.get(i - 1)); 						// Añadir el valor a la sentencia
+			Object obj = values.get(i-1);
+			if(!this.lib.atributoBasico(obj.getClass()))
+				if(this.lib.constainsKeyObjectMap(obj))
+					obj = this.lib.getId(obj);
+				else
+					obj = -1;
+			pst.setObject(i, obj); 						// Añadir el valor a la sentencia
 		}
+		System.out.println(pst);
 		ResultSet rs = pst.executeQuery(); 								// Ejecución de la sentencia
 		Object object; 													// Instancia de la clase 'clase'
 		while (rs.next()) { 											// Mientras aún haya resultados de la sentencia SQL ejecutada
@@ -149,7 +165,6 @@ public class Query {
 			}
 			else{ 														//Si no esta te creas el objeto y le añades al mapa
 				object = objCrtr.createObject(this.clase,rs, profundidad); 								// Crea el objeto de la clase
-				System.out.println("eeeee");
 			}
 			lista.add(object); 											// Añadir el objeto a la lista que se devolverá
 		}

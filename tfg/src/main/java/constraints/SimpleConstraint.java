@@ -75,37 +75,14 @@ public class SimpleConstraint implements Constraint{
 		return l;
 	}
 
-	public String[] getOnConditions(){
-		String[] classes = StringUtils.split(this.campo,".");
-		String[] ret = new String[classes.length - 1];
-		for (int i = 0; i < ret.length; i++) {
-			ret[i] = "t" + (i+1) + "." + classes[i] + " = " + "t" + (i+2) + ".id ";
-		}
-		return ret;
-	}
-
-	/**
-	 * devuelve un array con atributos no simples de la condiccion
-	 * @return array con atributos no simples de la condiccion
-	 */
-	public String[] getMultiplesAtributos() {
-		String[] campos = StringUtils.split(this.campo,".");
-		String[] ret = new String[campos.length-1];
-		for (int i = 0; i < ret.length; i++){
-			ret[i] = campos[i];	
-		}
-		return ret;
-	}
-	
-	public List<String> getCampos(){
-		List<String> ret = new ArrayList<String>();
-		ret.add(this.campo);
-		return ret;
+	@Override
+	public List<Constraint> getInnerConstraint() {
+		return null;
 	}
 
 	@Override
-	public String getUnion() {
-		return "";
+	public String getCampo() {
+		return this.campo;
 	}
 
 }

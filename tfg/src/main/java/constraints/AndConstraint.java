@@ -51,29 +51,13 @@ public class AndConstraint implements Constraint{
 	}
 
 	@Override
-	public String[] getOnConditions() {
-		// TODO Auto-generated method stub
+	public List<Constraint> getInnerConstraint() {
+		return cons;
+	}
+
+	@Override
+	public String getCampo() {
 		return null;
-	}
-
-	@Override
-	public String[] getMultiplesAtributos() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public List<String> getCampos() {
-		List<String> ret = new ArrayList<String>();
-		for (int i = 0; i < this.cons.size(); i++) {
-			ret.addAll(this.cons.get(i).getCampos());
-		}
-		return ret;
-	}
-
-	@Override
-	public String getUnion() {
-		return " AND ";
 	}
 	
 }

@@ -17,8 +17,8 @@ import constraints.AndConstraint;
 import constraints.Constraint;
 import constraints.SimpleConstraint;
 import excepciones.ObjetoInexistente;
-import prueba.Usuario;
-import prueba.Direccion;
+import pruebaList2.Usuario;
+import pruebaList2.Direccion;
 import excepciones.LibreriaBBDDException;
 
 
@@ -425,7 +425,7 @@ public class LibreriaBBDD {
 		try {
 			lista = q.executeQuery(c, this.profundidad);
 			c.close();
-		} catch (InstantiationException | IllegalAccessException | SQLException | ClassNotFoundException e) {
+		} catch (InstantiationException | IllegalAccessException | SQLException | ClassNotFoundException | IllegalArgumentException | NoSuchFieldException | SecurityException e) {
 			throw new LibreriaBBDDException(e);
 		}
 		
@@ -447,7 +447,7 @@ public class LibreriaBBDD {
 			c = this.getConnection();
 			lista = q.executeQuery(c, profundidad);
 			c.close();
-		} catch (SQLException | InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+		} catch (SQLException | InstantiationException | IllegalAccessException | ClassNotFoundException | IllegalArgumentException | NoSuchFieldException | SecurityException e) {
 			throw new LibreriaBBDDException(e);
 		}
 		
@@ -614,21 +614,22 @@ public class LibreriaBBDD {
 	
 	boolean atributoBasico(Class<?> c){
 		return c.getCanonicalName().equalsIgnoreCase("Java.lang.String") 
-				|| c.getCanonicalName().equalsIgnoreCase("Int");
+				|| c.getCanonicalName().equalsIgnoreCase("Int")
+				|| c.getCanonicalName().equalsIgnoreCase("Java.lang.Integer");
+		
 	}
 
 	public static void main(String[] argv) {
 		LibreriaBBDD lib = null;
 		
-		lib = new LibreriaBBDD("tfg", "root", "");
+		lib = new LibreriaBBDD("tfg", "root", "");		
 		
-		Direccion d = new Direccion();
 		Query q = lib.newQuery(Usuario.class);
-		Constraint c1 = SimpleConstraint.igualQueConstraint("domicilio", new Direccion());
-		Constraint c2 = SimpleConstraint.igualQueConstraint("compañero.domicilio.calle", "i");
-		Constraint c = new AndConstraint(c1,c2);
+		Constraint c = SimpleConstraint.igualQueConstraint("direcciones", 1);
 		q.setConstraint(c);
-		lib.executeQuery(q);
+		Usuario carlos = (Usuario) lib.executeQuery(q).get(0);
+		System.out.println(carlos.getNombre());
+		
 
 
 	}

@@ -8,7 +8,7 @@ public class Usuario {
 	private String nombre;
 	private int edad;
 	
-	private List<Direccion>direcciones;
+	private List<String> direcciones;
 
 	
 	public Usuario(){}
@@ -16,10 +16,10 @@ public class Usuario {
 	public Usuario(String nombre, int edad){
 		this.nombre=nombre;
 		this.edad=edad;
-		this.direcciones=new ArrayList<Direccion>();
+		this.direcciones=new ArrayList<String>();
 	}
 	
-	public void addDireccion(Direccion direcion){
+	public void addDireccion(String direcion){
 		this.direcciones.add(direcion);
 	}
 	
@@ -39,7 +39,7 @@ public class Usuario {
 		this.edad = edad;
 	}
 
-	public List<Direccion> getDirecciones() {
+	public List<String> getDirecciones() {
 		return direcciones;
 	}
 

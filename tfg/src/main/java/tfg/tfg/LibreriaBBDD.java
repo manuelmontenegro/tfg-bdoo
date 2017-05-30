@@ -622,13 +622,15 @@ public class LibreriaBBDD {
 	public static void main(String[] argv) {
 		LibreriaBBDD lib = null;
 		
-		lib = new LibreriaBBDD("tfg", "root", "");		
+		lib = new LibreriaBBDD("tfg", "root", "");
+		
 		
 		Query q = lib.newQuery(Usuario.class);
-		Constraint c = SimpleConstraint.igualQueConstraint("direcciones", 1);
+		Constraint c = SimpleConstraint.igualQueConstraint("direcciones", "calle");
 		q.setConstraint(c);
 		Usuario carlos = (Usuario) lib.executeQuery(q).get(0);
 		System.out.println(carlos.getNombre());
+		
 		
 
 

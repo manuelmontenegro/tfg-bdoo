@@ -141,17 +141,21 @@ public class Query {
 				ParameterizedType friendsParameterizedType = (ParameterizedType) friendsGenericType;
 				Type[] friendsType = friendsParameterizedType.getActualTypeArguments();
 				Class<?> userClass = (Class<?>) friendsType[0];
-				
-				//SOLO SIRVE PARA CLASES DE TIPO NO BASICO
+				//ud.id1_1Usuario FROM 1usuario_direcciones ud WHERE ud.direcciones = ? AND ud.id1_1Usuario = u.Id)
 				constraint += "EXISTS (SELECT ";
 				String nombreTablaClase = this.lib.getTableName(this.clase.getName());
 				String nombreTablaList = nombreTablaClase +  "_" + campoActual.getName();
-				String nombreTablaTipoList = this.lib.getTableName(userClass.getName());
-				constraint += "ntl.id1_" + nombreTablaClase;
-				constraint += " FROM " + nombreTablaList + " ntl JOIN " + nombreTablaTipoList + " nt ON ntl.id2_" 
-							+ nombreTablaTipoList + " = nt.id WHERE " + "nt.id = ? AND " + "ntl.id1_" + nombreTablaClase + " = t1.id";
-				
-				
+				if(lib.atributoBasico(userClass)){
+					constraint += "ntl.id1_" + nombreTablaClase;
+					constraint += " FROM " + nombreTablaList +  " ntl WHERE " + " ntl." 
+								+ campoActual.getName() + " = ? AND ntl.id1_" + nombreTablaClase + " = t1.id"; 
+				}
+				else{					
+					String nombreTablaTipoList = this.lib.getTableName(userClass.getName());
+					constraint += "ntl.id1_" + nombreTablaClase;
+					constraint += " FROM " + nombreTablaList + " ntl JOIN " + nombreTablaTipoList + " nt ON ntl.id2_" 
+								+ nombreTablaTipoList + " = nt.id WHERE " + "nt.id = ? AND " + "ntl.id1_" + nombreTablaClase + " = t1.id";
+				}
 				constraint += ")";
 			}
 			

@@ -118,7 +118,7 @@ public class Query {
 				campoActual = clase.getDeclaredField(s);
 				clase = campoActual.getType();
 			}
-			if(!campoActual.getType().isAssignableFrom(List.class)){
+			if(!campoActual.getType().isAssignableFrom(List.class) && !campoActual.getType().isAssignableFrom(List.class) && !campoActual.getType().isArray()){
 				li.add("t1");
 				campoActual = null;
 				clase = this.clase;
@@ -137,11 +137,16 @@ public class Query {
 				constraint = "t" + index + "." + campoActual.getName() + " = ?";
 			}
 			else{
-				Type friendsGenericType = campoActual.getGenericType();
-				ParameterizedType friendsParameterizedType = (ParameterizedType) friendsGenericType;
-				Type[] friendsType = friendsParameterizedType.getActualTypeArguments();
-				Class<?> userClass = (Class<?>) friendsType[0];
-				//ud.id1_1Usuario FROM 1usuario_direcciones ud WHERE ud.direcciones = ? AND ud.id1_1Usuario = u.Id)
+				Class<?> userClass;
+				if(!campoActual.getType().isArray()){
+					Type friendsGenericType = campoActual.getGenericType();
+					ParameterizedType friendsParameterizedType = (ParameterizedType) friendsGenericType;
+					Type[] friendsType = friendsParameterizedType.getActualTypeArguments();
+					userClass = (Class<?>) friendsType[0];
+				}
+				else{
+					userClass = campoActual.getType().getComponentType();
+				}
 				constraint += "EXISTS (SELECT ";
 				String nombreTablaClase = this.lib.getTableName(this.clase.getName());
 				String nombreTablaList = nombreTablaClase +  "_" + campoActual.getName();

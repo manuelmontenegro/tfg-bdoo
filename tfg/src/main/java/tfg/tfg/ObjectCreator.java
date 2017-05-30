@@ -1,5 +1,6 @@
 package tfg.tfg;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -61,7 +62,7 @@ public class ObjectCreator {
 					ParameterizedType friendsParameterizedType = (ParameterizedType) friendsGenericType;
 					Type[] friendsType = friendsParameterizedType.getActualTypeArguments();
 					Class<?> userClass = (Class<?>) friendsType[0];
-					if(userClass.getName().equalsIgnoreCase("Java.lang.String") || userClass.getName().equalsIgnoreCase("Java.lang.Integer"))
+					if(lib.atributoBasico(userClass))
 					{//Lista de objetos String o int
 						String nombreCampo = f.getName();
 						String nombreTabla = lib.getTableName(c.getName());
@@ -175,30 +176,89 @@ public class ObjectCreator {
 				}
 				campo = set;
 			}
-			else if(!f.getType().getCanonicalName().contains("java.lang.String") && !f.getType().getCanonicalName().contains("int")) //Si el campo no es ni int ni string:
+			else if(!lib.atributoBasico(f.getType()))//no basico:
 			{
-				if(profundidad==1)//se recorta aqui la recusividad para evitar hacer una consulta y crear el objeto cuando va ser null
-					campo=null;
-				if(campo!=null){
-					Identificador iden=new Identificador((int)campo, f.getType().getCanonicalName());
-					if(lib.constainsKeyIdMap(iden)){ 
-						campo=lib.getIdMap(iden);
+				String tipoAtr = rs.getString("2_" + f.getName());
+				if(!tipoAtr.equals("Array")){
+					if(profundidad==1)//se recorta aqui la recusividad para evitar hacer una consulta y crear el objeto cuando va ser null
+						campo=null;
+					if(campo!=null){
+						Identificador iden=new Identificador((int)campo, f.getType().getCanonicalName());
+						if(lib.constainsKeyIdMap(iden)){ 
+							campo=lib.getIdMap(iden);
+						}
+						else {
+							String tn = lib.getTableName(f.getType().getCanonicalName());
+							String sqlStatement = "SELECT * FROM " + tn + " WHERE ID = ?";
+							Connection con = lib.getConnection();
+							PreparedStatement pst;
+							pst = con.prepareStatement(sqlStatement); 			// Preparación de la sentencia
+							pst.setInt(1, (int) campo);
+							ResultSet rset = pst.executeQuery(); 					// Ejecución de la sentencia
+							if(rset.next()){
+								campo = createObject(f.getType(),rset, profundidad-1);
+							}
+							else
+								campo=null;
+							con.close();
+						}
 					}
-					else {
-						String tn = lib.getTableName(f.getType().getCanonicalName());
-						String sqlStatement = "SELECT * FROM " + tn + " WHERE ID = ?";
+				}
+				else{//ARRAYS
+					if(lib.atributoBasico(f.getType().getComponentType())){
+						String nombreCampo = f.getName();
+						String nombreTabla = lib.getTableName(c.getName());
+						String nombreTablaMultivalorado = nombreTabla + "_" + nombreCampo;
+						String sqlStatement = "SELECT " + nombreCampo + " FROM " + nombreTablaMultivalorado + " WHERE id1_" + nombreTabla + " = " + idenO.getIdentificador() + " ORDER BY posicion DESC";
 						Connection con = lib.getConnection();
 						PreparedStatement pst;
-						pst = con.prepareStatement(sqlStatement); 			// Preparación de la sentencia
-						pst.setInt(1, (int) campo);
-						ResultSet rset = pst.executeQuery(); 					// Ejecución de la sentencia
-						if(rset.next()){
-							campo = createObject(f.getType(),rset, profundidad-1);
+						pst = con.prepareStatement(sqlStatement);
+						ResultSet rset = pst.executeQuery();
+						boolean created = false;
+						while(rset.next()){
+							if(!created){
+								int size = rset.getInt("posicion");
+								campo = Array.newInstance(f.getType().getComponentType(), (size+1));
+								created = true;
+							}
+							Array.set(campo, (int) rset.getObject("posicion"), rset.getObject(nombreCampo));
 						}
-						else
-							campo=null;
 						con.close();
 					}
+					else
+					{
+						String nombreTabla = lib.getTableName(c.getName());
+						String nombreTablaObjetoMultivalorado = lib.getTableName(f.getType().getComponentType().getName());
+						String nombreTablaMultivalorado = nombreTabla + "_" + f.getName();
+						String selectStatement = "id2_" + nombreTablaObjetoMultivalorado;
+						String whereStatement = "id1_" + nombreTabla;
+						
+						String sqlStatement = "SELECT " + selectStatement + " FROM " + nombreTablaMultivalorado + " WHERE " + whereStatement + " = " + idenO.getIdentificador() + " ORDER BY posicion DESC";
+						Connection con = lib.getConnection();
+						PreparedStatement pst;
+						pst = con.prepareStatement(sqlStatement);
+						ResultSet rset = pst.executeQuery();
+						boolean created = false;
+						while(rset.next()){
+							if(!created){
+								int size = rset.getInt("posicion");
+								campo = Array.newInstance(f.getType().getComponentType(), (size+1));
+								created = true;
+							}
+							String sqlSttmnt = "SELECT * FROM " + nombreTablaObjetoMultivalorado + " WHERE id = " + rset.getInt(selectStatement);
+							Connection connect = lib.getConnection();
+							PreparedStatement pst2;
+							pst2 = connect.prepareStatement(sqlSttmnt);
+							ResultSet rs2 = pst2.executeQuery();
+							Object obj = f.getType().getComponentType().newInstance();
+							rs2.next();
+							obj = createObject(f.getType().getComponentType(), rs2, profundidad-1);
+							Array.set(campo, (int) rset.getObject("posicion"), obj);
+							connect.close();
+						}
+						con.close();
+					}
+					
 				}
 			}
 			f.set(o, campo);									//campo = valor

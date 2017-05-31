@@ -1,4 +1,4 @@
-package tfg.tfg;
+package oobd.library;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
@@ -19,319 +19,279 @@ import pruebaList.Direccion;
 import pruebaList.Usuario;
 
 
-public class GuardadorOactualizador {
+public class Saver {
 	
-	private LibreriaBBDD lib;
+	private OOBDLibrary library;
 	
-	GuardadorOactualizador (LibreriaBBDD lib){
-		this.lib=lib;
+	Saver (OOBDLibrary lib){
+		this.library=lib;
 	}
 
-	/**
-	 * Metodo que usa la libreria para guardar un objeto y todos los que tenga a su vez
-	 * si el objeto ya esta previamente guardado actualizarara sus valores
-	 * Usa un mapa parcial de objetos visitados que a la vuelta vuelca en el general de objetos guardados
-	 * @param o objeto que se va a guardar
-	 * @param im mapa parcial de objetos guardados para no volver a guardar uno ya guardado
-	 * @throws SQLException
-	 * @throws IllegalAccessException 
-	 * @throws IllegalArgumentException 
-	 */
-	void guardarOactualizar(Object o, IdentityHashMap<Object, Integer> im)throws SQLException, IllegalArgumentException, IllegalAccessException {
+	void save(Object o, IdentityHashMap<Object, Integer> im)throws SQLException, IllegalArgumentException, IllegalAccessException {
 		int id = -1;
-		String nombreTabla;
+		String tableName;
 
-		nombreTabla = crearTabla(o);
+		tableName = createTable(o);
 
-		if (!im.containsKey(o) && !this.lib.constainsKeyObjectMap(o)) {
-			ArrayList<Atributo> atributos = alterarTabla(nombreTabla, o);
-			id = insertarFilaVacia(nombreTabla,atributos);
-		} else {// esta en alguno de los dos
-			if (im.containsKey(o)) {// obtener id de la fila con de alguno de
-									// los dos mapas
+		if (!im.containsKey(o) && !this.library.constainsKeyObjectMap(o)) {
+			ArrayList<Atribute> atributes = alterarTabla(tableName, o);
+			id = insertEmptyRow(tableName,atributes);
+		} else {
+			if (im.containsKey(o)) {
 				id = im.get(o);
 			} else {
-				id = this.lib.getObjectMap(o);
+				id = this.library.getObjectMap(o);
 			}
 		}
-		im.put(o, id);// guardar en im <obj, id>
-		Identificador key = new Identificador(id, o.getClass().getName());
-		this.lib.putIdMap(key, o);// hay que insertar tambien en idMap para no
-									// perder consistencia
+		im.put(o, id);
+		Identificator key = new Identificator(id, o.getClass().getName());
+		this.library.putIdMap(key, o);
 
-		for (Field f : o.getClass().getDeclaredFields()) {// para cada atributo
-															// no basico{
+		for (Field f : o.getClass().getDeclaredFields()) {
 
 			f.setAccessible(true);
-			Object atributo = null;
+			Object atribute = null;
 
-			atributo = f.get(o);
+			atribute = f.get(o);
 
-			if (!esBasico(f)) {
-				if (atributo != null) {
+			if (!isBasic(f)) {
+				if (atribute != null) {
 
-					if (atributo instanceof List<?> || atributo instanceof Set<?>) {// si es una lista o set hay que tratarlo aparte
-						vaciarTablaIntermediaById(nombreTabla, f.getName(), id);
+					if (atribute instanceof List<?> || atribute instanceof Set<?>) {
+						emptyMiddleTableById(tableName, f.getName(), id);
 
-						// Aqui sacamos el tipo del parametro
 						Type friendsGenericType = f.getGenericType();
 						ParameterizedType friendsParameterizedType = (ParameterizedType) friendsGenericType;
 						Type[] friendsType = friendsParameterizedType.getActualTypeArguments();
 						Class<?> userClass = (Class<?>) friendsType[0];
 
-						String tipoInstancia = "";
-						if (atributo instanceof List<?>)
-							tipoInstancia = "List";
+						String instanceType = "";
+						if (atribute instanceof List<?>)
+							instanceType = "List";
 						else
-							tipoInstancia = "Set";
+							instanceType = "Set";
 
 						int i = 0;
-						// Si son basicos insertamos en la tabla de
-						// multivalorado
+
 						if (userClass.getName().equalsIgnoreCase("Java.lang.String")
 								|| userClass.getName().equalsIgnoreCase("Java.lang.Integer")) {
-							if (tipoInstancia.equalsIgnoreCase("List")) {
-								for (Object obj : ((List<?>) atributo)) {
-									insertarMultivalorado(nombreTabla, f.getName(), id, obj, i, tipoInstancia);
+							if (instanceType.equalsIgnoreCase("List")) {
+								for (Object obj : ((List<?>) atribute)) {
+									insertMultivalued(tableName, f.getName(), id, obj, i, instanceType);
 									i++;
 								}
 							} else {
-								for (Object obj : ((Set<?>) atributo)) {
-									insertarMultivalorado(nombreTabla, f.getName(), id, obj, i, tipoInstancia);
+								for (Object obj : ((Set<?>) atribute)) {
+									insertMultivalued(tableName, f.getName(), id, obj, i, instanceType);
 									i++;
 								}
 							}
-						} else { // Si el parametro es un objeto con el id del usuario,
-								//la id de la direccion recien insertada y la posicion
-									// que ocupa se inserta la fila en la tabla intermedia
-							if (tipoInstancia.equalsIgnoreCase("List")) {
-								for (Object parametro : ((List<?>) atributo)) {
-									if (!im.containsKey(parametro)) {
-										guardarOactualizar(parametro, im); // Te recorres la lista guardando cada objeto
+						} else {
+							if (instanceType.equalsIgnoreCase("List")) {
+								for (Object param : ((List<?>) atribute)) {
+									if (!im.containsKey(param)) {
+										save(param, im);
 									}
-									insertarObjetoLista(nombreTabla, id, lib.getTableName(parametro.getClass().getName()), f.getName(),im.get(parametro), i, tipoInstancia);
+									insertObjectList(tableName, id, library.getTableName(param.getClass().getName()), f.getName(),im.get(param), i, instanceType);
 									i++;
 								}
 							} else {
-								for (Object parametro : ((Set<?>) atributo)) {
-									if (!im.containsKey(parametro)) {
-										guardarOactualizar(parametro, im); // Te recorres el set guardando cada objeto
+								for (Object param : ((Set<?>) atribute)) {
+									if (!im.containsKey(param)) {
+										save(param, im);
 									}
-									insertarObjetoLista(nombreTabla, id, lib.getTableName(parametro.getClass().getName()), f.getName(),
-											im.get(parametro), i, tipoInstancia);
+									insertObjectList(tableName, id, library.getTableName(param.getClass().getName()), f.getName(),
+											im.get(param), i, instanceType);
 									i++;
 								}
 							}
 						}
 
-					} else {// es un objeto complejo
-						if (!im.containsKey(atributo)) {// if(!esta en im)
-							guardarOactualizar(atributo, im);
+					} else {
+						if (!im.containsKey(atribute)) {
+							save(atribute, im);
 						}
 					}
 
 				}
 			}
 		}
-		update(nombreTabla, o, im);
+		update(tableName, o, im);
 	}
-	private void vaciarTablaIntermediaById(String nombreTabla, String nombreAtributo, int id) throws SQLException {
-		String sql = "DELETE FROM "+ nombreTabla +"_"+nombreAtributo + " WHERE id1_"+nombreTabla + " = ?" ;
+	private void emptyMiddleTableById(String tableName, String fieldName, int id) throws SQLException {
+		String sql = "DELETE FROM "+ tableName +"_"+fieldName + " WHERE id1_"+tableName + " = ?" ;
 		PreparedStatement pst;
-		Connection c = this.lib.getConnection();
+		Connection c = this.library.getConnection();
 		pst = c.prepareStatement(sql);
 		pst.setInt(1, id);
 		pst.execute();
 		c.close();
 	}
 
-	private void insertarObjetoLista(String nombreTablaPadre, int idPadre, String nombreTablaParametro, String nombreParametro, Integer idParametro, int posicion, String tipoInstancia) throws SQLException {
-		Connection c = this.lib.getConnection();
+	private void insertObjectList(String parentTableName, int idPadre, String paramTableName, String paramName, Integer idParametro, int position, String instanceType) throws SQLException {
+		Connection c = this.library.getConnection();
 
 		String sqlInsert = "";
-		if (tipoInstancia.equalsIgnoreCase("List"))
-			sqlInsert = "INSERT INTO " + nombreTablaPadre + "_" + nombreParametro + " ( id1_" + nombreTablaPadre
-					+ ", id2_" + nombreTablaParametro + ", posicion) VALUES (?, ?, ?)";
-		else // Si es un Set
-			sqlInsert = "INSERT INTO " + nombreTablaPadre + "_" + nombreParametro + " ( id1_" + nombreTablaPadre
-					+ ", id2_" + nombreTablaParametro + ") VALUES (?, ?)";
+		if (instanceType.equalsIgnoreCase("List"))
+			sqlInsert = "INSERT INTO " + parentTableName + "_" + paramName + " ( id1_" + parentTableName
+					+ ", id2_" + paramTableName + ", posicion) VALUES (?, ?, ?)";
+		else
+			sqlInsert = "INSERT INTO " + parentTableName + "_" + paramName + " ( id1_" + parentTableName
+					+ ", id2_" + paramTableName + ") VALUES (?, ?)";
 		
 		PreparedStatement pstI;
-		System.out.println(sqlInsert+ idPadre);
 		pstI = c.prepareStatement(sqlInsert);
 		pstI.setInt(1, idPadre);
 		pstI.setObject(2, idParametro);
-		if (tipoInstancia.equalsIgnoreCase("List"))
-			pstI.setInt(3, posicion);
+		if (instanceType.equalsIgnoreCase("List"))
+			pstI.setInt(3, position);
 		pstI.execute();
 
 		c.close();
 	}
 
-	private void insertarMultivalorado(String nombreTablaPadre, String nombreLista, int idPadre, Object elemento, int posicion, String tipoInstancia) throws SQLException {
+	private void insertMultivalued(String parentTableName, String listName, int parentId, Object obj, int position, String instanceType) throws SQLException {
 		
-		Connection c = this.lib.getConnection();
+		Connection c = this.library.getConnection();
 
 		String sqlInsert = "";
-		if(tipoInstancia.equalsIgnoreCase("List"))
-			sqlInsert="INSERT INTO "+nombreTablaPadre+"_"+nombreLista+" ( id1_"+nombreTablaPadre+", "+nombreLista+", posicion) VALUES (?, ?, ?)";
+		if(instanceType.equalsIgnoreCase("List"))
+			sqlInsert="INSERT INTO "+parentTableName+"_"+listName+" ( id1_"+parentTableName+", "+listName+", posicion) VALUES (?, ?, ?)";
 		else
-			sqlInsert="INSERT INTO "+nombreTablaPadre+"_"+nombreLista+" ( id1_"+nombreTablaPadre+", "+nombreLista+") VALUES (?, ?)";
+			sqlInsert="INSERT INTO "+parentTableName+"_"+listName+" ( id1_"+parentTableName+", "+listName+") VALUES (?, ?)";
 
 		PreparedStatement pstI;
 		pstI = c.prepareStatement(sqlInsert);
-		pstI.setInt(1, idPadre);
-		pstI.setObject(2, elemento);
-		if(tipoInstancia.equalsIgnoreCase("List"))
-			pstI.setInt(3, posicion);
+		pstI.setInt(1, parentId);
+		pstI.setObject(2, obj);
+		if(instanceType.equalsIgnoreCase("List"))
+			pstI.setInt(3, position);
 		pstI.execute();
 		
 		c.close();
 	}
 
-	/**
-	 * Inserta una fila vacia en la tabla pasada como argumento
-	 * @param nombreTabla
-	 * @param atributos 
-	 * @return
-	 * @throws SQLException
-	 */
-	private int insertarFilaVacia(String nombreTabla, ArrayList<Atributo> atributos) throws SQLException{
+	private int insertEmptyRow(String tableName, ArrayList<Atribute> atributes) throws SQLException{
 		int id = 0;
-		ArrayList<String> valores = new ArrayList<String>();
-		String nombres = "";
-		String claves = "";
+		ArrayList<String> values = new ArrayList<String>();
+		String names = "";
+		String keys = "";
 		boolean primero=true;
-		for(int i=0; i<atributos.size();i++){
-			if(!atributos.get(i).isBasico()){
+		for(int i=0; i<atributes.size();i++){
+			if(!atributes.get(i).isBasic()){
 				
 				if(!primero){
-					claves+=" , ";
-					nombres+=" , ";
+					keys+=" , ";
+					names+=" , ";
 				}
-				valores.add(atributos.get(i).getClaseConstructora());	
-				claves+=" ? ";
-				nombres+="2_"+atributos.get(i).getNombre();
+				values.add(atributes.get(i).getConstructorClass());	
+				keys+=" ? ";
+				names+="2_"+atributes.get(i).getName();
 				primero=false;
 			}
 		}
-		String sql = "INSERT INTO "+nombreTabla+" ("+nombres+") VALUES ("+claves+")";
-		Connection c = this.lib.getConnection();
+		String sql = "INSERT INTO "+tableName+" ("+names+") VALUES ("+keys+")";
+		Connection c = this.library.getConnection();
 		PreparedStatement pst = c.prepareStatement(sql,Statement.RETURN_GENERATED_KEYS);
 		int i = 1;
-		for(String valor : valores){
-			pst.setString(i,valor);
+		for(String value : values){
+			pst.setString(i,value);
 			i++;
 		}
-		System.out.println(pst.unwrap(PreparedStatement.class).toString().split(":")[1]);
-		pst.executeUpdate();// insertar fila pero todo vacio
+		pst.executeUpdate();
 		ResultSet rs = pst.getGeneratedKeys();
 		if (rs.next()) 
 		    id = rs.getInt(1);
-		// obtener id de la fila con getgeneratedkeys()
 		c.close();
 		return id;
 	}
 	
-	private void update(String nombreTabla, Object o, IdentityHashMap<Object, Integer> im) throws SQLException, IllegalArgumentException, IllegalAccessException{
-		String claves = "";
-		ArrayList<String> valores = new ArrayList<String>();	
+	private void update(String tableName, Object o, IdentityHashMap<Object, Integer> im) throws SQLException, IllegalArgumentException, IllegalAccessException{
+		String keys = "";
+		ArrayList<String> values = new ArrayList<String>();	
 		
 		Field[] fields=o.getClass().getDeclaredFields();
-		int tam=o.getClass().getDeclaredFields().length;
-		for (int i=0; i<tam ;i++) {
+		int size=o.getClass().getDeclaredFields().length;
+		for (int i=0; i<size ;i++) {
 			Field f=fields[i];
 			f.setAccessible(true);
-			Object atributo=null;
+			Object field=null;
 			
-			atributo=f.get(o);
+			field=f.get(o);
 
-			if(!esBasico(f)){
-				if(atributo!=null){	
+			if(!isBasic(f)){
+				if(field!=null){	
 					
-					if( f.get(o) instanceof List<?> ){//si es una lista actualizar la lista
+					if( f.get(o) instanceof List<?> ){
 						
 					}
 					else if (f.get(o) instanceof Set<?>){
 						
 					}
-					else{//
-						valores.add(im.get(atributo)+"");
+					else{
+						values.add(im.get(field)+"");
 						if (i != 0)
-							claves += " , ";
-						claves+=f.getName()+" =?";
+							keys += " , ";
+						keys+=f.getName()+" =?";
 					}
 					
 				}
 			}
-			else {//es basico
-				valores.add(atributo+"");
+			else {
+				values.add(field+"");
 				if (i != 0)
-					claves += " , ";
-				claves+=f.getName()+" =?";
+					keys += " , ";
+				keys+=f.getName()+" =?";
 			}			
 		}	
 		
-		String sqlUpdate="UPDATE " + nombreTabla +
-				  " SET " + claves +
+		String sqlUpdate="UPDATE " + tableName +
+				  " SET " + keys +
 				  " WHERE ID = ?";
-		System.out.println(sqlUpdate);
 		Connection con;
 		
-		con = this.lib.getConnection();
+		con = this.library.getConnection();
 		PreparedStatement pst = con.prepareStatement(sqlUpdate);
-		for (int i = 0; i < valores.size(); i++) { 
-			pst.setObject(i+1, valores.get(i));
+		for (int i = 0; i < values.size(); i++) { 
+			pst.setObject(i+1, values.get(i));
 		}
-		pst.setObject(valores.size()+1, im.get(o));	//Añadir la ID parametrizada
+		pst.setObject(values.size()+1, im.get(o));
 		pst.execute();
 		con.close();
 		
 		
 	}
 
-	/**
-	 * Metodo para combrar si un campo es de tipo basico o no
-	 * @param f
-	 * @return cierto si es basico
-	 */
-	private boolean esBasico(Field f) {
+	private boolean isBasic(Field f) {
 		boolean ret=false;
-		if (f.getType().getCanonicalName().equalsIgnoreCase("Java.lang.String") || f.getType().getCanonicalName().equalsIgnoreCase("Int"))
+		if (library.atributoBasico(f.getType()))
 			ret=true;
 		return ret;
 	}
 
-	/**
-	 * Metodo para crear una tabla con el nombre que coresponda segun el objeto pasado
-	 * la tabla solo tendra id para que asi otras tablas la puedan referenciar
-	 * @param o objeto para el que va crear la tabla
-	 * @return nombre de la tabla creada o de la que ya habia
-	 * @throws SQLException
-	 */
-	private String crearTabla(Object o) throws SQLException {
-		String nombreTabla="";
+	private String createTable(Object o) throws SQLException {
+		String tableName="";
 		String sql = "SELECT nombreclase,nombretabla FROM indicetabla WHERE nombreclase = ?";
 		PreparedStatement pst;
-		Connection c = this.lib.getConnection();
+		Connection c = this.library.getConnection();
 		pst = c.prepareStatement(sql);
 		pst.setString(1, o.getClass().getName());
 		ResultSet rs = pst.executeQuery();
 		if (rs.next()) {//ya esta creada, se consulta su nombre
-			nombreTabla=rs.getString("nombretabla");
+			tableName=rs.getString("nombretabla");
 		}
 		else{//hay que crearla
-			nombreTabla=insertarIndiceTabla(o.getClass().getName(), o.getClass().getSimpleName());
+			tableName=insertarIndiceTabla(o.getClass().getName(), o.getClass().getSimpleName());
 			
-			String sql1 = "CREATE TABLE IF NOT EXISTS "+nombreTabla+" (id INTEGER not NULL AUTO_INCREMENT, PRIMARY KEY ( id ))";
-			Connection c1 = this.lib.getConnection();
+			String sql1 = "CREATE TABLE IF NOT EXISTS "+tableName+" (id INTEGER not NULL AUTO_INCREMENT, PRIMARY KEY ( id ))";
+			Connection c1 = this.library.getConnection();
 			PreparedStatement pst1 = c1.prepareStatement(sql1);
 			
 			pst1.execute();
 			c1.close();
 		}
 		c.close();
-		return nombreTabla;
+		return tableName;
 	}
 	
 	/**
@@ -347,7 +307,7 @@ public class GuardadorOactualizador {
 	private String insertarIndiceTabla(String nombreClase, String casiNombreTabla) throws SQLException {
 		int id;
 		String nombreTabla;
-		Connection c = this.lib.getConnection();
+		Connection c = this.library.getConnection();
 		String sql = "INSERT INTO indicetabla (nombreclase) VALUES (?)";
 		
 		PreparedStatement statement = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
@@ -368,7 +328,7 @@ public class GuardadorOactualizador {
 	    
 	    nombreTabla=id+casiNombreTabla;
 	    
-	    c = this.lib.getConnection();
+	    c = this.library.getConnection();
 	    sql = "UPDATE indicetabla SET nombretabla=? where id=?";
 	    PreparedStatement pst = c.prepareStatement(sql);
 	    pst.setString(1, nombreTabla);
@@ -390,11 +350,11 @@ public class GuardadorOactualizador {
 	 * @param o
 	 * @throws SQLException
 	 */
-	private ArrayList<Atributo> alterarTabla(String nombreTabla, Object o) throws SQLException {
-		ArrayList<Atributo> atributos = sacarAtributos(o);
+	private ArrayList<Atribute> alterarTabla(String nombreTabla, Object o) throws SQLException {
+		ArrayList<Atribute> atributos = sacarAtributos(o);
 		
 		String idIndiceTabla=getIDIndiceTabla(nombreTabla);
-		for (Atributo a : atributos) {
+		for (Atribute a : atributos) {
 			if(!estaIndiceColumna(a, idIndiceTabla))
 				insertarIndiceColumna(nombreTabla, a, idIndiceTabla);
 		}
@@ -402,14 +362,14 @@ public class GuardadorOactualizador {
 		
 		//borrarIndiceColumna(nombreTabla, atributos, idIndiceTabla);
 	}
-	private boolean estaIndiceColumna(Atributo a, String idIndiceTabla) throws SQLException {
+	private boolean estaIndiceColumna(Atribute a, String idIndiceTabla) throws SQLException {
 		String sql = "SELECT id FROM indicecolumna WHERE idtabla = ? and atributo = ?";
 
-		Connection c = this.lib.getConnection();
+		Connection c = this.library.getConnection();
 		PreparedStatement pst = c.prepareStatement(sql);
 		pst.setString(1, idIndiceTabla);
 	
-		pst.setString(2, a.getNombre());
+		pst.setString(2, a.getName());
 
 		ResultSet rs = pst.executeQuery();
 		
@@ -425,8 +385,8 @@ public class GuardadorOactualizador {
 	 * @return lista de atributos del objeto nombre y tipo sql
 	 * @throws SQLException
 	 */
-	private ArrayList<Atributo> sacarAtributos(Object o) throws SQLException {
-		ArrayList<Atributo> atributos = new ArrayList<Atributo>();
+	private ArrayList<Atribute> sacarAtributos(Object o) throws SQLException {
+		ArrayList<Atribute> atributos = new ArrayList<Atribute>();
 		for (Field f : o.getClass().getDeclaredFields()) {
 			boolean objetoNulo=false;
 			boolean basico = true;
@@ -454,7 +414,7 @@ public class GuardadorOactualizador {
 						ParameterizedType friendsParameterizedType = (ParameterizedType) friendsGenericType;
 						Type[] friendsType = friendsParameterizedType.getActualTypeArguments();
 						Class<?> userClass = (Class<?>) friendsType[0];
-						String nombreTablaObjeto = lib.getTableName(o.getClass().getName());
+						String nombreTablaObjeto = library.getTableName(o.getClass().getName());
 						String tipoInstancia = "";
 						if( ob instanceof List<?>)
 							tipoInstancia = "List";
@@ -470,7 +430,7 @@ public class GuardadorOactualizador {
 						}
 						else{ //Si el parametro es un objeto creamos una tabla intermedia.
 							Object param = userClass.newInstance();
-							String nombreTablaParametro =crearTabla(param);
+							String nombreTablaParametro =createTable(param);
 							crearTablaIntermedia(nombreTablaObjeto,nombreTablaParametro,f.getName(),tipoInstancia);
 						}
 						nombre = f.getName();
@@ -486,7 +446,7 @@ public class GuardadorOactualizador {
 							//System.out.println("el objeto contiene un objeto null");
 						}
 						else{
-							String nombreTablaReferenciada=crearTabla(ob);
+							String nombreTablaReferenciada=createTable(ob);
 							basico = false;
 							nombre = f.getName();
 							claseConstructora = ob.getClass().getName();
@@ -499,9 +459,9 @@ public class GuardadorOactualizador {
 				}
 			}
 			if(!objetoNulo){
-				Atributo a = new Atributo(nombre, tipo, basico, multi);
+				Atribute a = new Atribute(nombre, tipo, basico, multi);
 				if(!basico)
-					a.setClaseConstructora(claseConstructora);
+					a.setConstructorClass(claseConstructora);
 				atributos.add(a);
 			}
 		}
@@ -529,7 +489,7 @@ public class GuardadorOactualizador {
 		sql+= " PRIMARY KEY ( id ),"
 		+ " CONSTRAINT fk_"+nto+"_"+nombreCampo+"_"+nombreCampo+" FOREIGN KEY (id1_"+nto+") REFERENCES "+nto+"(id) )";
 		
-		Connection c = this.lib.getConnection();
+		Connection c = this.library.getConnection();
 		PreparedStatement pst = c.prepareStatement(sql);
 		pst.execute();
 		c.close();
@@ -555,7 +515,7 @@ public class GuardadorOactualizador {
 		+ " CONSTRAINT fk1_"+nto+"_"+nombreParametro+" FOREIGN KEY (id1_"+nto+") REFERENCES "+nto+"(id),"
 		+ " CONSTRAINT fk2_"+nto+"_"+nombreParametro+" FOREIGN KEY (id2_"+ntp+") REFERENCES "+ntp+"(id) )";
 		
-		Connection c = this.lib.getConnection();
+		Connection c = this.library.getConnection();
 		PreparedStatement pst = c.prepareStatement(sql);
 		pst.execute();
 		c.close();
@@ -571,7 +531,7 @@ public class GuardadorOactualizador {
 		String id = "";
 		String sql = "SELECT id FROM indicetabla WHERE nombretabla = ? ";
 		PreparedStatement pst;
-		Connection c = this.lib.getConnection();
+		Connection c = this.library.getConnection();
 		pst = c.prepareStatement(sql);
 		pst.setString(1, nombreTabla);
 		ResultSet rs = pst.executeQuery();
@@ -583,86 +543,70 @@ public class GuardadorOactualizador {
 		return id;
 	}
 
-	/**
-	 * Metodo para intentar insertar en indice columna el atributo pasado
-	 * si no estaba le inserta y añade una comuna a la tabla para guardarle
-	 * @param nombreTabla
-	 * @param a
-	 * @throws SQLException
-	 */
-	private void insertarIndiceColumna(String nombreTabla,  Atributo a, String idIndiceTabla) throws SQLException {
+	private void insertarIndiceColumna(String nombreTabla,  Atribute a, String idIndiceTabla) throws SQLException {
 	
 		String sql1;
 		String alter;
 		
-		if(a.isBasico()){	
+		if(a.isBasic()){	
 			sql1 = "INSERT INTO indicecolumna (idtabla,atributo,columna) " + " VALUES ( \"" + idIndiceTabla + "\" , \""
-					+ a.getNombre() + "\" , \"" + a.getNombre() + "\"  )";
+					+ a.getName() + "\" , \"" + a.getName() + "\"  )";
 
-			alter = "ALTER TABLE " + nombreTabla + " ADD " + a.getNombre() + " " + a.getTipo();
+			alter = "ALTER TABLE " + nombreTabla + " ADD " + a.getName() + " " + a.getType();
 		}
 		else{
-			if(a.isMulti()){	
+			if(a.isMultivalued()){	
 				sql1 = "INSERT INTO indicecolumna (idtabla,atributo,nombrecolumnatipo) " + " VALUES ( \"" + idIndiceTabla + "\" , \""
-						+ a.getNombre() + "\" , \"2_" + a.getNombre() + "\" )";
+						+ a.getName() + "\" , \"2_" + a.getName() + "\" )";
 				
-				alter = "ALTER TABLE " + nombreTabla + " ADD  2_"+a.getNombre()+" VARCHAR(255)";
+				alter = "ALTER TABLE " + nombreTabla + " ADD  2_"+a.getName()+" VARCHAR(255)";
 			}
 			else{
 				sql1 = "INSERT INTO indicecolumna (idtabla,atributo,columna,nombrecolumnatipo) " + " VALUES ( \"" + idIndiceTabla + "\" , \""
-						+ a.getNombre() + "\" , \"" + a.getNombre() + "\" , \"2_" + a.getNombre() + "\" )";
+						+ a.getName() + "\" , \"" + a.getName() + "\" , \"2_" + a.getName() + "\" )";
 				
-				alter = "ALTER TABLE " + nombreTabla + " ADD " + a.getNombre() + " " + a.getTipo()+", ADD 2_"+a.getNombre()+" VARCHAR(255)";
+				alter = "ALTER TABLE " + nombreTabla + " ADD " + a.getName() + " " + a.getType()+", ADD 2_"+a.getName()+" VARCHAR(255)";
 			}
 			
 		}
-		System.out.println(sql1);
-		Connection c1 = this.lib.getConnection();
+		Connection c1 = this.library.getConnection();
 		PreparedStatement pst1 = c1.prepareStatement(sql1);
 		pst1.execute();
 		c1.close();
 		
-		System.out.println(alter);
-		Connection c2 = this.lib.getConnection();
+		Connection c2 = this.library.getConnection();
 		PreparedStatement pst = c2.prepareStatement(alter);
-		//System.out.println(anyadir);
 		pst.execute();
 		
 		c2.close();
 	}
-	/**
-	 * Metodo para eliminar las culumnas que no tengoa el objeto pero que todavia tenga la tabla usada para guardar el objeto
-	 * ademas elimina su entrad en indice columnas
-	 * @param nombreTabla
-	 * @param atributos
-	 * @throws SQLException
-	 */
-	private void borrarIndiceColumna(String nombreTabla, ArrayList<Atributo> atributos, String idIndiceTabla) throws SQLException {
+
+	private void borrarIndiceColumna(String nombreTabla, ArrayList<Atribute> atributos, String idIndiceTabla) throws SQLException {
 		String sql = "SELECT atributo FROM indicecolumna WHERE idtabla = ?";
 		PreparedStatement pst;
-		Connection c = this.lib.getConnection();
+		Connection c = this.library.getConnection();
 		pst = c.prepareStatement(sql);
 
 		pst.setString(1, idIndiceTabla);
 		ResultSet rs = pst.executeQuery();
 		boolean esta = false;
 		while (rs.next()) {//para cada atributo de la tabla indice columna
-			for (Atributo a : atributos) {//comprueba que este en los atributos del objeto
-				if (rs.getString("atributo").equalsIgnoreCase(a.getNombre())) {
+			for (Atribute a : atributos) {//comprueba que este en los atributos del objeto
+				if (rs.getString("atributo").equalsIgnoreCase(a.getName())) {
 					esta = true;
 				}
 			}
 			if (!esta) {//si no esta hay que borrar su entarada en indicecolumna y eliminar la columna de su tabla
 
 				String del = "ALTER TABLE " + nombreTabla + " DROP COLUMN " + rs.getString("atributo");
-				c = this.lib.getConnection();
+				c = this.library.getConnection();
 				pst = c.prepareStatement(del);
 				pst.execute();
 				c.close();
 				System.out.println(del);
 
 				del = "DELETE FROM indicecolumna WHERE idtabla = ? and atributo = ?";
-				c = this.lib.getConnection();
+				c = this.library.getConnection();
 				pst = c.prepareStatement(del);
 				System.out.println(del);
 

@@ -1,4 +1,4 @@
-package tfg.tfg;
+package oobd.library;
 
 import java.beans.PropertyVetoException;
 import java.lang.reflect.Field;
@@ -13,44 +13,34 @@ import java.util.List;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 
-import constraints.AndConstraint;
-import constraints.Constraint;
-import constraints.SimpleConstraint;
-import excepciones.ObjetoInexistente;
+import oobd.constraints.AndConstraint;
+import oobd.constraints.Constraint;
+import oobd.constraints.SimpleConstraint;
+import oobd.exception.NonExistentObject;
+import oobd.exception.OOBDLibraryException;
 import pruebaList2.Usuario;
 import pruebaList2.Direccion;
-import excepciones.LibreriaBBDDException;
 
 
-public class LibreriaBBDD {
+public class OOBDLibrary {
 
-	// Atributos
 	private String user;
 	private String pass;
 	private String nombrebbdd;
 	private ComboPooledDataSource cpds;
 	private IdentityHashMap<Object, Integer> objectMap; //objetos con su id
-	private HashMap<Identificador, Object> idMap; //identificador de clase r id con su objeto
+	private HashMap<Identificator, Object> idMap; //identificador de clase r id con su objeto
 	private HashMap<String, String> classMap; //<Nombre de la clase, Nombre de la tabla>
 	private int profundidad;
-	private GuardadorOactualizador guaOa;
-	private Activador act;
+	private Saver guaOa;
+	private Activator act;
 
-	/**
-	 * Constructor
-	 * 
-	 * @param nombrebbdd
-	 * @param user
-	 * @param pass
-	 * @throws PropertyVetoException 
-	 * @throws SQLException 
-	 */
-	public LibreriaBBDD(String nombrebbdd, String user, String pass) throws LibreriaBBDDException{
+	public OOBDLibrary(String nombrebbdd, String user, String pass) throws OOBDLibraryException{
 
 		this.cpds = new ComboPooledDataSource();
 
 		this.objectMap = new IdentityHashMap<Object, Integer>();
-		this.idMap = new HashMap<Identificador, Object>();
+		this.idMap = new HashMap<Identificator, Object>();
 		this.classMap = new HashMap<String,String>();
 		this.user = user;
 		this.pass = pass;
@@ -59,8 +49,8 @@ public class LibreriaBBDD {
 		conectar();
 		crearTablaIndice();
 		crearColumnaIndice();
-		this.guaOa=new GuardadorOactualizador(this);
-		this.act=new Activador(this);
+		this.guaOa=new Saver(this);
+		this.act=new Activator(this);
 	}
 
 	public Connection getConnection() throws SQLException {
@@ -72,7 +62,7 @@ public class LibreriaBBDD {
 	/**
 	 * Metodo para crear tabla indiceTabla
 	 */
-	private void crearTablaIndice() throws LibreriaBBDDException{
+	private void crearTablaIndice() throws OOBDLibraryException{
 		String sql = "CREATE TABLE IF NOT EXISTS indicetabla " + "(id INTEGER not NULL AUTO_INCREMENT, "
 				+ " nombreclase VARCHAR(255)," + " nombretabla VARCHAR(255)," + " PRIMARY KEY ( id ))";
 		PreparedStatement pst;
@@ -83,7 +73,7 @@ public class LibreriaBBDD {
 			pst.execute();
 			c.close();
 		} catch (SQLException e) {
-			throw new LibreriaBBDDException(e);
+			throw new OOBDLibraryException(e);
 		}
 		
 
@@ -94,7 +84,7 @@ public class LibreriaBBDD {
 	 * 
 	 * @throws SQLException
 	 */
-	private void crearColumnaIndice() throws LibreriaBBDDException {
+	private void crearColumnaIndice() throws OOBDLibraryException {
 		String sql = "CREATE TABLE IF NOT EXISTS indicecolumna " 
 				+ "(id INTEGER not NULL AUTO_INCREMENT, "
 				+ " idtabla INTEGER, " 
@@ -122,12 +112,12 @@ public class LibreriaBBDD {
 	 * Metodo para conectar a la base de datos
 	 * @throws PropertyVetoException 
 	 */
-	private void conectar()throws LibreriaBBDDException{
+	private void conectar()throws OOBDLibraryException{
 
 		try {
 			this.cpds.setDriverClass("com.mysql.jdbc.Driver");
 		} catch (PropertyVetoException e) {
-			throw new LibreriaBBDDException(e);
+			throw new OOBDLibraryException(e);
 		}
 
 		this.cpds.setJdbcUrl("jdbc:mysql://localhost/" + this.nombrebbdd);
@@ -184,12 +174,12 @@ public class LibreriaBBDD {
 	 * @param o objeto a guardar
 	 * @throws SQLException
 	 */
-	public void guardarOactualizar(Object o) throws LibreriaBBDDException{
+	public void guardarOactualizar(Object o) throws OOBDLibraryException{
 		IdentityHashMap<Object, Integer> im=new IdentityHashMap<Object, Integer>();
 		try {
-			this.guaOa.guardarOactualizar(o, im);
+			this.guaOa.save(o, im);
 		} catch (IllegalArgumentException | IllegalAccessException | SQLException e) {
-			throw new LibreriaBBDDException(e);
+			throw new OOBDLibraryException(e);
 		}
 		this.objectMap.putAll(im);
 	}
@@ -204,8 +194,8 @@ public class LibreriaBBDD {
 	 * @throws IllegalAccessException 
 	 * @throws IllegalArgumentException 
 	 */
-	ArrayList<Atributo> sacarAtributosNoNulos(Object o) throws IllegalArgumentException, IllegalAccessException {
-		ArrayList<Atributo> atributos = new ArrayList<Atributo>();
+	ArrayList<Atribute> sacarAtributosNoNulos(Object o) throws IllegalArgumentException, IllegalAccessException {
+		ArrayList<Atribute> atributos = new ArrayList<Atribute>();
 
 		// Con o.getClass().getDeclaredFields() --> Se cogen atributos privados
 		for (Field n : o.getClass().getDeclaredFields()) {
@@ -218,7 +208,7 @@ public class LibreriaBBDD {
 						tipo = "INTEGER";
 					
 
-					Atributo a = new Atributo(n.getName(), tipo, false,false);
+					Atribute a = new Atribute(n.getName(), tipo, false,false);
 					atributos.add(a);
 				}
 		}
@@ -231,11 +221,11 @@ public class LibreriaBBDD {
 	 * Elimina de la base de datos el objeto recibido
 	 * @param o
 	 * @throws SQLException
-	 * @throws ObjetoInexistente 
+	 * @throws NonExistentObject 
 	 */
-	public void delete(Object o) throws LibreriaBBDDException{
+	public void delete(Object o) throws OOBDLibraryException{
 		if(!this.objectMap.containsKey(o)){
-			throw new LibreriaBBDDException(new ObjetoInexistente());
+			throw new OOBDLibraryException(new NonExistentObject());
 		}
 		String tableName;
 		Integer id;
@@ -252,7 +242,7 @@ public class LibreriaBBDD {
 			pst.execute();
 			con.close();
 		} catch (SQLException e) {
-			throw new LibreriaBBDDException(e);
+			throw new OOBDLibraryException(e);
 		}
 		this.objectMap.remove(o);
 		this.idMap.remove(o.getClass().getName()+"-"+id);
@@ -266,49 +256,49 @@ public class LibreriaBBDD {
 	 * @throws SQLException
 	 * @throws IllegalAccessException 
 	 * @throws IllegalArgumentException 
-	 * @throws ObjetoInexistente 
+	 * @throws NonExistentObject 
 	 */
-	public void update(Object o) throws LibreriaBBDDException{
+	public void update(Object o) throws OOBDLibraryException{
 		if(!this.objectMap.containsKey(o)){
-			throw new LibreriaBBDDException(new ObjetoInexistente());
+			throw new OOBDLibraryException(new NonExistentObject());
 		}
-		ArrayList<Atributo> atributos;
+		ArrayList<Atribute> atributos;
 		try {
 			atributos = sacarAtributosNoNulos(o);
 		} catch (IllegalArgumentException | IllegalAccessException e) {
-			throw new LibreriaBBDDException(e);
+			throw new OOBDLibraryException(e);
 		}
 		String claves = "";
 		for (int i = 0; i < atributos.size(); i++) {
 			if (i != 0)
 				claves += " , ";
-			Atributo a = atributos.get(i);
-			claves += a.getNombre()+" = ?";
+			Atribute a = atributos.get(i);
+			claves += a.getName()+" = ?";
 		}
 
 		ArrayList<Object> valores = new ArrayList<Object>();
 		for (int i = 0; i < atributos.size(); i++) {
-			Atributo a = atributos.get(i);
+			Atribute a = atributos.get(i);
 			
 				Field val = null;
 				try {
-					val = o.getClass().getDeclaredField(a.getNombre());
+					val = o.getClass().getDeclaredField(a.getName());
 				} catch (NoSuchFieldException | SecurityException e) {
-					throw new LibreriaBBDDException(e);
+					throw new OOBDLibraryException(e);
 				}
 				val.setAccessible(true);
 				if(!val.getType().getCanonicalName().contains("java.lang.String") && !val.getType().getCanonicalName().contains("int")){ //Si el campo no es ni int ni string:
 					try {
 						valores.add(this.objectMap.get(val.get(o)));
 					} catch (IllegalArgumentException | IllegalAccessException e) {
-						throw new LibreriaBBDDException(e);
+						throw new OOBDLibraryException(e);
 					}
 				}
 				else{
 					try {
 						valores.add(val.get(o));
 					} catch (IllegalArgumentException | IllegalAccessException e) {
-						throw new LibreriaBBDDException(e);
+						throw new OOBDLibraryException(e);
 					}
 				}
 		
@@ -330,16 +320,16 @@ public class LibreriaBBDD {
 			pst.execute();
 			con.close();
 		} catch (SQLException e) {
-			throw new LibreriaBBDDException(e);
+			throw new OOBDLibraryException(e);
 		}											
 		
 	}
 	
-	public void updateProfundidad(Object o) throws LibreriaBBDDException{
+	public void updateProfundidad(Object o) throws OOBDLibraryException{
 		try {
 			updateProfundidad(o,this.profundidad);
-		} catch (IllegalArgumentException | IllegalAccessException | SQLException | ObjetoInexistente e) {
-			throw new LibreriaBBDDException(e);
+		} catch (IllegalArgumentException | IllegalAccessException | SQLException | NonExistentObject e) {
+			throw new OOBDLibraryException(e);
 		}
 	}
 	
@@ -350,30 +340,30 @@ public class LibreriaBBDD {
 	 * @throws SQLException
 	 * @throws IllegalAccessException 
 	 * @throws IllegalArgumentException 
-	 * @throws ObjetoInexistente 
+	 * @throws NonExistentObject 
 	 */
-	private void updateProfundidad(Object o, int prof) throws SQLException, IllegalArgumentException, IllegalAccessException, ObjetoInexistente{
+	private void updateProfundidad(Object o, int prof) throws SQLException, IllegalArgumentException, IllegalAccessException, NonExistentObject{
 		if(!this.objectMap.containsKey(o)){
-			throw new ObjetoInexistente(); //Cambiar nombre
+			throw new NonExistentObject(); //Cambiar nombre
 		}
-		ArrayList<Atributo> atributos = sacarAtributosNoNulos(o);
+		ArrayList<Atribute> atributos = sacarAtributosNoNulos(o);
 		String claves = "";
 		for (int i = 0; i < atributos.size(); i++) {
 			if (i != 0)
 				claves += " , ";
-			Atributo a = atributos.get(i);
-			claves += a.getNombre()+" = ?";
+			Atribute a = atributos.get(i);
+			claves += a.getName()+" = ?";
 		}
 
 		ArrayList<Object> valores = new ArrayList<Object>();
 		for (int i = 0; i < atributos.size(); i++) {
-			Atributo a = atributos.get(i);
+			Atribute a = atributos.get(i);
 			
 				Field val = null;
 				try {
-					val = o.getClass().getDeclaredField(a.getNombre());
+					val = o.getClass().getDeclaredField(a.getName());
 				} catch (NoSuchFieldException | SecurityException e) {
-					throw new LibreriaBBDDException(e);
+					throw new OOBDLibraryException(e);
 				}
 				val.setAccessible(true);
 				if(!val.getType().getCanonicalName().contains("java.lang.String") && !val.getType().getCanonicalName().contains("int")){ 					//Si el campo no es ni int ni string:
@@ -414,19 +404,19 @@ public class LibreriaBBDD {
 	 * @throws InstantiationException
 	 * @throws IllegalAccessException
 	 */
-	public List<Object> executeQuery(Query q) throws LibreriaBBDDException {
+	public List<Object> executeQuery(Query q) throws OOBDLibraryException {
 		Connection c;
 		try {
 			c = this.getConnection();
 		} catch (SQLException e) {
-			throw new LibreriaBBDDException(e);
+			throw new OOBDLibraryException(e);
 		}
 		List<Object> lista;
 		try {
 			lista = q.executeQuery(c, this.profundidad);
 			c.close();
 		} catch (InstantiationException | IllegalAccessException | SQLException | ClassNotFoundException | IllegalArgumentException | NoSuchFieldException | SecurityException e) {
-			throw new LibreriaBBDDException(e);
+			throw new OOBDLibraryException(e);
 		}
 		
 		return lista;
@@ -440,7 +430,7 @@ public class LibreriaBBDD {
 	 * @throws InstantiationException
 	 * @throws IllegalAccessException
 	 */
-	public List<Object> executeQuery(Query q, int profundidad) throws LibreriaBBDDException {
+	public List<Object> executeQuery(Query q, int profundidad) throws OOBDLibraryException {
 		Connection c;
 		List<Object> lista;
 		try {
@@ -448,25 +438,25 @@ public class LibreriaBBDD {
 			lista = q.executeQuery(c, profundidad);
 			c.close();
 		} catch (SQLException | InstantiationException | IllegalAccessException | ClassNotFoundException | IllegalArgumentException | NoSuchFieldException | SecurityException e) {
-			throw new LibreriaBBDDException(e);
+			throw new OOBDLibraryException(e);
 		}
 		
 		return lista;
 	}
 	
-	public void activar(Object o, int profundidad) throws LibreriaBBDDException{
+	public void activar(Object o, int depth) throws OOBDLibraryException{
 		try {
-			this.act.activar(o, profundidad);
+			this.act.activate(o, depth);
 		} catch (ClassNotFoundException e) {
-			throw new LibreriaBBDDException(e);
+			throw new OOBDLibraryException(e);
 		}
 	}
 	
-	public void activar(Object o) throws LibreriaBBDDException{
+	public void activar(Object o) throws OOBDLibraryException{
 		try {
-			this.act.activar(o, this.profundidad);
+			this.act.activate(o, this.profundidad);
 		} catch (ClassNotFoundException e) {
-			throw new LibreriaBBDDException(e);
+			throw new OOBDLibraryException(e);
 		}
 	}
 	/**
@@ -484,7 +474,7 @@ public class LibreriaBBDD {
 	 * @param s
 	 * @return
 	 */
-	protected boolean constainsKeyIdMap(Identificador s){
+	protected boolean constainsKeyIdMap(Identificator s){
 		return this.idMap.containsKey(s);
 	}
 	/**
@@ -492,7 +482,7 @@ public class LibreriaBBDD {
 	 * @param s
 	 * @return
 	 */
-	protected Object getIdMap(Identificador s) {
+	protected Object getIdMap(Identificator s) {
 		return this.idMap.get(s);
 	}
 	/**
@@ -500,7 +490,7 @@ public class LibreriaBBDD {
 	 * @param key
 	 * @param value
 	 */
-	protected void putIdMap(Identificador key, Object value) {
+	protected void putIdMap(Identificator key, Object value) {
 		this.idMap.put(key, value);
 	}
 	/**
@@ -547,11 +537,11 @@ public class LibreriaBBDD {
 	 * @throws SecurityException
 	 * @throws SQLException
 	 */
-	public List<Object> queryByExample(Object o) throws LibreriaBBDDException{
+	public List<Object> queryByExample(Object o) throws OOBDLibraryException{
 		try {
 			return queryByExample(o, new ArrayList<String>());
 		} catch (SecurityException e) {
-			throw new LibreriaBBDDException(e);
+			throw new OOBDLibraryException(e);
 		}		//Devuelve la lista recibida del método QueryByExample con una lista en la que se ignoran todos los campos que sean 0 o nulos
 	}
 	
@@ -567,7 +557,7 @@ public class LibreriaBBDD {
 	 * @throws NoSuchFieldException
 	 * @throws SecurityException
 	 */
-	public List<Object> queryByExample(Object o, List<String> notToIgnore) throws LibreriaBBDDException{
+	public List<Object> queryByExample(Object o, List<String> notToIgnore) throws OOBDLibraryException{
 		List<Object> l = new ArrayList<Object>();						//Lista a devolver
 		List<Constraint> constraintList = new ArrayList<Constraint>();	//Lista de rectricciones que se aplicarán
 		Field[] campos = o.getClass().getDeclaredFields();				//Obtener los campos del objecto
@@ -580,7 +570,7 @@ public class LibreriaBBDD {
 				try {
 					n = (int)f.get(o);
 				} catch (IllegalArgumentException | IllegalAccessException e) {
-					throw new LibreriaBBDDException(e);
+					throw new OOBDLibraryException(e);
 				}									//Obtener el valor del entero
 				if(n != 0)												//Si el entero es distinto de 0:
 					notIgnoring = true;									//El campo no se ignora
@@ -590,15 +580,15 @@ public class LibreriaBBDD {
 					if(f.get(o) != null)									//Si es distinto de nulo:
 						notIgnoring = true;
 				} catch (IllegalArgumentException | IllegalAccessException e) {
-					throw new LibreriaBBDDException(e);
+					throw new OOBDLibraryException(e);
 				}									//El campo no se ignora
 			}
 			
 			if(notToIgnore.contains(f.getName()) || notIgnoring)
 				try {
-					constraintList.add(SimpleConstraint.igualQueConstraint(f.getName(), f.get(o)));
+					constraintList.add(SimpleConstraint.equalConstraint(f.getName(), f.get(o)));
 				} catch (IllegalArgumentException | IllegalAccessException e) {
-					throw new LibreriaBBDDException(e);
+					throw new OOBDLibraryException(e);
 				}		//Se añade a la lista de restricciones
 		}
 		
@@ -619,35 +609,4 @@ public class LibreriaBBDD {
 		
 	}
 
-	public static void main(String[] argv) {
-		LibreriaBBDD lib = null;
-		
-		lib = new LibreriaBBDD("tfg", "root", "");
-		
-		/*
-		Query q = lib.newQuery(Usuario.class);
-		Constraint c = SimpleConstraint.igualQueConstraint("direcciones", "calle");
-		q.setConstraint(c);
-		Usuario carlos = (Usuario) lib.executeQuery(q).get(0);
-		System.out.println(carlos.getNombre());
-		*/
-		String[] s = new String[10];
-		
-		
-
-
-	}
-
 }
-
-
-/*
-
-
-5 junio borrador para profesor pra que le corrija, se puede ir corrijiendo antes
-16 junio entrega memoria final en secretaria,  con el codigo y todo lo demas
-28 29 30 junio exposicion 5 minutos cada uno con su parte en ingles
-
-
-
-*/

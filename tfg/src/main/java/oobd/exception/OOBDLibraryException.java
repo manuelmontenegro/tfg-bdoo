@@ -1,16 +1,16 @@
-package excepciones;
+package oobd.exception;
 
-public class LibreriaBBDDException extends RuntimeException {
-	
+public class OOBDLibraryException extends RuntimeException {
+
 	private Exception cause;
 	private String message;
 
-	public LibreriaBBDDException(Exception e) {
+	public OOBDLibraryException(Exception e) {
 		this.cause = e;
 		this.message = null;
 	}
 
-	public LibreriaBBDDException(Exception e, String m) {
+	public OOBDLibraryException(Exception e, String m) {
 		this.cause = e;
 		this.message = m;
 	}

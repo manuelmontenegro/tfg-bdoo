@@ -16,6 +16,10 @@ public class OrConstraint implements Constraint {
 		}
 	}
 
+	public OrConstraint(List<Constraint> l) {
+		this.constraints = l;
+	}
+	
 	public String toSql() {
 		if (this.constraints.size() == 0)
 			return "(FALSE)";

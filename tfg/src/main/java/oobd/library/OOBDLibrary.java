@@ -53,7 +53,7 @@ public class OOBDLibrary {
 		this.act=new Activator(this);
 	}
 
-	public Connection getConnection() throws SQLException {
+	Connection getConnection() throws SQLException {
 		Connection c = cpds.getConnection();
 
 		return c;
@@ -128,7 +128,7 @@ public class OOBDLibrary {
 		this.cpds.setAcquireRetryDelay(1);
 	}
 	
-	public String getTableName(String nombreClase) throws SQLException{
+	String getTableName(String nombreClase) throws SQLException{
 		if(classMap.containsKey(nombreClase))
 			return classMap.get(nombreClase);
 		else{
@@ -249,153 +249,7 @@ public class OOBDLibrary {
 
 	}
 	
-	/**
-	 * Actualiza en la base de datos los atributos del objeto recibido
-	 * 
-	 * @param o
-	 * @throws SQLException
-	 * @throws IllegalAccessException 
-	 * @throws IllegalArgumentException 
-	 * @throws NonExistentObject 
-	 */
-	public void update(Object o) throws OOBDLibraryException{
-		if(!this.objectMap.containsKey(o)){
-			throw new OOBDLibraryException(new NonExistentObject());
-		}
-		ArrayList<Atribute> atributos;
-		try {
-			atributos = sacarAtributosNoNulos(o);
-		} catch (IllegalArgumentException | IllegalAccessException e) {
-			throw new OOBDLibraryException(e);
-		}
-		String claves = "";
-		for (int i = 0; i < atributos.size(); i++) {
-			if (i != 0)
-				claves += " , ";
-			Atribute a = atributos.get(i);
-			claves += a.getName()+" = ?";
-		}
-
-		ArrayList<Object> valores = new ArrayList<Object>();
-		for (int i = 0; i < atributos.size(); i++) {
-			Atribute a = atributos.get(i);
-			
-				Field val = null;
-				try {
-					val = o.getClass().getDeclaredField(a.getName());
-				} catch (NoSuchFieldException | SecurityException e) {
-					throw new OOBDLibraryException(e);
-				}
-				val.setAccessible(true);
-				if(!val.getType().getCanonicalName().contains("java.lang.String") && !val.getType().getCanonicalName().contains("int")){ //Si el campo no es ni int ni string:
-					try {
-						valores.add(this.objectMap.get(val.get(o)));
-					} catch (IllegalArgumentException | IllegalAccessException e) {
-						throw new OOBDLibraryException(e);
-					}
-				}
-				else{
-					try {
-						valores.add(val.get(o));
-					} catch (IllegalArgumentException | IllegalAccessException e) {
-						throw new OOBDLibraryException(e);
-					}
-				}
-		
-		}
-		
-		String tableName;
-		try {
-			tableName = this.getTableName(o.getClass().getName());//Nombre de la tabla de la base de datos perteneciente a la clase del objeto
-			String sqlStatement = "UPDATE " + tableName +
-					  " SET " + claves +
-					  " WHERE ID = ?";		
-			Connection con = this.cpds.getConnection();
-			PreparedStatement pst;
-			pst = con.prepareStatement(sqlStatement);											//Preparación de la sentencia
-			for (int i = 1; i <= valores.size(); i++) { 
-				pst.setObject(i, valores.get(i-1)); 						// Añadir el valor a la sentencia
-			}
-			pst.setObject(o.getClass().getDeclaredFields().length+1, this.objectMap.get(o));	//Añadir la ID parametrizada
-			pst.execute();
-			con.close();
-		} catch (SQLException e) {
-			throw new OOBDLibraryException(e);
-		}											
-		
-	}
 	
-	public void updateProfundidad(Object o) throws OOBDLibraryException{
-		try {
-			updateProfundidad(o,this.profundidad);
-		} catch (IllegalArgumentException | IllegalAccessException | SQLException | NonExistentObject e) {
-			throw new OOBDLibraryException(e);
-		}
-	}
-	
-	/**
-	 * Actualiza en la base de datos los atributos del objeto recibido
-	 * 
-	 * @param o
-	 * @throws SQLException
-	 * @throws IllegalAccessException 
-	 * @throws IllegalArgumentException 
-	 * @throws NonExistentObject 
-	 */
-	private void updateProfundidad(Object o, int prof) throws SQLException, IllegalArgumentException, IllegalAccessException, NonExistentObject{
-		if(!this.objectMap.containsKey(o)){
-			throw new NonExistentObject(); //Cambiar nombre
-		}
-		ArrayList<Atribute> atributos = sacarAtributosNoNulos(o);
-		String claves = "";
-		for (int i = 0; i < atributos.size(); i++) {
-			if (i != 0)
-				claves += " , ";
-			Atribute a = atributos.get(i);
-			claves += a.getName()+" = ?";
-		}
-
-		ArrayList<Object> valores = new ArrayList<Object>();
-		for (int i = 0; i < atributos.size(); i++) {
-			Atribute a = atributos.get(i);
-			
-				Field val = null;
-				try {
-					val = o.getClass().getDeclaredField(a.getName());
-				} catch (NoSuchFieldException | SecurityException e) {
-					throw new OOBDLibraryException(e);
-				}
-				val.setAccessible(true);
-				if(!val.getType().getCanonicalName().contains("java.lang.String") && !val.getType().getCanonicalName().contains("int")){ 					//Si el campo no es ni int ni string:
-					if(prof == 0)
-						valores.add(this.objectMap.get(val.get(o)));
-					else{
-						valores.add(this.objectMap.get(val.get(o)));
-						updateProfundidad(val.get(o),prof-1);
-					}
-					
-				}
-				else{
-					valores.add(val.get(o));
-				}
-		
-		}
-		
-		String tableName = this.getTableName(o.getClass().getName());											//Nombre de la tabla de la base de datos perteneciente a la clase del objeto
-		String sqlStatement = "UPDATE " + tableName +
-							  " SET " + claves +
-							  " WHERE ID = ?";		
-		Connection con = this.cpds.getConnection();
-		PreparedStatement pst;
-		pst = con.prepareStatement(sqlStatement);											//Preparación de la sentencia
-		for (int i = 1; i <= valores.size(); i++) { 
-			pst.setObject(i, valores.get(i-1)); 						// Añadir el valor a la sentencia
-		}
-		pst.setObject(o.getClass().getDeclaredFields().length+1, this.objectMap.get(o));	//Añadir la ID parametrizada
-		pst.execute();
-		con.close();
-	}
-
 	/**
 	 * Ejecuta la consulta recibida 
 	 * @param q

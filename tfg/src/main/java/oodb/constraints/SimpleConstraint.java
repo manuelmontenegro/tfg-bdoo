@@ -1,4 +1,4 @@
-package oobd.constraints;
+package oodb.constraints;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,27 +17,27 @@ public class SimpleConstraint implements Constraint {
 		value = v;
 	}
 
-	public static SimpleConstraint equalConstraint(String field, Object value) {
+	public static SimpleConstraint newEqualConstraint(String field, Object value) {
 		return new SimpleConstraint("=", field, value);
 	}
 
-	public static SimpleConstraint greaterThanConstraint(String field, Object value) {
+	public static SimpleConstraint newGreaterThanConstraint(String field, Object value) {
 		return new SimpleConstraint(">", field, value);
 	}
 
-	public static SimpleConstraint lessThanConstraint(String field, Object value) {
+	public static SimpleConstraint newLessThanConstraint(String field, Object value) {
 		return new SimpleConstraint("<", field, value);
 	}
 
-	public static SimpleConstraint greaterThanOrEqualsConstraint(String field, Object value) {
+	public static SimpleConstraint newGreaterThanOrEqualsConstraint(String field, Object value) {
 		return new SimpleConstraint(">=", field, value);
 	}
 
-	public static SimpleConstraint lessThanOrEqualsConstraint(String field, Object value) {
+	public static SimpleConstraint newLessThanOrEqualsConstraint(String field, Object value) {
 		return new SimpleConstraint("<=", field, value);
 	}
 
-	public static SimpleConstraint notEqualConstraint(String field, Object value) {
+	public static SimpleConstraint newNotEqualConstraint(String field, Object value) {
 		return new SimpleConstraint("<>", field, value);
 	}
 

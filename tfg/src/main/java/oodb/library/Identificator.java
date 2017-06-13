@@ -1,4 +1,4 @@
-package oobd.library;
+package oodb.library;
 
 public class Identificator {
 

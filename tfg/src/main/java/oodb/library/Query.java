@@ -1,4 +1,4 @@
-package oobd.library;
+package oodb.library;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
@@ -13,15 +13,15 @@ import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 
-import oobd.constraints.AndConstraint;
-import oobd.constraints.Constraint;
+import oodb.constraints.AndConstraint;
+import oodb.constraints.Constraint;
 
 public class Query {
-	private OOBDLibrary library;
+	private OODBLibrary library;
 	private Class<?> constraintClass;
 	private Constraint constraint;
 
-	Query(Class<?> cl, OOBDLibrary lib) {
+	Query(Class<?> cl, OODBLibrary lib) {
 		constraintClass = cl;
 		this.library = lib;
 		this.constraint = new AndConstraint();
@@ -97,7 +97,7 @@ public class Query {
 				for (String s : campos) {
 					currentField = currentClass.getDeclaredField(s);
 					currentClass = currentField.getType();
-					if (!this.library.atributoBasico(currentClass)) {
+					if (!this.library.basicType(currentClass)) {
 						tl.add(this.library.getTableName(currentClass.getName()));
 						fl.add(currentField.getName());
 					}
@@ -105,7 +105,7 @@ public class Query {
 				for (int i = 1; i < campos.length - 1; i++)
 					il.add("t" + (il.size() + 1));
 				int index = tl.size() + 1;
-				if (!this.library.atributoBasico(currentField.getType()))
+				if (!this.library.basicType(currentField.getType()))
 					index--;
 				constraint = "t" + index + "." + currentField.getName() + " = ?";
 			} else {
@@ -121,7 +121,7 @@ public class Query {
 				constraint += "EXISTS (SELECT ";
 				String classTableName = this.library.getTableName(this.constraintClass.getName());
 				String listTableName = classTableName + "_" + currentField.getName();
-				if (library.atributoBasico(userClass)) {
+				if (library.basicType(userClass)) {
 					constraint += "ntl.id1_" + classTableName;
 					constraint += " FROM " + listTableName + " ntl WHERE " + " ntl." + currentField.getName()
 							+ " = ? AND ntl.id1_" + classTableName + " = t1.id";
@@ -149,8 +149,8 @@ public class Query {
 		List<Object> values = this.constraint.getValues();
 		for (int i = 1; i <= values.size(); i++) {
 			Object obj = values.get(i - 1);
-			if (!this.library.atributoBasico(obj.getClass())) {
-				if (this.library.constainsKeyObjectMap(obj))
+			if (!this.library.basicType(obj.getClass())) {
+				if (this.library.containsKeyObjectMap(obj))
 					obj = this.library.getId(obj);
 				else
 					obj = -1;
@@ -162,7 +162,7 @@ public class Query {
 		Object object;
 		while (rs.next()) {
 			Identificator iden = new Identificator(rs.getInt("id"), this.constraintClass.getName());
-			if (this.library.constainsKeyIdMap(iden)) {
+			if (this.library.containsKeyIdMap(iden)) {
 				object = this.library.getIdMap(iden);
 			} else {
 				object = objCrtr.createObject(this.constraintClass, rs, profundidad);

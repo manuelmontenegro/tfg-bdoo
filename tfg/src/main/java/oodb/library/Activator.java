@@ -1,4 +1,4 @@
-package oobd.library;
+package oodb.library;
 
 import java.lang.reflect.Field;
 import java.sql.Connection;
@@ -6,24 +6,24 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import oobd.exception.NonExistentObject;
-import oobd.exception.OOBDLibraryException;
+import oodb.exception.NonExistentObject;
+import oodb.exception.OOBDLibraryException;
 
 public class Activator {
 
-	private OOBDLibrary lib;
+	private OODBLibrary lib;
 
-	public Activator(OOBDLibrary library) {
+	public Activator(OODBLibrary library) {
 		this.lib = library;
 	}
 
 	void activate(Object o, int depth) throws OOBDLibraryException, ClassNotFoundException {
-		if (!this.lib.constainsKeyObjectMap(o))
+		if (!this.lib.containsKeyObjectMap(o))
 			throw new OOBDLibraryException(new NonExistentObject());
 		if (depth > 0) {
 			for (Field f : o.getClass().getDeclaredFields()) {
 				f.setAccessible(true);
-				if (!lib.atributoBasico(f.getType())) {
+				if (!lib.basicType(f.getType())) {
 					Object obj = null;
 					try {
 						obj = f.get(o);

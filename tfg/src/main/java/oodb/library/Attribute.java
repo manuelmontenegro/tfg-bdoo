@@ -1,6 +1,6 @@
-package oobd.library;
+package oodb.library;
 
-public class Atribute {
+public class Attribute {
 
 	private String name;
 	private String type;
@@ -8,7 +8,7 @@ public class Atribute {
 	private String constructorClass;
 	private boolean multivalued;
 
-	Atribute(String name, String type, boolean basic, boolean multivalued) {
+	Attribute(String name, String type, boolean basic, boolean multivalued) {
 		super();
 		this.name = name;
 		this.type = type;
@@ -53,8 +53,8 @@ public class Atribute {
 	}
 
 	public boolean equals(Object obj) {
-		if (obj instanceof Atribute) {
-			Atribute tmp = (Atribute) obj;
+		if (obj instanceof Attribute) {
+			Attribute tmp = (Attribute) obj;
 			if (this.type.equals(tmp.type) && this.name.equals(tmp.name)) {
 				return true;
 			} else {

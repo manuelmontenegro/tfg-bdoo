@@ -1,4 +1,4 @@
-package oobd.constraints;
+package oodb.constraints;
 
 import java.util.List;
 

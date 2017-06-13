@@ -1,4 +1,4 @@
-package oobd.test;
+package oodb.test;
 
 import java.beans.PropertyVetoException;
 import java.sql.SQLException;
@@ -6,17 +6,17 @@ import java.sql.SQLException;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import oobd.constraints.AndConstraint;
-import oobd.constraints.Constraint;
-import oobd.constraints.SimpleConstraint;
-import oobd.library.OOBDLibrary;
-import oobd.library.Query;
+import oodb.constraints.AndConstraint;
+import oodb.constraints.Constraint;
+import oodb.constraints.SimpleConstraint;
+import oodb.library.OODBLibrary;
+import oodb.library.Query;
 import prueba.Direccion;
 import prueba.Usuario;
 
 public class LibreriaTest extends TestCase{
 	
-	private OOBDLibrary lib;
+	private OODBLibrary lib;
 	private Usuario usuario;
 	//private Query q;
 	
@@ -26,7 +26,7 @@ public class LibreriaTest extends TestCase{
 
 	
     protected void setUp() {
-    	this.lib=new OOBDLibrary("tfg", "root", "");
+    	this.lib=new OODBLibrary("tfg", "root", "");
     	
 		this.usuario = new Usuario("manuel", 22);
 		this.usuario.setDireccion( new Direccion("Toledo",20) );
@@ -62,8 +62,8 @@ public class LibreriaTest extends TestCase{
  
     	Usuario u=null;
 		try {
-			Constraint c1=SimpleConstraint.equalConstraint("nombre", this.usuario.getNombre());
-			Constraint c2=SimpleConstraint.equalConstraint("edad", this.usuario.getEdad());
+			Constraint c1=SimpleConstraint.newEqualConstraint("nombre", this.usuario.getNombre());
+			Constraint c2=SimpleConstraint.newEqualConstraint("edad", this.usuario.getEdad());
 			Constraint c=new AndConstraint(c1,c2);
 			
 			Query q=lib.newQuery(prueba.Usuario.class);

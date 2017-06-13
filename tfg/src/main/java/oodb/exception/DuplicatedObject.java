@@ -1,4 +1,4 @@
-package oobd.exception;
+package oodb.exception;
 
 public class DuplicatedObject extends Exception {
 

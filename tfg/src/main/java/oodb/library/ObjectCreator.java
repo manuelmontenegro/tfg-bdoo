@@ -1,4 +1,4 @@
-package oobd.library;
+package oodb.library;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
@@ -18,9 +18,9 @@ import java.util.TreeSet;
 
 public class ObjectCreator {
 
-	private OOBDLibrary library;
+	private OODBLibrary library;
 
-	ObjectCreator(OOBDLibrary lib) {
+	ObjectCreator(OODBLibrary lib) {
 		this.library = lib;
 	}
 
@@ -54,7 +54,7 @@ public class ObjectCreator {
 					Type[] friendsType = friendsParameterizedType.getActualTypeArguments();
 					Class<?> userClass = (Class<?>) friendsType[0];
 
-					if (library.atributoBasico(userClass)) {
+					if (library.basicType(userClass)) {
 						String fieldName = f.getName();
 						String tableName = library.getTableName(c.getName());
 						String multivaluedTableName = tableName + "_" + fieldName;
@@ -118,7 +118,7 @@ public class ObjectCreator {
 					Type[] friendsType = friendsParameterizedType.getActualTypeArguments();
 					Class<?> userClass = (Class<?>) friendsType[0];
 
-					if (library.atributoBasico(userClass)) {
+					if (library.basicType(userClass)) {
 						String fieldName = f.getName();
 						String tableName = library.getTableName(c.getName());
 						String multivaluedTableName = tableName + "_" + fieldName;
@@ -164,14 +164,14 @@ public class ObjectCreator {
 
 				}
 				field = set;
-			} else if (!library.atributoBasico(f.getType())) {
+			} else if (!library.basicType(f.getType())) {
 				String atrType = rs.getString("2_" + f.getName());
 				if (!atrType.equals("Array")) {
 					if (depth == 1)
 						field = null;
 					if (field != null) {
 						Identificator iden = new Identificator((int) field, f.getType().getCanonicalName());
-						if (library.constainsKeyIdMap(iden)) {
+						if (library.containsKeyIdMap(iden)) {
 							field = library.getIdMap(iden);
 						} else {
 							String tn = library.getTableName(f.getType().getCanonicalName());
@@ -189,7 +189,7 @@ public class ObjectCreator {
 						}
 					}
 				} else {
-					if (library.atributoBasico(f.getType().getComponentType())) {
+					if (library.basicType(f.getType().getComponentType())) {
 						String fieldName = f.getName();
 						String tableName = library.getTableName(c.getName());
 						String multivaluedTableName = tableName + "_" + fieldName;

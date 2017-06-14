@@ -5,10 +5,17 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 
+/**
+ * Implements the Constraint interface to represent the intersection between two or more constraints.
+ */
 public class AndConstraint implements Constraint {
 
 	private List<Constraint> constraints;
 
+	/**
+	 * Class constructor. Admits one or more Constraint objects.
+	 * @param c
+	 */
 	public AndConstraint(Constraint... c) {
 		this.constraints = new ArrayList<Constraint>();
 		for (int i = 0; i < c.length; i++) {
@@ -16,10 +23,17 @@ public class AndConstraint implements Constraint {
 		}
 	}
 
+	/**
+	 * Class constructor. Admits a list of Constraint objects.
+	 * @param l
+	 */
 	public AndConstraint(List<Constraint> l) {
 		this.constraints = l;
 	}
 
+	/**
+	 * Returns the SQL statement that represents the constraint.
+	 */
 	public String toSql() {
 		if (this.constraints.size() == 0)
 			return "(TRUE)";
@@ -32,6 +46,9 @@ public class AndConstraint implements Constraint {
 		return "(" + ret + ")";
 	}
 
+	/**
+	 * Returns a List of values of each constraint.
+	 */
 	public List<Object> getValues() {
 		List<Object> l = new ArrayList<Object>();
 		for (Constraint c : constraints)
@@ -39,10 +56,16 @@ public class AndConstraint implements Constraint {
 		return l;
 	}
 
+	/**
+	 * Returns the List of constraints.
+	 */
 	public List<Constraint> getInnerConstraint() {
 		return constraints;
 	}
 
+	/**
+	 * Useless for this constraint.
+	 */
 	public String getField() {
 		return null;
 	}

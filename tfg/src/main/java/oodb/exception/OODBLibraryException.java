@@ -1,16 +1,19 @@
 package oodb.exception;
 
-public class OOBDLibraryException extends RuntimeException {
+/**
+ * Library exception wrapper.
+ */
+public class OODBLibraryException extends RuntimeException {
 
 	private Exception cause;
 	private String message;
 
-	public OOBDLibraryException(Exception e) {
+	public OODBLibraryException(Exception e) {
 		this.cause = e;
 		this.message = null;
 	}
 
-	public OOBDLibraryException(Exception e, String m) {
+	public OODBLibraryException(Exception e, String m) {
 		this.cause = e;
 		this.message = m;
 	}

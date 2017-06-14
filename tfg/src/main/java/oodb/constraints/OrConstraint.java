@@ -5,10 +5,17 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 
+/**
+ * Implements the Constraint interface to represent the union between two or more constraints.
+ */
 public class OrConstraint implements Constraint {
 
 	private List<Constraint> constraints;
 
+	/**
+	 * Class constructor. Admits one or more Constraint objects.
+	 * @param c
+	 */
 	public OrConstraint(Constraint... c) {
 		this.constraints = new ArrayList<Constraint>();
 		for (int i = 0; i < c.length; i++) {
@@ -16,6 +23,10 @@ public class OrConstraint implements Constraint {
 		}
 	}
 
+	/**
+	 * Class constructor. Admits a list of Constraint objects.
+	 * @param l
+	 */
 	public OrConstraint(List<Constraint> l) {
 		this.constraints = l;
 	}
@@ -41,7 +52,10 @@ public class OrConstraint implements Constraint {
 	public List<Constraint> getInnerConstraint() {
 		return constraints;
 	}
-
+	
+	/**
+	 * Useless for this constraint.
+	 */
 	public String getField() {
 		return null;
 	}

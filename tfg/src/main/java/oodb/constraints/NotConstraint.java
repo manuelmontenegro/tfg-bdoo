@@ -3,6 +3,9 @@ package oodb.constraints;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Implements the Constraint interface to represent the negation of a constraint.
+ */
 public class NotConstraint implements Constraint {
 
 	private Constraint constraint;

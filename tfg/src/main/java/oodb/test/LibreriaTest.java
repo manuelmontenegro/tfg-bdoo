@@ -1,8 +1,5 @@
 package oodb.test;
 
-import java.beans.PropertyVetoException;
-import java.sql.SQLException;
-
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
@@ -11,14 +8,11 @@ import oodb.constraints.Constraint;
 import oodb.constraints.SimpleConstraint;
 import oodb.library.OODBLibrary;
 import oodb.library.Query;
-import prueba.Direccion;
-import prueba.Usuario;
 
 public class LibreriaTest extends TestCase{
 	
 	private OODBLibrary lib;
 	private Usuario usuario;
-	//private Query q;
 	
 	 public LibreriaTest(String name) {
 	        super(name);
@@ -66,7 +60,7 @@ public class LibreriaTest extends TestCase{
 			Constraint c2=SimpleConstraint.newEqualConstraint("edad", this.usuario.getEdad());
 			Constraint c=new AndConstraint(c1,c2);
 			
-			Query q=lib.newQuery(prueba.Usuario.class);
+			Query q=lib.newQuery(oodb.test.Usuario.class);
 			q.setConstraint(c);
 	
 

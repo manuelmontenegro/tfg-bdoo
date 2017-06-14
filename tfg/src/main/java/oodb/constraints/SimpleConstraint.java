@@ -5,6 +5,9 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 
+/**
+ * Basic constraint class that represents a simple constraint with a field, operator and value.
+ */
 public class SimpleConstraint implements Constraint {
 
 	private String operator;
@@ -17,26 +20,62 @@ public class SimpleConstraint implements Constraint {
 		value = v;
 	}
 
+	/**
+	 * Returns a simple constraint: field = value.
+	 * @param field
+	 * @param value
+	 * @return
+	 */
 	public static SimpleConstraint newEqualConstraint(String field, Object value) {
 		return new SimpleConstraint("=", field, value);
 	}
 
+	/**
+	 * Returns a simple constraint: field > value.
+	 * @param field
+	 * @param value
+	 * @return
+	 */
 	public static SimpleConstraint newGreaterThanConstraint(String field, Object value) {
 		return new SimpleConstraint(">", field, value);
 	}
 
+	/**
+	 * Returns a simple constraint: field < value.
+	 * @param field
+	 * @param value
+	 * @return
+	 */
 	public static SimpleConstraint newLessThanConstraint(String field, Object value) {
 		return new SimpleConstraint("<", field, value);
 	}
 
+	/**
+	 * Returns a simple constraint: field >= value.
+	 * @param field
+	 * @param value
+	 * @return
+	 */
 	public static SimpleConstraint newGreaterThanOrEqualsConstraint(String field, Object value) {
 		return new SimpleConstraint(">=", field, value);
 	}
 
+	/**
+	 * Returns a simple constraint: field <= value.
+	 * @param field
+	 * @param value
+	 * @return
+	 */
 	public static SimpleConstraint newLessThanOrEqualsConstraint(String field, Object value) {
 		return new SimpleConstraint("<=", field, value);
 	}
 
+	/**
+	 * Returns a simple constraint: field != value.
+	 * @param field
+	 * @param value
+	 * @return
+	 */
 	public static SimpleConstraint newNotEqualConstraint(String field, Object value) {
 		return new SimpleConstraint("<>", field, value);
 	}

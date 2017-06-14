@@ -7,19 +7,33 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import oodb.exception.NonExistentObject;
-import oodb.exception.OOBDLibraryException;
+import oodb.exception.OODBLibraryException;
 
+/**
+ * Implements the activation of an object process.
+ */
 public class Activator {
 
 	private OODBLibrary lib;
 
-	public Activator(OODBLibrary library) {
+	/**
+	 * Class constructor.
+	 * @param library
+	 */
+	Activator(OODBLibrary library) {
 		this.lib = library;
 	}
 
-	void activate(Object o, int depth) throws OOBDLibraryException, ClassNotFoundException {
+	/**
+	 * Activates Object o with the specific depth.
+	 * @param o
+	 * @param depth
+	 * @throws OODBLibraryException
+	 * @throws ClassNotFoundException
+	 */
+	void activate(Object o, int depth) throws OODBLibraryException, ClassNotFoundException {
 		if (!this.lib.containsKeyObjectMap(o))
-			throw new OOBDLibraryException(new NonExistentObject());
+			throw new OODBLibraryException(new NonExistentObject());
 		if (depth > 0) {
 			for (Field f : o.getClass().getDeclaredFields()) {
 				f.setAccessible(true);
@@ -28,14 +42,14 @@ public class Activator {
 					try {
 						obj = f.get(o);
 					} catch (IllegalArgumentException | IllegalAccessException e) {
-						throw new OOBDLibraryException(e);
+						throw new OODBLibraryException(e);
 					}
 
 					if (obj == null) {
 						try {
 							f.set(o, retrieve(o, f.getName(), f.getType(), depth - 1));
 						} catch (IllegalArgumentException | IllegalAccessException e) {
-							throw new OOBDLibraryException(e);
+							throw new OODBLibraryException(e);
 						}
 					} else {
 						activate(obj, depth - 1);
@@ -46,6 +60,15 @@ public class Activator {
 		}
 	}
 
+	/**
+	 * Retrieves an object from the database.
+	 * @param o
+	 * @param columnName
+	 * @param class1
+	 * @param depth
+	 * @return Object
+	 * @throws ClassNotFoundException
+	 */
 	private Object retrieve(Object o, String columnName, Class<?> class1, int depth) throws ClassNotFoundException {
 		if (depth == 0)
 			return null;
@@ -71,16 +94,16 @@ public class Activator {
 						ObjectCreator objCrtr = new ObjectCreator(this.lib);
 						objeto = objCrtr.createObject(class1, childRs, depth);
 					} catch (InstantiationException e) {
-						throw new OOBDLibraryException(e);
+						throw new OODBLibraryException(e);
 					} catch (IllegalAccessException e) {
-						throw new OOBDLibraryException(e);
+						throw new OODBLibraryException(e);
 					}
 				}
 				c.close();
 				return objeto;
 			}
 		} catch (SQLException e) {
-			throw new OOBDLibraryException(e);
+			throw new OODBLibraryException(e);
 		}
 		return null;
 	}

@@ -16,21 +16,43 @@ import org.apache.commons.lang3.StringUtils;
 import oodb.constraints.AndConstraint;
 import oodb.constraints.Constraint;
 
+/**
+ * Class that implements the Object load from the database.
+ */
 public class Query {
 	private OODBLibrary library;
 	private Class<?> constraintClass;
 	private Constraint constraint;
 
+	/**
+	 * Class constructor.
+	 * @param cl
+	 * @param lib
+	 */
 	Query(Class<?> cl, OODBLibrary lib) {
 		constraintClass = cl;
 		this.library = lib;
 		this.constraint = new AndConstraint();
 	}
 
+	/**
+	 * Sets the constraint to apply to the Object.
+	 * @param c
+	 */
 	public void setConstraint(Constraint c) {
 		this.constraint = c;
 	}
 
+	/**
+	 * Returns the SQL Statement in String form.
+	 * @param con
+	 * @return sqlStatement
+	 * @throws SQLException
+	 * @throws IllegalArgumentException
+	 * @throws IllegalAccessException
+	 * @throws NoSuchFieldException
+	 * @throws SecurityException
+	 */
 	String toSql(Connection con) throws SQLException, IllegalArgumentException, IllegalAccessException,
 			NoSuchFieldException, SecurityException {
 
@@ -63,6 +85,17 @@ public class Query {
 		return sqlStatement;
 	}
 
+	/**
+	 * Returns the SQL form of a given Constraint.
+	 * @param c
+	 * @param tl
+	 * @param fl
+	 * @param il
+	 * @return String
+	 * @throws SQLException
+	 * @throws NoSuchFieldException
+	 * @throws SecurityException
+	 */
 	private String constraintToSql(Constraint c, List<String> tl, List<String> fl, List<String> il)
 			throws SQLException, NoSuchFieldException, SecurityException {
 
@@ -138,7 +171,20 @@ public class Query {
 			return "( " + constraint + " )";
 		}
 	}
-
+	
+	/**
+	 * Executes the Query.
+	 * @param con
+	 * @param profundidad
+	 * @return
+	 * @throws SQLException
+	 * @throws InstantiationException
+	 * @throws IllegalAccessException
+	 * @throws ClassNotFoundException
+	 * @throws IllegalArgumentException
+	 * @throws NoSuchFieldException
+	 * @throws SecurityException
+	 */
 	List<Object> executeQuery(Connection con, int profundidad)
 			throws SQLException, InstantiationException, IllegalAccessException, ClassNotFoundException,
 			IllegalArgumentException, NoSuchFieldException, SecurityException {

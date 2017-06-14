@@ -1,6 +1,9 @@
 package oodb.library;
 
-public class Attribute {
+/**
+ * Represents a Field object with extra data that helps in the implementation of the library methods.
+ */
+class Attribute {
 
 	private String name;
 	private String type;

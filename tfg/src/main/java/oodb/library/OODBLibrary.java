@@ -17,11 +17,11 @@ import oodb.constraints.AndConstraint;
 import oodb.constraints.Constraint;
 import oodb.constraints.SimpleConstraint;
 import oodb.exception.NonExistentObject;
-import oodb.exception.OOBDLibraryException;
-import pruebaList2.Usuario;
-import pruebaList2.Direccion;
+import oodb.exception.OODBLibraryException;
 
-
+/**
+ * Main class of the library. 
+ */
 public class OODBLibrary {
 
 	private String user;
@@ -35,7 +35,14 @@ public class OODBLibrary {
 	private Saver saver;
 	private Activator activator;
 
-	public OODBLibrary(String dbname, String user, String pass) throws OOBDLibraryException{
+	/**
+	 * Class constructor.
+	 * @param dbname
+	 * @param user
+	 * @param pass
+	 * @throws OODBLibraryException
+	 */
+	public OODBLibrary(String dbname, String user, String pass) throws OODBLibraryException{
 
 		this.cpds = new ComboPooledDataSource();
 		this.objectMap = new IdentityHashMap<Object, Integer>();
@@ -52,13 +59,22 @@ public class OODBLibrary {
 		this.activator=new Activator(this);
 	}
 
+	/**
+	 * Returns a connection to the database.
+	 * @return
+	 * @throws SQLException
+	 */
 	Connection getConnection() throws SQLException {
 		Connection c = cpds.getConnection();
 
 		return c;
 	}
 
-	private void createIndexTable() throws OOBDLibraryException{
+	/**
+	 * Creates the class index table.
+	 * @throws OODBLibraryException
+	 */
+	private void createIndexTable() throws OODBLibraryException{
 		String sql = "CREATE TABLE IF NOT EXISTS indicetabla " + "(id INTEGER not NULL AUTO_INCREMENT, "
 				+ " nombreclase VARCHAR(255)," + " nombretabla VARCHAR(255)," + " PRIMARY KEY ( id ))";
 		PreparedStatement pst;
@@ -69,13 +85,17 @@ public class OODBLibrary {
 			pst.execute();
 			c.close();
 		} catch (SQLException e) {
-			throw new OOBDLibraryException(e);
+			throw new OODBLibraryException(e);
 		}
 		
 
 	}
 
-	private void createColumnIndex() throws OOBDLibraryException {
+	/**
+	 * Creates the column index table.
+	 * @throws OODBLibraryException
+	 */
+	private void createColumnIndex() throws OODBLibraryException {
 		String sql = "CREATE TABLE IF NOT EXISTS indicecolumna " 
 				+ "(id INTEGER not NULL AUTO_INCREMENT, "
 				+ " idtabla INTEGER, " 
@@ -97,12 +117,16 @@ public class OODBLibrary {
 
 	}
 
-	private void connect()throws OOBDLibraryException{
+	/**
+	 * Connects to the database.
+	 * @throws OODBLibraryException
+	 */
+	private void connect()throws OODBLibraryException{
 
 		try {
 			this.cpds.setDriverClass("com.mysql.jdbc.Driver");
 		} catch (PropertyVetoException e) {
-			throw new OOBDLibraryException(e);
+			throw new OODBLibraryException(e);
 		}
 
 		this.cpds.setJdbcUrl("jdbc:mysql://localhost/" + this.dbname);
@@ -113,6 +137,12 @@ public class OODBLibrary {
 		this.cpds.setAcquireRetryDelay(1);
 	}
 	
+	/**
+	 * Returns the table name associated to a class.
+	 * @param nombreClase
+	 * @return
+	 * @throws SQLException
+	 */
 	String getTableName(String nombreClase) throws SQLException{
 		if(classMap.containsKey(nombreClase))
 			return classMap.get(nombreClase);
@@ -134,20 +164,38 @@ public class OODBLibrary {
 		}
 	}
 	
+	/**
+	 * Returns the id of an object.
+	 * @param obj
+	 * @return
+	 */
 	int getId(Object obj){
 		return this.objectMap.get(obj);
 	}
 
-	public void save(Object o) throws OOBDLibraryException{
+	/**
+	 * Saves an object in the database.
+	 * If the object has been saved before updates the object.
+	 * @param o
+	 * @throws OODBLibraryException
+	 */
+	public void save(Object o) throws OODBLibraryException{
 		IdentityHashMap<Object, Integer> im=new IdentityHashMap<Object, Integer>();
 		try {
 			this.saver.save(o, im);
 		} catch (IllegalArgumentException | IllegalAccessException | SQLException e) {
-			throw new OOBDLibraryException(e);
+			throw new OODBLibraryException(e);
 		}
 		this.objectMap.putAll(im);
 	}
 
+	/**
+	 * Return the non-null attributes of an object.
+	 * @param o
+	 * @return
+	 * @throws IllegalArgumentException
+	 * @throws IllegalAccessException
+	 */
 	ArrayList<Attribute> getNonNullAttributes(Object o) throws IllegalArgumentException, IllegalAccessException {
 		ArrayList<Attribute> attributes = new ArrayList<Attribute>();
 
@@ -170,9 +218,14 @@ public class OODBLibrary {
 
 	}
 	
-	public void delete(Object o) throws OOBDLibraryException{
+	/**
+	 * Deletes an object from the database.
+	 * @param o
+	 * @throws OODBLibraryException
+	 */
+	public void delete(Object o) throws OODBLibraryException{
 		if(!this.objectMap.containsKey(o)){
-			throw new OOBDLibraryException(new NonExistentObject());
+			throw new OODBLibraryException(new NonExistentObject());
 		}
 		String tableName;
 		Integer id;
@@ -188,32 +241,45 @@ public class OODBLibrary {
 			pst.execute();
 			con.close();
 		} catch (SQLException e) {
-			throw new OOBDLibraryException(e);
+			throw new OODBLibraryException(e);
 		}
 		this.objectMap.remove(o);
 		this.idMap.remove(o.getClass().getName()+"-"+id);
 
 	}
 	
-	public List<Object> executeQuery(Query q) throws OOBDLibraryException {
+	/**
+	 * Executes a given query and retrieves a list of objects created with the default depth.
+	 * @param q
+	 * @return
+	 * @throws OODBLibraryException
+	 */
+	public List<Object> executeQuery(Query q) throws OODBLibraryException {
 		Connection c;
 		try {
 			c = this.getConnection();
 		} catch (SQLException e) {
-			throw new OOBDLibraryException(e);
+			throw new OODBLibraryException(e);
 		}
 		List<Object> list;
 		try {
 			list = q.executeQuery(c, this.depth);
 			c.close();
 		} catch (InstantiationException | IllegalAccessException | SQLException | ClassNotFoundException | IllegalArgumentException | NoSuchFieldException | SecurityException e) {
-			throw new OOBDLibraryException(e);
+			throw new OODBLibraryException(e);
 		}
 		
 		return list;
 	}
 	
-	public List<Object> executeQuery(Query q, int profundidad) throws OOBDLibraryException {
+	/**
+	 * Executes a given query and retrieves a list of objects created with the given depth.
+	 * @param q
+	 * @param profundidad
+	 * @return
+	 * @throws OODBLibraryException
+	 */
+	public List<Object> executeQuery(Query q, int profundidad) throws OODBLibraryException {
 		Connection c;
 		List<Object> list;
 		try {
@@ -221,28 +287,44 @@ public class OODBLibrary {
 			list = q.executeQuery(c, profundidad);
 			c.close();
 		} catch (SQLException | InstantiationException | IllegalAccessException | ClassNotFoundException | IllegalArgumentException | NoSuchFieldException | SecurityException e) {
-			throw new OOBDLibraryException(e);
+			throw new OODBLibraryException(e);
 		}
 		
 		return list;
 	}
 	
-	public void activate(Object o, int depth) throws OOBDLibraryException{
+	/**
+	 * Activates the null pointers of an object using a given depth.
+	 * @param o
+	 * @param depth
+	 * @throws OODBLibraryException
+	 */
+	public void activate(Object o, int depth) throws OODBLibraryException{
 		try {
 			this.activator.activate(o, depth);
 		} catch (ClassNotFoundException e) {
-			throw new OOBDLibraryException(e);
+			throw new OODBLibraryException(e);
 		}
 	}
 	
-	public void activate(Object o) throws OOBDLibraryException{
+	/**
+	 * Activates the null pointers of an object using the default depth.
+	 * @param o
+	 * @throws OODBLibraryException
+	 */
+	public void activate(Object o) throws OODBLibraryException{
 		try {
 			this.activator.activate(o, this.depth);
 		} catch (ClassNotFoundException e) {
-			throw new OOBDLibraryException(e);
+			throw new OODBLibraryException(e);
 		}
 	}
 
+	/**
+	 * Creates a new Query to retrieve objects of a given class.
+	 * @param class1
+	 * @return
+	 */
 	public Query newQuery(Class<?> class1) {	
 		return new Query(class1, this);
 	}
@@ -275,15 +357,30 @@ public class OODBLibrary {
 		this.depth = depth;
 	}
 	
-	public List<Object> queryByExample(Object o) throws OOBDLibraryException{
+	/**
+	 * Retrieves a list of objects from the database that match the given Object o field values.
+	 * 0 or Null fields will not be considered as constraints.
+	 * @param o
+	 * @return
+	 * @throws OODBLibraryException
+	 */
+	public List<Object> queryByExample(Object o) throws OODBLibraryException{
 		try {
 			return queryByExample(o, new ArrayList<String>());
 		} catch (SecurityException e) {
-			throw new OOBDLibraryException(e);
+			throw new OODBLibraryException(e);
 		}
 	}
 	
-	public List<Object> queryByExample(Object o, List<String> notToIgnore) throws OOBDLibraryException{
+	/**
+	 * Retrieves a list of objects from the database that match the given Object o field values.
+	 * Uses a given list of fields to consider even though they have 0 or Null values.
+	 * @param o
+	 * @param notToIgnore
+	 * @return
+	 * @throws OODBLibraryException
+	 */
+	public List<Object> queryByExample(Object o, List<String> notToIgnore) throws OODBLibraryException{
 		List<Object> l = new ArrayList<Object>();
 		List<Constraint> constraintList = new ArrayList<Constraint>();
 		Field[] fields = o.getClass().getDeclaredFields();
@@ -296,7 +393,7 @@ public class OODBLibrary {
 				try {
 					n = (int)f.get(o);
 				} catch (IllegalArgumentException | IllegalAccessException e) {
-					throw new OOBDLibraryException(e);
+					throw new OODBLibraryException(e);
 				}
 				if(n != 0)
 					notIgnoring = true;
@@ -306,7 +403,7 @@ public class OODBLibrary {
 					if(f.get(o) != null)
 						notIgnoring = true;
 				} catch (IllegalArgumentException | IllegalAccessException e) {
-					throw new OOBDLibraryException(e);
+					throw new OODBLibraryException(e);
 				}
 			}
 			
@@ -314,7 +411,7 @@ public class OODBLibrary {
 				try {
 					constraintList.add(SimpleConstraint.newEqualConstraint(f.getName(), f.get(o)));
 				} catch (IllegalArgumentException | IllegalAccessException e) {
-					throw new OOBDLibraryException(e);
+					throw new OODBLibraryException(e);
 				}
 		}
 		
@@ -325,6 +422,11 @@ public class OODBLibrary {
 		return l;
 	}
 	
+	/**
+	 * Returns true if the given class is a basic Java type.
+	 * @param c
+	 * @return
+	 */
 	boolean basicType(Class<?> c){
 		return c.getCanonicalName().equalsIgnoreCase("Java.lang.String") 
 				|| c.getCanonicalName().equalsIgnoreCase("Int")

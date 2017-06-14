@@ -14,14 +14,31 @@ import java.util.List;
 import java.util.Set;
 import com.mysql.jdbc.Statement;
 
-public class Saver {
+/**
+ * Implements the insertion or update process of an object.
+ */
+class Saver {
 
 	private OODBLibrary lib;
 
+	/**
+	 * Class constructor.
+	 * 
+	 * @param lib
+	 */
 	Saver(OODBLibrary lib) {
 		this.lib = lib;
 	}
 
+	/**
+	 * Saves the object in the database.
+	 * 
+	 * @param o
+	 * @param im
+	 * @throws SQLException
+	 * @throws IllegalArgumentException
+	 * @throws IllegalAccessException
+	 */
 	void save(Object o, IdentityHashMap<Object, Integer> im)
 			throws SQLException, IllegalArgumentException, IllegalAccessException {
 		int id = -1;
@@ -49,37 +66,18 @@ public class Saver {
 
 			attribute = f.get(o);
 
-			if (!isBasic(f)) {
-				if (attribute instanceof List<?> || attribute instanceof Set<?>) // si
-																					// es
-																					// una
-																					// lista
-																					// o
-																					// set
-																					// hay
-																					// que
-																					// tratarlo
-																					// aparte
+			if (!lib.basicType(f.getType())) {
+				if (attribute instanceof List<?> || attribute instanceof Set<?>)
 					emptyMiddleTableById(tableName, f.getName(), id);
 
 				if (attribute != null) {
 
-					if (attribute instanceof List<?> || attribute instanceof Set<?> || attribute.getClass().isArray()) {// si
-																														// es
-																														// una
-																														// lista
-																														// o
-																														// set
-																														// hay
-																														// que
-																														// tratarlo
-																														// aparte
+					if (attribute instanceof List<?> || attribute instanceof Set<?> || attribute.getClass().isArray()) {
 
 						Class<?> componentType = null;
 						if (attribute.getClass().isArray()) {
 							componentType = attribute.getClass().getComponentType();
 						} else {
-							// Aqui sacamos el tipo del parametro
 							Type friendsGenericType = f.getGenericType();
 							ParameterizedType friendsParameterizedType = (ParameterizedType) friendsGenericType;
 							Type[] friendsType = friendsParameterizedType.getActualTypeArguments();
@@ -150,17 +148,14 @@ public class Saver {
 		update(tableName, o, im);
 	}
 
-	private void emptyTableRow(String tableName, int id) throws SQLException {
-		String sql = "UPDATE " + tableName + " SET  WHERE id = ?";
-		PreparedStatement pst;
-		Connection c = this.lib.getConnection();
-		pst = c.prepareStatement(sql);
-		pst.setInt(1, id);
-		pst.execute();
-		c.close();
-
-	}
-
+	/**
+	 * Empties a middle table.
+	 * 
+	 * @param tableName
+	 * @param attributeName
+	 * @param id
+	 * @throws SQLException
+	 */
 	private void emptyMiddleTableById(String tableName, String attributeName, int id) throws SQLException {
 		String sql = "DELETE FROM " + tableName + "_" + attributeName + " WHERE id1_" + tableName + " = ?";
 		PreparedStatement pst;
@@ -171,6 +166,18 @@ public class Saver {
 		c.close();
 	}
 
+	/**
+	 * Inserts an Object from a list.
+	 * 
+	 * @param parentTableName
+	 * @param parentId
+	 * @param paramTableName
+	 * @param paramName
+	 * @param paramId
+	 * @param position
+	 * @param instanceType
+	 * @throws SQLException
+	 */
 	private void insertListObject(String parentTableName, int parentId, String paramTableName, String paramName,
 			Integer paramId, int position, String instanceType) throws SQLException {
 		Connection c = this.lib.getConnection();
@@ -194,6 +201,17 @@ public class Saver {
 		c.close();
 	}
 
+	/**
+	 * Inserts a multivalued object.
+	 * 
+	 * @param parentTableName
+	 * @param listName
+	 * @param idPadre
+	 * @param element
+	 * @param position
+	 * @param instanceType
+	 * @throws SQLException
+	 */
 	private void insertMultivalued(String parentTableName, String listName, int idPadre, Object element, int position,
 			String instanceType) throws SQLException {
 
@@ -218,6 +236,13 @@ public class Saver {
 		c.close();
 	}
 
+	/**
+	 * 
+	 * @param tableName
+	 * @param attributes
+	 * @return
+	 * @throws SQLException
+	 */
 	private int insertEmptyRow(String tableName, ArrayList<Attribute> attributes) throws SQLException {
 		int id = 0;
 		ArrayList<String> values = new ArrayList<String>();
@@ -255,6 +280,16 @@ public class Saver {
 		return id;
 	}
 
+	/**
+	 * Updates an Object.
+	 * 
+	 * @param tableName
+	 * @param o
+	 * @param im
+	 * @throws SQLException
+	 * @throws IllegalArgumentException
+	 * @throws IllegalAccessException
+	 */
 	private void update(String tableName, Object o, IdentityHashMap<Object, Integer> im)
 			throws SQLException, IllegalArgumentException, IllegalAccessException {
 		String keys = "";
@@ -269,7 +304,7 @@ public class Saver {
 
 			attribute = f.get(o);
 
-			if (!isBasic(f)) {
+			if (!lib.basicType(f.getType())) {
 
 				if (attribute != null) {
 
@@ -310,14 +345,12 @@ public class Saver {
 		con.close();
 	}
 
-	private boolean isBasic(Field f) {
-		boolean ret = false;
-		if (f.getType().getCanonicalName().equalsIgnoreCase("Java.lang.String")
-				|| f.getType().getCanonicalName().equalsIgnoreCase("Int"))
-			ret = true;
-		return ret;
-	}
-
+	/**
+	 * 
+	 * @param o
+	 * @return
+	 * @throws SQLException
+	 */
 	private String createTable(Object o) throws SQLException {
 		String tableName = "";
 		String sql = "SELECT nombreclase,nombretabla FROM indicetabla WHERE nombreclase = ?";
@@ -343,6 +376,13 @@ public class Saver {
 		return tableName;
 	}
 
+	/**
+	 * 
+	 * @param className
+	 * @param almostTableName
+	 * @return
+	 * @throws SQLException
+	 */
 	private String insertTableIndex(String className, String almostTableName) throws SQLException {
 		int id;
 		String tableName;
@@ -377,6 +417,13 @@ public class Saver {
 		return tableName;
 	}
 
+	/**
+	 * 
+	 * @param tableName
+	 * @param o
+	 * @return
+	 * @throws SQLException
+	 */
 	private ArrayList<Attribute> alterTable(String tableName, Object o) throws SQLException {
 		ArrayList<Attribute> atributos = getAttributes(o);
 
@@ -389,6 +436,13 @@ public class Saver {
 
 	}
 
+	/**
+	 * 
+	 * @param a
+	 * @param indexTableId
+	 * @return
+	 * @throws SQLException
+	 */
 	private boolean existsColumnIndex(Attribute a, String indexTableId) throws SQLException {
 		String sql = "SELECT id FROM indicecolumna WHERE idtabla = ? and atributo = ?";
 
@@ -405,6 +459,12 @@ public class Saver {
 		return ret;
 	}
 
+	/**
+	 * 
+	 * @param o
+	 * @return
+	 * @throws SQLException
+	 */
 	private ArrayList<Attribute> getAttributes(Object o) throws SQLException {
 		ArrayList<Attribute> attributes = new ArrayList<Attribute>();
 		for (Field f : o.getClass().getDeclaredFields()) {
@@ -476,11 +536,7 @@ public class Saver {
 							name = f.getName();
 							constructorClass = ob.getClass().getName();
 							type = "INTEGER, ADD FOREIGN KEY (" + f.getName() + ") REFERENCES " + referencedTableName
-									+ "(id) ON DELETE SET NULL"; // El tipo ya
-																	// va a ser
-																	// una
-																	// foreign
-																	// key
+									+ "(id) ON DELETE SET NULL";
 						}
 					}
 				} catch (IllegalArgumentException | IllegalAccessException | SecurityException
@@ -499,6 +555,14 @@ public class Saver {
 		return attributes;
 	}
 
+	/**
+	 * 
+	 * @param nto
+	 * @param fieldName
+	 * @param type
+	 * @param instanceType
+	 * @throws SQLException
+	 */
 	private void createMultivaluedTable(String nto, String fieldName, String type, String instanceType)
 			throws SQLException {
 		String sql = "CREATE TABLE IF NOT EXISTS " + nto + "_" + fieldName + " (id INTEGER not NULL AUTO_INCREMENT,"
@@ -516,6 +580,15 @@ public class Saver {
 		c.close();
 	}
 
+	/**
+	 * Creates a middle table class.
+	 * 
+	 * @param nto
+	 * @param ntp
+	 * @param paramName
+	 * @param instanceType
+	 * @throws SQLException
+	 */
 	private void createMiddleTable(String nto, String ntp, String paramName, String instanceType) throws SQLException {
 		String sql = "CREATE TABLE IF NOT EXISTS " + nto + "_" + paramName + " (id INTEGER not NULL AUTO_INCREMENT,"
 				+ "id1_" + nto + " INTEGER, " + "id2_" + ntp + " INTEGER, ";
@@ -533,6 +606,13 @@ public class Saver {
 		c.close();
 	}
 
+	/**
+	 * Returns the index of a given table name.
+	 * 
+	 * @param tableName
+	 * @return
+	 * @throws SQLException
+	 */
 	private String getIndexTableId(String tableName) throws SQLException {
 		String id = "";
 		String sql = "SELECT id FROM indicetabla WHERE nombretabla = ? ";
@@ -549,6 +629,14 @@ public class Saver {
 		return id;
 	}
 
+	/**
+	 * Inserts an attribute in the column index.
+	 * 
+	 * @param tableName
+	 * @param a
+	 * @param indexTableId
+	 * @throws SQLException
+	 */
 	private void insertColumnIndex(String tableName, Attribute a, String indexTableId) throws SQLException {
 
 		String sql1;
@@ -585,44 +673,6 @@ public class Saver {
 		pst.execute();
 
 		c2.close();
-	}
-
-	private void deleteColumnIndex(String tableName, ArrayList<Attribute> attributes, String indexTableId)
-			throws SQLException {
-		String sql = "SELECT atributo FROM indicecolumna WHERE idtabla = ?";
-		PreparedStatement pst;
-		Connection c = this.lib.getConnection();
-		pst = c.prepareStatement(sql);
-
-		pst.setString(1, indexTableId);
-		ResultSet rs = pst.executeQuery();
-		boolean exists = false;
-		while (rs.next()) {
-			for (Attribute a : attributes) {
-				if (rs.getString("atributo").equalsIgnoreCase(a.getName())) {
-					exists = true;
-				}
-			}
-			if (!exists) {
-
-				String del = "ALTER TABLE " + tableName + " DROP COLUMN " + rs.getString("atributo");
-				c = this.lib.getConnection();
-				pst = c.prepareStatement(del);
-				pst.execute();
-				c.close();
-
-				del = "DELETE FROM indicecolumna WHERE idtabla = ? and atributo = ?";
-				c = this.lib.getConnection();
-				pst = c.prepareStatement(del);
-
-				pst.setString(1, indexTableId);
-				pst.setString(2, rs.getString("atributo"));
-				pst.execute();
-				c.close();
-			}
-			exists = false;
-		}
-		c.close();
 	}
 
 }

@@ -1,6 +1,9 @@
 package oodb.library;
 
-public class Identificator {
+/**
+ * Represents an Object ID.
+ */
+class Identificator {
 
 	private Integer id;
 	private String className;

@@ -16,7 +16,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-public class ObjectCreator {
+/**
+ * Creates an Object using the data retrieved from the database.
+ */
+class ObjectCreator {
 
 	private OODBLibrary library;
 
@@ -24,6 +27,17 @@ public class ObjectCreator {
 		this.library = lib;
 	}
 
+	/**
+	 * Creates and return an object using the ResultSet.
+	 * @param c
+	 * @param rs
+	 * @param depth
+	 * @return Object
+	 * @throws InstantiationException
+	 * @throws IllegalAccessException
+	 * @throws SQLException
+	 * @throws ClassNotFoundException
+	 */
 	Object createObject(Class<?> c, ResultSet rs, int depth)
 			throws InstantiationException, IllegalAccessException, SQLException, ClassNotFoundException {
 		String className = c.getName();

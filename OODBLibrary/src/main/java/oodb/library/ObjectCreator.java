@@ -54,7 +54,10 @@ class ObjectCreator {
 
 			if (f.getType().isAssignableFrom(List.class)) {
 				List<Object> list = null;
-				String listType = rs.getString("2_" + f.getName());
+				StringBuilder sb = new StringBuilder();
+				sb.append("2_");
+				sb.append(f.getName());
+				String listType = rs.getString(sb.toString());
 				if (listType != null) {
 					Class<?> cl = Class.forName(listType);
 					if (listType.contains("ArrayList")) {
@@ -72,11 +75,19 @@ class ObjectCreator {
 						String fieldName = f.getName();
 						String tableName = library.getTableName(c.getName());
 						String multivaluedTableName = tableName + "_" + fieldName;
-						String sqlStatement = "SELECT " + fieldName + " FROM " + multivaluedTableName + " WHERE id1_"
-								+ tableName + " = " + idenO.getId() + " ORDER BY posicion";
+						sb = new StringBuilder();
+						sb.append("SELECT ");
+						sb.append(fieldName);
+						sb.append(" FROM ");
+						sb.append(multivaluedTableName);
+						sb.append(" WHERE id1_");
+						sb.append(tableName);
+						sb.append(" = ");
+						sb.append(idenO.getId());
+						sb.append(" ORDER BY posicion");
 						Connection con = library.getConnection();
 						PreparedStatement pst;
-						pst = con.prepareStatement(sqlStatement);
+						pst = con.prepareStatement(sb.toString());
 						ResultSet rset = pst.executeQuery();
 						while (rset.next()) {
 							list.add(rset.getObject(fieldName));
@@ -86,22 +97,43 @@ class ObjectCreator {
 						String tableName = library.getTableName(c.getName());
 						String multivaluedObjectTableName = library.getTableName(userClass.getName());
 						String multivaluedTableName = tableName + "_" + f.getName();
-						String selectStatement = "id2_" + multivaluedObjectTableName;
-						String whereStatement = "id1_" + tableName;
+						
+						StringBuilder selectStatement = new StringBuilder();
+						selectStatement.append("id2_");
+						selectStatement.append(multivaluedObjectTableName);
+						
+						StringBuilder whereStatement = new StringBuilder();
+						whereStatement.append("id1_");
+						whereStatement.append(tableName);
+						
+						StringBuilder sqlStatement = new StringBuilder();
+						sqlStatement.append("SELECT ");
+						sqlStatement.append(selectStatement.toString());
+						sqlStatement.append("FROM ");
+						sqlStatement.append(multivaluedTableName);
+						sqlStatement.append(" WHERE ");
+						sqlStatement.append(whereStatement.toString());
+						sqlStatement.append(" = ");
+						sqlStatement.append(idenO.getId());
+						sqlStatement.append(" ORDER BY posicion");
 
-						String sqlStatement = "SELECT " + selectStatement + " FROM " + multivaluedTableName + " WHERE "
-								+ whereStatement + " = " + idenO.getId() + " ORDER BY posicion";
+						
 						Connection con = library.getConnection();
 						PreparedStatement pst;
-						pst = con.prepareStatement(sqlStatement);
+						pst = con.prepareStatement(sqlStatement.toString());
 						ResultSet rset = pst.executeQuery();
 
 						while (rset.next()) {
-							String sqlSttmnt = "SELECT * FROM " + multivaluedObjectTableName + " WHERE id = "
-									+ rset.getInt(selectStatement);
+							StringBuilder sqlSttmnt = new StringBuilder();
+							sqlSttmnt.append("SELECT * FROM ");
+							sqlSttmnt.append(multivaluedObjectTableName);
+							sqlSttmnt.append(" WHERE id = ");
+							sqlSttmnt.append(rset.getInt(selectStatement.toString()));
+							
+							
 							Connection connect = library.getConnection();
 							PreparedStatement pst2;
-							pst2 = connect.prepareStatement(sqlSttmnt);
+							pst2 = connect.prepareStatement(sqlSttmnt.toString());
 							ResultSet rs2 = pst2.executeQuery();
 							Object obj = userClass.newInstance();
 							rs2.next();
@@ -116,7 +148,10 @@ class ObjectCreator {
 				field = list;
 			} else if (f.getType().isAssignableFrom(Set.class)) {
 				Set<Object> set = null;
-				String setType = rs.getString("2_" + f.getName());
+				StringBuilder sType = new StringBuilder();
+				sType.append("2_");
+				sType.append(f.getName());
+				String setType = rs.getString(sType.toString());
 				if (setType != null) {
 					Class cl = Class.forName(setType);
 					if (setType.contains("HashSet")) {
@@ -135,12 +170,26 @@ class ObjectCreator {
 					if (library.basicType(userClass)) {
 						String fieldName = f.getName();
 						String tableName = library.getTableName(c.getName());
-						String multivaluedTableName = tableName + "_" + fieldName;
-						String sqlStatement = "SELECT " + fieldName + " FROM " + multivaluedTableName + " WHERE id1_"
-								+ tableName + " = " + idenO.getId();
+						
+						StringBuilder multivaluedTableName = new StringBuilder();
+						multivaluedTableName.append(tableName);
+						multivaluedTableName.append("_");
+						multivaluedTableName.append(fieldName);
+						
+						StringBuilder sqlStatement = new StringBuilder();
+						sqlStatement.append("SELECT ");
+						sqlStatement.append(fieldName);
+						sqlStatement.append(" FROM ");
+						sqlStatement.append(multivaluedTableName.toString());
+						sqlStatement.append(" WHERE id1_");
+						sqlStatement.append(tableName);
+						sqlStatement.append(" = ");
+						sqlStatement.append(idenO.getId());
+						
+						
 						Connection con = library.getConnection();
 						PreparedStatement pst;
-						pst = con.prepareStatement(sqlStatement);
+						pst = con.prepareStatement(sqlStatement.toString());
 						ResultSet rset = pst.executeQuery();
 						while (rset.next()) {
 							set.add(rset.getObject(fieldName));
@@ -149,23 +198,44 @@ class ObjectCreator {
 					} else {
 						String tableName = library.getTableName(c.getName());
 						String multivaluedObjectTableName = library.getTableName(userClass.getName());
-						String multivaluedTableName = tableName + "_" + f.getName();
-						String selectStatement = "id2_" + multivaluedObjectTableName;
-						String whereStatement = "id1_" + tableName;
+						StringBuilder multivaluedTableName = new StringBuilder();
+						multivaluedTableName.append(tableName);
+						multivaluedTableName.append("_");
+						multivaluedTableName.append(f.getName());
+						
+						StringBuilder selectStatement = new StringBuilder();
+						selectStatement.append("id2_");
+						selectStatement.append(multivaluedObjectTableName);
+						
+						StringBuilder whereStatement = new StringBuilder();
+						whereStatement.append("id1_");
+						whereStatement.append(tableName);
+						
+						StringBuilder sqlStatement = new StringBuilder();
+						sqlStatement.append("SELECT ");
+						sqlStatement.append(selectStatement.toString());
+						sqlStatement.append(" FROM ");
+						sqlStatement.append(multivaluedTableName.toString());
+						sqlStatement.append(" WHERE ");
+						sqlStatement.append(whereStatement.toString());
+						sqlStatement.append(" = ");
+						sqlStatement.append(idenO.getId());
 
-						String sqlStatement = "SELECT " + selectStatement + " FROM " + multivaluedTableName + " WHERE "
-								+ whereStatement + " = " + idenO.getId();
 						Connection con = library.getConnection();
 						PreparedStatement pst;
-						pst = con.prepareStatement(sqlStatement);
+						pst = con.prepareStatement(sqlStatement.toString());
 						ResultSet rset = pst.executeQuery();
 
 						while (rset.next()) {
-							String sqlSttmnt = "SELECT * FROM " + multivaluedObjectTableName + " WHERE id = "
-									+ rset.getInt(selectStatement);
+							StringBuilder sqlSttmnt = new StringBuilder();
+							sqlSttmnt.append("SELECT * FROM ");
+							sqlSttmnt.append(multivaluedObjectTableName);
+							sqlSttmnt.append(" WHERE id = ");
+							sqlSttmnt.append(rset.getInt(selectStatement.toString()));
+						
 							Connection connect = library.getConnection();
 							PreparedStatement pst2;
-							pst2 = connect.prepareStatement(sqlSttmnt);
+							pst2 = connect.prepareStatement(sqlSttmnt.toString());
 							ResultSet rs2 = pst2.executeQuery();
 							Object obj = userClass.newInstance();
 							rs2.next();
@@ -179,7 +249,10 @@ class ObjectCreator {
 				}
 				field = set;
 			} else if (!library.basicType(f.getType())) {
-				String atrType = rs.getString("2_" + f.getName());
+				StringBuilder atr = new StringBuilder();
+				atr.append("2_");
+				atr.append(f.getName());
+				String atrType = rs.getString(atr.toString());
 				if (!atrType.equals("Array")) {
 					if (depth == 1)
 						field = null;
@@ -189,10 +262,14 @@ class ObjectCreator {
 							field = library.getIdMap(iden);
 						} else {
 							String tn = library.getTableName(f.getType().getCanonicalName());
-							String sqlStatement = "SELECT * FROM " + tn + " WHERE ID = ?";
+							StringBuilder sqlStatement = new StringBuilder();
+							sqlStatement.append("SELECT * FROM ");
+							sqlStatement.append(tn);
+							sqlStatement.append(" WHERE ID = ?");
+							
 							Connection con = library.getConnection();
 							PreparedStatement pst;
-							pst = con.prepareStatement(sqlStatement);
+							pst = con.prepareStatement(sqlStatement.toString());
 							pst.setInt(1, (int) field);
 							ResultSet rset = pst.executeQuery();
 							if (rset.next()) {
@@ -206,12 +283,26 @@ class ObjectCreator {
 					if (library.basicType(f.getType().getComponentType())) {
 						String fieldName = f.getName();
 						String tableName = library.getTableName(c.getName());
-						String multivaluedTableName = tableName + "_" + fieldName;
-						String sqlStatement = "SELECT " + fieldName + " FROM " + multivaluedTableName + " WHERE id1_"
-								+ tableName + " = " + idenO.getId() + " ORDER BY posicion DESC";
+						StringBuilder multivaluedTableName = new StringBuilder();
+						multivaluedTableName.append(tableName);
+						multivaluedTableName.append("_");
+						multivaluedTableName.append(fieldName);
+						
+						StringBuilder sqlStatement = new StringBuilder();
+						sqlStatement.append("SELECT ");
+						sqlStatement.append(fieldName);
+						sqlStatement.append(" FROM ");
+						sqlStatement.append(multivaluedTableName.toString());
+						sqlStatement.append(" WHERE id1_");
+						sqlStatement.append(tableName);
+						sqlStatement.append(" = ");
+						sqlStatement.append(idenO.getId());
+						sqlStatement.append(" ORDER BY posicion DESC");
+						
+						
 						Connection con = library.getConnection();
 						PreparedStatement pst;
-						pst = con.prepareStatement(sqlStatement);
+						pst = con.prepareStatement(sqlStatement.toString());
 						ResultSet rset = pst.executeQuery();
 						boolean created = false;
 						while (rset.next()) {
@@ -226,15 +317,35 @@ class ObjectCreator {
 					} else {
 						String tableName = library.getTableName(c.getName());
 						String multivaluedObjectTableName = library.getTableName(f.getType().getComponentType().getName());
-						String multivaluedTableName = tableName + "_" + f.getName();
-						String selectStatement = "id2_" + multivaluedObjectTableName;
-						String whereStatement = "id1_" + tableName;
-
-						String sqlStatement = "SELECT " + selectStatement + " FROM " + multivaluedTableName + " WHERE "
-								+ whereStatement + " = " + idenO.getId() + " ORDER BY posicion DESC";
+						
+						StringBuilder multivaluedTableName = new StringBuilder();
+						multivaluedTableName.append(tableName);
+						multivaluedTableName.append("_");
+						multivaluedTableName.append(f.getName());
+						
+						StringBuilder selectStatement = new StringBuilder();
+						selectStatement.append("id2_");
+						selectStatement.append(multivaluedObjectTableName);
+						
+						StringBuilder whereStatement = new StringBuilder();
+						whereStatement.append("id1_");
+						whereStatement.append(tableName);
+						
+						StringBuilder sqlStatement = new StringBuilder();
+						sqlStatement.append("SELECT ");
+						sqlStatement.append(selectStatement);
+						sqlStatement.append(" FROM ");
+						sqlStatement.append(multivaluedTableName.toString());
+						sqlStatement.append(" WHERE ");
+						sqlStatement.append(whereStatement.toString());
+						sqlStatement.append(" = ");
+						sqlStatement.append(idenO.getId());
+						sqlStatement.append(" ORDER BY posicion DESC");
+						
+						
 						Connection con = library.getConnection();
 						PreparedStatement pst;
-						pst = con.prepareStatement(sqlStatement);
+						pst = con.prepareStatement(sqlStatement.toString());
 						ResultSet rset = pst.executeQuery();
 						boolean created = false;
 						while (rset.next()) {
@@ -243,11 +354,16 @@ class ObjectCreator {
 								field = Array.newInstance(f.getType().getComponentType(), (size + 1));
 								created = true;
 							}
-							String sqlSttmnt = "SELECT * FROM " + multivaluedObjectTableName + " WHERE id = "
-									+ rset.getInt(selectStatement);
+							
+							StringBuilder sqlSttmnt = new StringBuilder();
+							sqlSttmnt.append("SELECT * FROM ");
+							sqlSttmnt.append(multivaluedObjectTableName);
+							sqlSttmnt.append(" WHERE id = ");
+							sqlSttmnt.append(rset.getInt(selectStatement.toString()));
+							
 							Connection connect = library.getConnection();
 							PreparedStatement pst2;
-							pst2 = connect.prepareStatement(sqlSttmnt);
+							pst2 = connect.prepareStatement(sqlSttmnt.toString());
 							ResultSet rs2 = pst2.executeQuery();
 							Object obj = f.getType().getComponentType().newInstance();
 							rs2.next();

@@ -157,10 +157,17 @@ class Saver {
 	 * @throws SQLException
 	 */
 	private void emptyMiddleTableById(String tableName, String attributeName, int id) throws SQLException {
-		String sql = "DELETE FROM " + tableName + "_" + attributeName + " WHERE id1_" + tableName + " = ?";
+		StringBuilder sql = new StringBuilder("DELETE FROM ");
+		sql.append(tableName);
+		sql.append("_");
+		sql.append(attributeName);
+		sql.append(" WHERE id1_");
+		sql.append(tableName);
+		sql.append(" = ?");
+		
 		PreparedStatement pst;
 		Connection c = this.lib.getConnection();
-		pst = c.prepareStatement(sql);
+		pst = c.prepareStatement(sql.toString());
 		pst.setInt(1, id);
 		pst.execute();
 		c.close();
@@ -182,16 +189,32 @@ class Saver {
 			Integer paramId, int position, String instanceType) throws SQLException {
 		Connection c = this.lib.getConnection();
 
-		String sqlInsert = "";
-		if (instanceType.equalsIgnoreCase("List") || instanceType.equalsIgnoreCase("Array"))
-			sqlInsert = "INSERT INTO " + parentTableName + "_" + paramName + " ( id1_" + parentTableName + ", id2_"
-					+ paramTableName + ", posicion) VALUES (?, ?, ?)";
-		else
-			sqlInsert = "INSERT INTO " + parentTableName + "_" + paramName + " ( id1_" + parentTableName + ", id2_"
-					+ paramTableName + ") VALUES (?, ?)";
+		StringBuilder sqlInsert = new StringBuilder();
+		if (instanceType.equalsIgnoreCase("List") || instanceType.equalsIgnoreCase("Array")){
+			sqlInsert.append("INSERT INTO ");
+			sqlInsert.append(parentTableName);
+			sqlInsert.append("_");
+			sqlInsert.append(paramName);
+			sqlInsert.append(" ( id1_");
+			sqlInsert.append(parentTableName);
+			sqlInsert.append(", id2_");
+			sqlInsert.append(paramTableName);
+			sqlInsert.append(", posicion) VALUES (?, ?, ?)");
+		}
+		else{
+			sqlInsert.append("INSERT INTO ");
+			sqlInsert.append(parentTableName);
+			sqlInsert.append( "_");
+			sqlInsert.append(paramName);
+			sqlInsert.append(" ( id1_");
+			sqlInsert.append(parentTableName);
+			sqlInsert.append(", id2_");
+			sqlInsert.append(paramTableName);
+			sqlInsert.append(") VALUES (?, ?)");
+		}
 
 		PreparedStatement pstI;
-		pstI = c.prepareStatement(sqlInsert);
+		pstI = c.prepareStatement(sqlInsert.toString());
 		pstI.setInt(1, parentId);
 		pstI.setObject(2, paramId);
 		if (instanceType.equalsIgnoreCase("List") || instanceType.equalsIgnoreCase("Array"))
@@ -217,16 +240,32 @@ class Saver {
 
 		Connection c = this.lib.getConnection();
 
-		String sqlInsert = "";
-		if (instanceType.equalsIgnoreCase("List") || instanceType.equalsIgnoreCase("Array"))
-			sqlInsert = "INSERT INTO " + parentTableName + "_" + listName + " ( id1_" + parentTableName + ", "
-					+ listName + ", posicion) VALUES (?, ?, ?)";
-		else
-			sqlInsert = "INSERT INTO " + parentTableName + "_" + listName + " ( id1_" + parentTableName + ", "
-					+ listName + ") VALUES (?, ?)";
+		StringBuilder sqlInsert = new StringBuilder();
+		if (instanceType.equalsIgnoreCase("List") || instanceType.equalsIgnoreCase("Array")){
+			sqlInsert.append("INSERT INTO ");
+			sqlInsert.append(parentTableName);
+			sqlInsert.append("_");
+			sqlInsert.append(listName);
+			sqlInsert.append(" ( id1_");
+			sqlInsert.append(parentTableName);
+			sqlInsert.append(", ");
+			sqlInsert.append(listName);
+			sqlInsert.append(", posicion) VALUES (?, ?, ?)");
+		}
+		else{
+			sqlInsert.append("INSERT INTO ");
+			sqlInsert.append(parentTableName);
+			sqlInsert.append("_");
+			sqlInsert.append(listName);
+			sqlInsert.append(" ( id1_");
+			sqlInsert.append(parentTableName);
+			sqlInsert.append(", ");
+			sqlInsert.append(listName);
+			sqlInsert.append(") VALUES (?, ?)");
+		}
 
 		PreparedStatement pstI;
-		pstI = c.prepareStatement(sqlInsert);
+		pstI = c.prepareStatement(sqlInsert.toString());
 		pstI.setInt(1, idPadre);
 		pstI.setObject(2, element);
 		if (instanceType.equalsIgnoreCase("List") || instanceType.equalsIgnoreCase("Array"))
@@ -246,25 +285,33 @@ class Saver {
 	private int insertEmptyRow(String tableName, ArrayList<Attribute> attributes) throws SQLException {
 		int id = 0;
 		ArrayList<String> values = new ArrayList<String>();
-		String names = "";
-		String keys = "";
+		StringBuilder names = new StringBuilder();
+		StringBuilder keys = new StringBuilder();
 		boolean first = true;
 		for (int i = 0; i < attributes.size(); i++) {
 			if (!attributes.get(i).isBasic()) {
 
 				if (!first) {
-					keys += " , ";
-					names += " , ";
+					keys.append(" , ");
+					names.append(" , ");
 				}
 				values.add(attributes.get(i).getConstructorClass());
-				keys += " ? ";
-				names += "2_" + attributes.get(i).getName();
+				keys.append(" ? ");
+				names.append("2_");
+				names.append(attributes.get(i).getName());
 				first = false;
 			}
 		}
-		String sql = "INSERT INTO " + tableName + " (" + names + ") VALUES (" + keys + ")";
+		StringBuilder sql = new StringBuilder("INSERT INTO ");
+		sql.append(tableName);
+		sql.append( " (");
+		sql.append(names);
+		sql.append(") VALUES (");
+		sql.append(keys);
+		sql.append(")");
+
 		Connection c = this.lib.getConnection();
-		PreparedStatement pst = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+		PreparedStatement pst = c.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS);
 		int i = 1;
 		for (String valor : values) {
 			pst.setString(i, valor);
@@ -292,7 +339,7 @@ class Saver {
 	 */
 	private void update(String tableName, Object o, IdentityHashMap<Object, Integer> im)
 			throws SQLException, IllegalArgumentException, IllegalAccessException {
-		String keys = "";
+		StringBuilder keys = new StringBuilder();
 		ArrayList<String> values = new ArrayList<String>();
 
 		Field[] fields = o.getClass().getDeclaredFields();
@@ -317,8 +364,9 @@ class Saver {
 					} else {
 						values.add(im.get(attribute) + "");
 						if (i != 0)
-							keys += " , ";
-						keys += f.getName() + " =?";
+							keys.append(" , ");
+						keys.append(f.getName());
+						keys.append(" =?");
 					}
 
 				}
@@ -326,17 +374,22 @@ class Saver {
 			} else {
 				values.add(attribute + "");
 				if (i != 0)
-					keys += " , ";
-				keys += f.getName() + " =?";
+					keys.append(" , ");
+				keys.append(f.getName());
+				keys.append(" =?");
 			}
 		}
 
-		String sqlUpdate = "UPDATE " + tableName + " SET " + keys + " WHERE ID = ?";
+		StringBuilder sqlUpdate = new StringBuilder("UPDATE ");
+		sqlUpdate.append(tableName);
+		sqlUpdate.append(" SET ");
+		sqlUpdate.append(keys);
+		sqlUpdate.append(" WHERE ID = ?");
 
 		Connection con;
 
 		con = this.lib.getConnection();
-		PreparedStatement pst = con.prepareStatement(sqlUpdate);
+		PreparedStatement pst = con.prepareStatement(sqlUpdate.toString());
 		for (int i = 0; i < values.size(); i++) {
 			pst.setObject(i + 1, values.get(i));
 		}
@@ -364,10 +417,12 @@ class Saver {
 		} else {
 			tableName = insertTableIndex(o.getClass().getName(), o.getClass().getSimpleName());
 
-			String sql1 = "CREATE TABLE IF NOT EXISTS " + tableName
-					+ " (id INTEGER not NULL AUTO_INCREMENT, PRIMARY KEY ( id ))";
+			StringBuilder sql1 = new StringBuilder("CREATE TABLE IF NOT EXISTS ");
+			sql1.append(tableName);
+			sql1.append(" (id INTEGER not NULL AUTO_INCREMENT, PRIMARY KEY ( id ))");
+
 			Connection c1 = this.lib.getConnection();
-			PreparedStatement pst1 = c1.prepareStatement(sql1);
+			PreparedStatement pst1 = c1.prepareStatement(sql1.toString());
 
 			pst1.execute();
 			c1.close();
@@ -385,7 +440,7 @@ class Saver {
 	 */
 	private String insertTableIndex(String className, String almostTableName) throws SQLException {
 		int id;
-		String tableName;
+		StringBuilder tableName = new StringBuilder();
 		Connection c = this.lib.getConnection();
 		String sql = "INSERT INTO indicetabla (nombreclase) VALUES (?)";
 
@@ -404,17 +459,18 @@ class Saver {
 		}
 		c.close();
 
-		tableName = id + almostTableName;
+		tableName.append(id);
+		tableName.append(almostTableName);
 
 		c = this.lib.getConnection();
 		sql = "UPDATE indicetabla SET nombretabla=? where id=?";
 		PreparedStatement pst = c.prepareStatement(sql);
-		pst.setString(1, tableName);
+		pst.setString(1, tableName.toString());
 		pst.setInt(2, id);
 		pst.executeUpdate();
 		c.close();
 
-		return tableName;
+		return tableName.toString();
 	}
 
 	/**
@@ -472,12 +528,12 @@ class Saver {
 			boolean basic = true;
 			boolean multivalued = false;
 			String name = f.getName();
-			String type = "";
+			StringBuilder type=new StringBuilder();
 			String constructorClass = "";
 			if (f.getType().getCanonicalName().equalsIgnoreCase("Java.lang.String"))
-				type = "VARCHAR(255)";
+				type = new StringBuilder("VARCHAR(255)");
 			else if (f.getType().getCanonicalName().equalsIgnoreCase("Int"))
-				type = "INTEGER";
+				type = new StringBuilder("INTEGER");
 			else {
 				f.setAccessible(true);
 				Object ob = null;
@@ -519,7 +575,7 @@ class Saver {
 							createMiddleTable(objectTableName, nombreTablaParametro, f.getName(), instanceType);
 						}
 						name = f.getName();
-						type = "VARCHAR(255)";
+						type = new StringBuilder("VARCHAR(255)");								
 						basic = false;
 						multivalued = true;
 						if (instanceType.equalsIgnoreCase("Array"))
@@ -535,8 +591,11 @@ class Saver {
 							basic = false;
 							name = f.getName();
 							constructorClass = ob.getClass().getName();
-							type = "INTEGER, ADD FOREIGN KEY (" + f.getName() + ") REFERENCES " + referencedTableName
-									+ "(id) ON DELETE SET NULL";
+							type = new StringBuilder("INTEGER, ADD FOREIGN KEY (");
+							type.append(f.getName());
+							type.append(") REFERENCES ");							
+							type.append(referencedTableName);
+							type.append("(id) ON DELETE SET NULL");
 						}
 					}
 				} catch (IllegalArgumentException | IllegalAccessException | SecurityException
@@ -545,14 +604,14 @@ class Saver {
 				}
 			}
 			if (!nullObject) {
-				Attribute a = new Attribute(name, type, basic, multivalued);
+				Attribute a = new Attribute(name, type.toString(), basic, multivalued);
 				if (!basic)
 					a.setConstructorClass(constructorClass);
 				attributes.add(a);
 			}
 		}
 
-		return attributes;
+		return attributes;		
 	}
 
 	/**
@@ -565,17 +624,36 @@ class Saver {
 	 */
 	private void createMultivaluedTable(String nto, String fieldName, String type, String instanceType)
 			throws SQLException {
-		String sql = "CREATE TABLE IF NOT EXISTS " + nto + "_" + fieldName + " (id INTEGER not NULL AUTO_INCREMENT,"
-				+ "id1_" + nto + " INTEGER, " + fieldName + " " + type + ", ";
+		StringBuilder sql = new StringBuilder("CREATE TABLE IF NOT EXISTS ");
+		sql.append(nto);
+		sql.append("_");
+		sql.append(fieldName);
+		sql.append(" (id INTEGER not NULL AUTO_INCREMENT,");
+		sql.append("id1_");
+		sql.append(nto);
+		sql.append(" INTEGER, ");
+		sql.append(fieldName);
+		sql.append(" " );
+		sql.append(type);
+		sql.append(", " );
 
 		if (instanceType.equalsIgnoreCase("List") || instanceType.equalsIgnoreCase("Array"))
-			sql += " posicion INTEGER, ";
-
-		sql += " PRIMARY KEY ( id )," + " CONSTRAINT fk_" + nto + "_" + fieldName + "_" + fieldName
-				+ " FOREIGN KEY (id1_" + nto + ") REFERENCES " + nto + "(id) )";
+			sql.append(" posicion INTEGER, ");
+			
+		sql.append(" PRIMARY KEY ( id ), CONSTRAINT fk_");
+		sql.append(nto);
+		sql.append("_");
+		sql.append(fieldName);
+		sql.append("_");
+		sql.append(fieldName);
+		sql.append(" FOREIGN KEY (id1_");
+		sql.append(nto);
+		sql.append(") REFERENCES ");
+		sql.append(nto);
+		sql.append("(id) )");
 
 		Connection c = this.lib.getConnection();
-		PreparedStatement pst = c.prepareStatement(sql);
+		PreparedStatement pst = c.prepareStatement(sql.toString());
 		pst.execute();
 		c.close();
 	}
@@ -590,18 +668,39 @@ class Saver {
 	 * @throws SQLException
 	 */
 	private void createMiddleTable(String nto, String ntp, String paramName, String instanceType) throws SQLException {
-		String sql = "CREATE TABLE IF NOT EXISTS " + nto + "_" + paramName + " (id INTEGER not NULL AUTO_INCREMENT,"
-				+ "id1_" + nto + " INTEGER, " + "id2_" + ntp + " INTEGER, ";
+		StringBuilder sql = new StringBuilder("CREATE TABLE IF NOT EXISTS ");
+		sql.append(nto);
+		sql.append("_");
+		sql.append(paramName);
+		sql.append(" (id INTEGER not NULL AUTO_INCREMENT, id1_");
+		sql.append(nto);
+		sql.append(" INTEGER, id2_");
+		sql.append(ntp);
+		sql.append(" INTEGER, ");
 
 		if (instanceType.equalsIgnoreCase("List") || instanceType.equalsIgnoreCase("Array"))
-			sql += " posicion INTEGER, ";
+			sql.append(" posicion INTEGER, ");
 
-		sql += " PRIMARY KEY ( id )," + " CONSTRAINT fk1_" + nto + "_" + paramName + " FOREIGN KEY (id1_" + nto
-				+ ") REFERENCES " + nto + "(id)," + " CONSTRAINT fk2_" + nto + "_" + paramName + " FOREIGN KEY (id2_"
-				+ ntp + ") REFERENCES " + ntp + "(id) )";
+		sql.append(" PRIMARY KEY ( id ), CONSTRAINT fk1_");
+		sql.append(nto);
+		sql.append("_");
+		sql.append(paramName);
+		sql.append(" FOREIGN KEY (id1_");
+		sql.append(nto);
+		sql.append(") REFERENCES ");
+		sql.append(nto);
+		sql.append("(id), CONSTRAINT fk2_");
+		sql.append(nto);
+		sql.append("_");
+		sql.append(paramName);
+		sql.append(" FOREIGN KEY (id2_");
+		sql.append(ntp);
+		sql.append(") REFERENCES ");
+		sql.append(ntp);
+		sql.append("(id) )");
 
 		Connection c = this.lib.getConnection();
-		PreparedStatement pst = c.prepareStatement(sql);
+		PreparedStatement pst = c.prepareStatement(sql.toString());
 		pst.execute();
 		c.close();
 	}
@@ -639,37 +738,69 @@ class Saver {
 	 */
 	private void insertColumnIndex(String tableName, Attribute a, String indexTableId) throws SQLException {
 
-		String sql1;
-		String alter;
+		StringBuilder sql1;
+		StringBuilder alter;
 
 		if (a.isBasic()) {
-			sql1 = "INSERT INTO indicecolumna (idtabla,atributo,columna) " + " VALUES ( \"" + indexTableId + "\" , \""
-					+ a.getName() + "\" , \"" + a.getName() + "\"  )";
-
-			alter = "ALTER TABLE " + tableName + " ADD " + a.getName() + " " + a.getType();
+			sql1 = new StringBuilder("INSERT INTO indicecolumna (idtabla,atributo,columna) VALUES ( \"");
+			sql1.append(indexTableId);
+			sql1.append("\" , \"");
+			sql1.append(a.getName());
+			sql1.append("\" , \"");
+			sql1.append( a.getName());
+			sql1.append("\"  )");
+			
+			alter=new StringBuilder("ALTER TABLE ");
+			alter.append(tableName);
+			alter.append(" ADD ");
+			alter.append(a.getName());
+			alter.append(" ");			
+			alter.append(a.getType());
 		} else {
 			if (a.isMultivalued()) {
-				sql1 = "INSERT INTO indicecolumna (idtabla,atributo,nombrecolumnatipo) " + " VALUES ( \"" + indexTableId
-						+ "\" , \"" + a.getName() + "\" , \"2_" + a.getName() + "\" )";
-
-				alter = "ALTER TABLE " + tableName + " ADD  2_" + a.getName() + " VARCHAR(255)";
+				sql1 = new StringBuilder("INSERT INTO indicecolumna (idtabla,atributo,nombrecolumnatipo) VALUES ( \"");
+				sql1.append(indexTableId);
+				sql1.append("\" , \"");
+				sql1.append( a.getName());
+				sql1.append( "\" , \"2_");
+				sql1.append(a.getName());
+				sql1.append("\" )");
+				
+				alter=new StringBuilder("ALTER TABLE ");
+				alter.append(tableName);
+				alter.append(" ADD  2_");
+				alter.append(a.getName());
+				alter.append(" VARCHAR(255)");
 			} else {
-				sql1 = "INSERT INTO indicecolumna (idtabla,atributo,columna,nombrecolumnatipo) " + " VALUES ( \""
-						+ indexTableId + "\" , \"" + a.getName() + "\" , \"" + a.getName() + "\" , \"2_" + a.getName()
-						+ "\" )";
+				sql1 = new StringBuilder("INSERT INTO indicecolumna (idtabla,atributo,nombrecolumnatipo) VALUES ( \"");
+				sql1.append(indexTableId);				
+				sql1.append("\" , \"");
+				sql1.append(a.getName());
+				sql1.append("\" , \"");
+				sql1.append(a.getName());
+				sql1.append("\" , \"2_");				
+				sql1.append(a.getName());
+				sql1.append("\" )");
 
-				alter = "ALTER TABLE " + tableName + " ADD " + a.getName() + " " + a.getType() + ", ADD 2_"
-						+ a.getName() + " VARCHAR(255)";
+				alter=new StringBuilder("ALTER TABLE ");
+				alter.append(tableName);
+				alter.append(" ADD ");
+				alter.append(a.getName());
+				alter.append(" ");
+				alter.append(a.getType());
+				alter.append(", ADD 2_");
+				alter.append(a.getName());
+				alter.append(" VARCHAR(255)");
 			}
 
 		}
 		Connection c1 = this.lib.getConnection();
-		PreparedStatement pst1 = c1.prepareStatement(sql1);
+		PreparedStatement pst1 = c1.prepareStatement(sql1.toString());
 		pst1.execute();
 		c1.close();
 
 		Connection c2 = this.lib.getConnection();
-		PreparedStatement pst = c2.prepareStatement(alter);
+		PreparedStatement pst = c2.prepareStatement(alter.toString());
 		pst.execute();
 
 		c2.close();

@@ -75,13 +75,17 @@ public class OODBLibrary {
 	 * @throws OODBLibraryException
 	 */
 	private void createIndexTable() throws OODBLibraryException{
-		String sql = "CREATE TABLE IF NOT EXISTS indicetabla " + "(id INTEGER not NULL AUTO_INCREMENT, "
-				+ " nombreclase VARCHAR(255)," + " nombretabla VARCHAR(255)," + " PRIMARY KEY ( id ))";
+		StringBuilder sql = new StringBuilder();
+		sql.append("CREATE TABLE IF NOT EXISTS indicetabla ");
+		sql.append("(id INTEGER not NULL AUTO_INCREMENT, ");
+		sql.append(" nombreclase VARCHAR(255),");
+		sql.append(" nombretabla VARCHAR(255)," + " PRIMARY KEY ( id ))");
+	
 		PreparedStatement pst;
 		Connection c;
 		try {
 			c = this.getConnection();
-			pst = c.prepareStatement(sql);
+			pst = c.prepareStatement(sql.toString());
 			pst.execute();
 			c.close();
 		} catch (SQLException e) {
@@ -96,13 +100,7 @@ public class OODBLibrary {
 	 * @throws OODBLibraryException
 	 */
 	private void createColumnIndex() throws OODBLibraryException {
-		String sql = "CREATE TABLE IF NOT EXISTS indicecolumna " 
-				+ "(id INTEGER not NULL AUTO_INCREMENT, "
-				+ " idtabla INTEGER, " 
-				+ " atributo VARCHAR(255)," 
-				+ " columna VARCHAR(255),"
-				+ " nombrecolumnatipo VARCHAR(255)," + " PRIMARY KEY ( id ),"
-				+"  CONSTRAINT fk_table FOREIGN KEY (idtabla) REFERENCES indicetabla(id)) ";
+		String sql = "CREATE TABLE IF NOT EXISTS indicecolumna (id INTEGER not NULL AUTO_INCREMENT, idtabla INTEGER, atributo VARCHAR(255), columna VARCHAR(255), nombrecolumnatipo VARCHAR(255)," + " PRIMARY KEY ( id ), CONSTRAINT fk_table FOREIGN KEY (idtabla) REFERENCES indicetabla(id)) ";
 		PreparedStatement pst;
 		Connection c;
 		try {
@@ -113,7 +111,6 @@ public class OODBLibrary {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		
 
 	}
 
@@ -149,12 +146,13 @@ public class OODBLibrary {
 		else{
 			Connection con = this.cpds.getConnection();
 			String str = "";
-			String sqlStatement = "SELECT nombretabla "
-					+ "FROM INDICETABLA "
-					+ "WHERE nombreclase = \'" 
-					+ nombreClase + "\'";
+			StringBuilder sqlStatement = new StringBuilder();
+			sqlStatement.append("SELECT nombretabla FROM INDICETABLA WHERE nombreclase = \'");
+			sqlStatement.append(nombreClase);
+			sqlStatement.append("\'");
+		
 			PreparedStatement pst;
-			pst = con.prepareStatement(sqlStatement);
+			pst = con.prepareStatement(sqlStatement.toString());
 			ResultSet rs = pst.executeQuery();
 			rs.next();
 			str = rs.getString("nombretabla");
@@ -231,12 +229,15 @@ public class OODBLibrary {
 		Integer id;
 		try {
 			tableName = this.getTableName(o.getClass().getName());
-			String sqlStatement = "DELETE FROM " + tableName +
-					  " WHERE ID = ?";
+			StringBuilder sqlStatement = new StringBuilder();
+			sqlStatement.append("DELETE FROM ");
+			sqlStatement.append(tableName);
+			sqlStatement.append(" WHERE ID = ? ");
+			
 			Connection con = this.cpds.getConnection();
 			PreparedStatement pst;
 			id = this.objectMap.get(o);
-			pst = con.prepareStatement(sqlStatement);
+			pst = con.prepareStatement(sqlStatement.toString());
 			pst.setObject(1, id);
 			pst.execute();
 			con.close();

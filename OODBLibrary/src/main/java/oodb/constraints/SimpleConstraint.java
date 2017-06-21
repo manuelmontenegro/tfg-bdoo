@@ -80,13 +80,27 @@ public class SimpleConstraint implements Constraint {
 		return new SimpleConstraint("<>", field, value);
 	}
 
-	public String toSql() {
+	public String toSql() {				
 		String[] fields = StringUtils.split(this.field, ".");
-		String classCond = "t" + fields.length + ".";
-		if (value != null)
-			return "(" + classCond + fields[fields.length - 1] + " " + operator + " ?)";
-		else
-			return "(" + field + " IS NULL)";
+		StringBuilder classCond =new StringBuilder( "t"); 
+		classCond.append(fields.length);
+		classCond.append(".");
+		StringBuilder sb = new StringBuilder();
+		if (value != null){
+			sb.append("(");
+			sb.append(classCond.toString());
+			sb.append(fields[fields.length - 1]);
+			sb.append(" ");
+			sb.append(operator);
+			sb.append(" ?");
+			return sb.toString();
+		}
+		else{
+			sb.append("(");
+			sb.append(field);
+			sb.append(" IS NULL");
+			return sb.toString();
+		}
 	}
 
 	public List<Object> getValues() {

@@ -56,7 +56,7 @@ public class Query {
 	String toSql(Connection con) throws SQLException, IllegalArgumentException, IllegalAccessException,
 			NoSuchFieldException, SecurityException {
 
-		String sqlStatement = "SELECT t1.id,";
+		StringBuilder sqlStatement=new StringBuilder("SELECT t1.id,");
 		Field[] fields = this.constraintClass.getDeclaredFields();
 		List<String> selectFields = new ArrayList<String>();
 		for (int i = 0; i < (fields.length); i++) {
@@ -67,22 +67,35 @@ public class Query {
 				selectFields.add("t1.2_" + fields[i].getName());
 			}
 		}
-		sqlStatement += StringUtils.join(selectFields, ",");
+		sqlStatement.append(StringUtils.join(selectFields, ","));
+		
+		sqlStatement.append(" FROM ");
+		sqlStatement.append(this.library.getTableName(this.constraintClass.getName()));
+		sqlStatement.append(" t1");
 
-		sqlStatement += " FROM " + this.library.getTableName(this.constraintClass.getName()) + " t1";
 		List<String> tableList = new ArrayList<String>();
 		List<String> fieldList = new ArrayList<String>();
 		List<String> indexList = new ArrayList<String>();
 
 		String constraintSQL = this.constraintToSql(this.constraint, tableList, fieldList, indexList);
 		for (int i = 0; i < tableList.size(); i++) {
-			sqlStatement += " LEFT JOIN " + tableList.get(i) + " t" + (i + 2) + " ON " + indexList.get(i) + "."
-					+ fieldList.get(i) + " = " + "t" + (i + 2) + ".id";
+			sqlStatement.append(" LEFT JOIN ");
+			sqlStatement.append(tableList.get(i));
+			sqlStatement.append(" t");
+			sqlStatement.append((i + 2));
+			sqlStatement.append( " ON ");
+			sqlStatement.append(indexList.get(i));
+			sqlStatement.append(".");
+			sqlStatement.append(fieldList.get(i));
+			sqlStatement.append(" = t");
+			sqlStatement.append((i + 2));
+			sqlStatement.append(".id");
 		}
 
-		sqlStatement += " WHERE " + constraintSQL;
+		sqlStatement.append(" WHERE ");
+		sqlStatement.append(constraintSQL);
 
-		return sqlStatement;
+		return sqlStatement.toString();
 	}
 
 	/**
@@ -99,6 +112,7 @@ public class Query {
 	private String constraintToSql(Constraint c, List<String> tl, List<String> fl, List<String> il)
 			throws SQLException, NoSuchFieldException, SecurityException {
 
+
 		if (c.getClass().getName().contains("NotConstraint")) {
 			return "NOT " + constraintToSql(c.getInnerConstraint().get(0), tl, fl, il);
 		} else if (c.getClass().getName().contains("AndConstraint")) {
@@ -114,7 +128,7 @@ public class Query {
 			}
 			return StringUtils.join(ls, " OR ");
 		} else {
-			String constraint = "";
+			StringBuilder constraint=new StringBuilder();
 			String[] campos = StringUtils.split(c.getField(), ".");
 			Field currentField = null;
 			Class<?> currentClass = this.constraintClass;
@@ -140,7 +154,11 @@ public class Query {
 				int index = tl.size() + 1;
 				if (!this.library.basicType(currentField.getType()))
 					index--;
-				constraint = "t" + index + "." + currentField.getName() + " = ?";
+				constraint=new StringBuilder("t");
+				constraint.append(index);
+				constraint.append(".");
+				constraint.append(currentField.getName());
+				constraint.append(" = ?");
 			} else {
 				Class<?> userClass;
 				if (!currentField.getType().isArray()) {
@@ -151,24 +169,43 @@ public class Query {
 				} else {
 					userClass = currentField.getType().getComponentType();
 				}
-				constraint += "EXISTS (SELECT ";
+				constraint.append("EXISTS (SELECT ");
 				String classTableName = this.library.getTableName(this.constraintClass.getName());
-				String listTableName = classTableName + "_" + currentField.getName();
+				StringBuilder listTableName=new StringBuilder();
+				listTableName.append(classTableName);
+				listTableName.append("_");
+				listTableName.append(currentField.getName());
 				if (library.basicType(userClass)) {
-					constraint += "ntl.id1_" + classTableName;
-					constraint += " FROM " + listTableName + " ntl WHERE " + " ntl." + currentField.getName()
-							+ " = ? AND ntl.id1_" + classTableName + " = t1.id";
+					constraint.append("ntl.id1_");
+					constraint.append(classTableName);
+					constraint.append(" FROM ");
+					constraint.append(listTableName.toString());
+					constraint.append(" ntl WHERE ntl.");
+					constraint.append(currentField.getName());
+					constraint.append(" = ? AND ntl.id1_");
+					constraint.append(classTableName);
+					constraint.append(" = t1.id");
 				} else {
 					String listComponentTableName = this.library.getTableName(userClass.getName());
-					constraint += "ntl.id1_" + classTableName;
-					constraint += " FROM " + listTableName + " ntl JOIN " + listComponentTableName + " nt ON ntl.id2_"
-							+ listComponentTableName + " = nt.id WHERE " + "nt.id = ? AND " + "ntl.id1_"
-							+ classTableName + " = t1.id";
+					constraint.append("ntl.id1_");
+					constraint.append(classTableName);
+					constraint.append(" FROM ");
+					constraint.append(listTableName.toString());
+					constraint.append(" ntl JOIN ");
+					constraint.append(listComponentTableName);
+					constraint.append(" nt ON ntl.id2_");
+					constraint.append(listComponentTableName);
+					constraint.append(" = nt.id WHERE nt.id = ? AND ntl.id1_");
+					constraint.append(classTableName);
+					constraint.append(" = t1.id");
 				}
-				constraint += ")";
+				constraint.append(")");
 			}
 
-			return "( " + constraint + " )";
+			constraint.append("( ");
+			constraint.append(constraint);
+			constraint.append(" )");
+			return  constraint.toString();
 		}
 	}
 	

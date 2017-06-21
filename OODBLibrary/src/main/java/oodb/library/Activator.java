@@ -78,16 +78,24 @@ public class Activator {
 			parentTn = this.lib.getTableName(o.getClass().getName());
 
 			Connection c = this.lib.getConnection();
-			String sql = "Select * from " + parentTn + " where id = " + parentId;
-			PreparedStatement parentPs = c.prepareStatement(sql);
+			StringBuilder sb = new StringBuilder();
+			sb.append("Select * from ");
+			sb.append(parentTn);
+			sb.append(" where id = ");
+			sb.append(parentId);
+			PreparedStatement parentPs = c.prepareStatement(sb.toString());
+			sb = new StringBuilder();
 			ResultSet parentRs = parentPs.executeQuery();
 			if (parentRs.next()) {
 				Object objeto = null;
 				int childId = parentRs.getInt(columnName);
 				String childTn = this.lib.getTableName(class1.getName());
-				sql = "Select * from " + childTn + " where id = " + childId;
+				sb.append("Select * from ");
+				sb.append(childTn);
+				sb.append(" where id = ");
+				sb.append(childId);
 
-				PreparedStatement childPs = c.prepareStatement(sql);
+				PreparedStatement childPs = c.prepareStatement(sb.toString());
 				ResultSet childRs = childPs.executeQuery();
 				if (childRs.next()) {
 					try {

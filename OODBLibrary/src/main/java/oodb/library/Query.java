@@ -240,7 +240,6 @@ public class Query {
 			}
 			pst.setObject(i, obj);
 		}
-
 		ResultSet rs = pst.executeQuery();
 		Object object;
 		while (rs.next()) {
